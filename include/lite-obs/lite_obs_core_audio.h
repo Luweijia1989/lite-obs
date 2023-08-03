@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include "lite_obs.h"
 
 #define MAX_BUFFERING_TICKS 45
 
@@ -11,15 +10,21 @@ struct ts_info {
 };
 
 struct lite_obs_core_audio_private;
+class audio_output;
 class lite_obs_core_audio
 {
 public:
-    lite_obs_core_audio();
+    struct output_audio_info {
+        uint32_t samples_per_sec{};
+        enum class speaker_layout speakers{};
+    };
+
+    lite_obs_core_audio(uintptr_t core_ptr);
     ~lite_obs_core_audio();
 
     std::shared_ptr<audio_output> core_audio();
 
-    bool lite_obs_start_audio(lite_obs::output_audio_info *oai);
+    bool lite_obs_start_audio(uint32_t sample_rate);
     void lite_obs_stop_audio();
 
 private:

@@ -15,8 +15,6 @@
 #include <glm/vec4.hpp>
 #include <atomic>
 #include <thread>
-#include <mutex>
-#include <list>
 
 #define NUM_TEXTURES 2
 #define NUM_CHANNELS 3
@@ -39,6 +37,8 @@ struct obs_graphics_context {
 
 struct lite_obs_core_video_private
 {
+    uintptr_t core_ptr;
+
     void *plat{};
     std::unique_ptr<graphics_subsystem> graphics{};
 
@@ -84,12 +84,13 @@ struct lite_obs_core_video_private
     std::atomic_long raw_active{};
     std::atomic_long gpu_encoder_active{};
 
-    lite_obs::output_video_info ovi{};
+    lite_obs_core_video::output_video_info ovi{};
 };
 
-lite_obs_core_video::lite_obs_core_video()
+lite_obs_core_video::lite_obs_core_video(uintptr_t core_ptr)
 {
     d_ptr = std::make_unique<lite_obs_core_video_private>();
+    d_ptr->core_ptr = core_ptr;
     d_ptr->plat = gs_device::gs_create_platform_rc();
 }
 
@@ -157,7 +158,8 @@ void lite_obs_core_video::render_all_sources()
 {
     std::list<std::shared_ptr<lite_source>> sources;
     lite_source::sources_mutex.lock();
-    for (auto iter = lite_source::sources.begin(); iter != lite_source::sources.end(); iter++) {
+    auto &s = lite_source::sources[d_ptr->core_ptr];
+    for (auto iter = s.begin(); iter != s.end(); iter++) {
         auto &pair = *iter;
         if (pair.first & source_type::Source_Video)
             sources.push_back(pair.second);
@@ -661,7 +663,7 @@ uint32_t lite_obs_core_video::lagged_frames()
     return d_ptr->lagged_frames;
 }
 
-void lite_obs_core_video::set_video_matrix(lite_obs::output_video_info *ovi)
+void lite_obs_core_video::set_video_matrix(output_video_info *ovi)
 {
     glm::mat4x4 mat{0};
     glm::vec4 r_row{0};
@@ -878,7 +880,7 @@ void lite_obs_core_video::graphics_thread(void *param)
     p->graphics_thread_internal();
 }
 
-static inline void make_video_info(video_output_info *vi, lite_obs::output_video_info *ovi)
+static inline void make_video_info(video_output_info *vi, lite_obs_core_video::output_video_info *ovi)
 {
     vi->name = "video";
     vi->format = ovi->output_format;
@@ -891,14 +893,23 @@ static inline void make_video_info(video_output_info *vi, lite_obs::output_video
     vi->cache_size = 6;
 }
 
-int lite_obs_core_video::lite_obs_start_video(lite_obs::output_video_info *ovi)
+int lite_obs_core_video::lite_obs_start_video(uint32_t width, uint32_t height, uint32_t fps)
 {
 #ifdef WIN32
     if (!d_ptr->plat)
         return OBS_VIDEO_FAIL;
 #endif
+    output_video_info ovi;
+    ovi.base_width = width;
+    ovi.base_height = height;
+    ovi.fps_den = 1;
+    ovi.fps_num = fps;
+    ovi.output_width = width;
+    ovi.output_height = height;
+    ovi.output_format = video_format::VIDEO_FORMAT_NV12;
+
     video_output_info vi;
-    make_video_info(&vi, ovi);
+    make_video_info(&vi, &ovi);
 
     auto video = std::make_shared<video_output>();
     auto errorcode = video->video_output_open(&vi);
@@ -913,15 +924,15 @@ int lite_obs_core_video::lite_obs_start_video(lite_obs::output_video_info *ovi)
     }
     d_ptr->video = video;
 
-    d_ptr->output_format = ovi->output_format;
-    d_ptr->base_width = ovi->base_width;
-    d_ptr->base_height = ovi->base_height;
-    d_ptr->output_width = ovi->output_width;
-    d_ptr->output_height = ovi->output_height;
+    d_ptr->output_format = ovi.output_format;
+    d_ptr->base_width = ovi.base_width;
+    d_ptr->base_height = ovi.base_height;
+    d_ptr->output_width = ovi.output_width;
+    d_ptr->output_height = ovi.output_height;
     d_ptr->gpu_conversion = true;
 
-    set_video_matrix(ovi);
-    d_ptr->ovi = *ovi;
+    set_video_matrix(&ovi);
+    d_ptr->ovi = ovi;
 
     d_ptr->graphics = graphics_subsystem::gs_create_graphics_system(d_ptr->plat);
     if (!d_ptr->graphics) {

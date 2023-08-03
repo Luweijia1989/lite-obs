@@ -3,12 +3,13 @@
 #include <memory>
 #include <functional>
 #include "lite_encoder_info.h"
-#include "lite_obs.h"
 
 struct lite_obs_encoder_private;
 
 typedef void (*new_packet)(void *param, const std::shared_ptr<encoder_packet> &packet);
 
+class lite_obs_core_video;
+class lite_obs_core_audio;
 class video_output;
 class audio_output;
 class lite_obs_output;
@@ -42,8 +43,8 @@ public:
     uint32_t lite_obs_encoder_get_sample_rate();
     size_t lite_obs_encoder_get_frame_size();
 
-    void lite_obs_encoder_set_preferred_video_format(video_format format);
-    video_format lite_obs_encoder_get_preferred_video_format();
+    void lite_obs_encoder_set_preferred_video_format(enum class video_format format);
+    enum class video_format lite_obs_encoder_get_preferred_video_format();
 
     bool lite_obs_encoder_get_extra_data(uint8_t **extra_data, size_t *size);
 

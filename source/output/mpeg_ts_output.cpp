@@ -2,11 +2,14 @@
 #include <thread>
 #include <mutex>
 #include <list>
+#include "lite-obs/lite_obs.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/lite_encoder.h"
 #include "lite-obs/media-io/ffmpeg-formats.h"
+#include "lite-obs/media-io/video_output.h"
+#include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/obs-defs.h"
 #include "lite-obs/output/ffmpeg-url.h"
 #include "lite-obs/output/ffmpeg-srt.h"

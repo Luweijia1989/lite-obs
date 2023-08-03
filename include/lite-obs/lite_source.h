@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <mutex>
+#include <map>
 #include <list>
 #include "lite_obs.h"
 #include "media-io/video_frame.h"
@@ -19,8 +20,8 @@ public:
         const uint8_t *data[MAX_AV_PLANES];
         uint32_t frames{};
 
-        enum speaker_layout speakers{};
-        enum audio_format format{};
+        enum class speaker_layout speakers{};
+        enum class audio_format format{};
         uint32_t samples_per_sec{};
 
         uint64_t timestamp{};
@@ -166,7 +167,7 @@ public:
 
 public:
     static std::recursive_mutex sources_mutex;
-    static std::list<std::pair<source_type,std::shared_ptr<lite_source>>> sources;
+    static std::map<uintptr_t, std::list<std::pair<source_type,std::shared_ptr<lite_source>>>> sources;
 
 private:
     bool audio_pending();
@@ -179,7 +180,7 @@ private:
     void reset_audio_data(uint64_t os_time);
     void reset_audio_timing(uint64_t timestamp, uint64_t os_time);
     void handle_ts_jump(uint64_t expected, uint64_t ts, uint64_t diff, uint64_t os_time);
-    void output_audio_data_internal(const audio_data *data);
+    void output_audio_data_internal(const struct audio_data *data);
     void output_audio_push_back(const struct audio_data *in, size_t channels);
     void output_audio_place(const struct audio_data *in, size_t channels, size_t sample_rate);
 

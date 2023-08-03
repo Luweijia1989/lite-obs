@@ -2,10 +2,12 @@
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/lite_source.h"
-#include <list>
+#include "lite-obs/media-io/audio_output.h"
 
 struct lite_obs_core_audio_private
 {
+    uintptr_t core_ptr;
+
     std::shared_ptr<audio_output> audio{};
 
     uint64_t buffered_ts{};
@@ -14,9 +16,10 @@ struct lite_obs_core_audio_private
     int total_buffering_ticks{};
 };
 
-lite_obs_core_audio::lite_obs_core_audio()
+lite_obs_core_audio::lite_obs_core_audio(uintptr_t core_ptr)
 {
     d_ptr = std::make_unique<lite_obs_core_audio_private>();
+    d_ptr->core_ptr = core_ptr;
 }
 
 lite_obs_core_audio::~lite_obs_core_audio()
@@ -31,7 +34,8 @@ std::shared_ptr<audio_output> lite_obs_core_audio::core_audio()
 
 void lite_obs_core_audio::find_min_ts(uint64_t *min_ts)
 {
-    for (auto iter = lite_source::sources.begin(); iter != lite_source::sources.end(); iter++) {
+    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &pair = *iter;
         if(!(pair.first & source_type::Source_Audio))
             continue;
@@ -47,7 +51,8 @@ bool lite_obs_core_audio::mark_invalid_sources(size_t sample_rate, uint64_t min_
 {
     bool recalculate = false;
 
-    for (auto iter = lite_source::sources.begin(); iter != lite_source::sources.end(); iter++) {
+    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &pair = *iter;
         if(!(pair.first & source_type::Source_Audio))
             continue;
@@ -132,10 +137,13 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
 
     std::list<std::shared_ptr<lite_source>> audio_sources;
     lite_source::sources_mutex.lock();
-    for (auto iter = lite_source::sources.begin(); iter != lite_source::sources.end(); iter++) {
-        auto &pair = *iter;
-        if (pair.first & source_type::Source_Audio) {
-            audio_sources.push_back(pair.second);
+    {
+        auto &sources = lite_source::sources[d_ptr->core_ptr];
+        for (auto iter = sources.begin(); iter != sources.end(); iter++) {
+            auto &pair = *iter;
+            if (pair.first & source_type::Source_Audio) {
+                audio_sources.push_back(pair.second);
+            }
         }
     }
     lite_source::sources_mutex.unlock();
@@ -175,13 +183,16 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     /* ------------------------------------------------ */
     /* discard audio */
     lite_source::sources_mutex.lock();
-    for (auto iter = lite_source::sources.begin(); iter != lite_source::sources.end(); iter++) {
-        auto &pair = *iter;
-        if(!(pair.first & source_type::Source_Audio))
-            continue;
+    {
+        auto &sources = lite_source::sources[d_ptr->core_ptr];
+        for (auto iter = sources.begin(); iter != sources.end(); iter++) {
+            auto &pair = *iter;
+            if(!(pair.first & source_type::Source_Audio))
+                continue;
 
-        auto &source = pair.second;
-        source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
+            auto &source = pair.second;
+            source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
+        }
     }
     lite_source::sources_mutex.unlock();
 
@@ -201,7 +212,6 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     return true;
 }
 
-
 bool lite_obs_core_audio::audio_callback(void *param, uint64_t start_ts_in, uint64_t end_ts_in,
                                          uint64_t *out_ts, uint32_t mixers,
                                          audio_output_data *mixes)
@@ -210,7 +220,7 @@ bool lite_obs_core_audio::audio_callback(void *param, uint64_t start_ts_in, uint
     return core_audio->audio_callback_internal(start_ts_in, end_ts_in, out_ts, mixers, mixes);
 }
 
-bool lite_obs_core_audio::lite_obs_start_audio(lite_obs::output_audio_info *oai)
+bool lite_obs_core_audio::lite_obs_start_audio(uint32_t sample_rate)
 {
     if (d_ptr->audio && d_ptr->audio->audio_output_active())
         return false;
@@ -219,9 +229,9 @@ bool lite_obs_core_audio::lite_obs_start_audio(lite_obs::output_audio_info *oai)
 
     audio_output_info ai{};
     ai.name = "Audio";
-    ai.samples_per_sec = oai->samples_per_sec;
+    ai.samples_per_sec = sample_rate;
     ai.format = audio_format::AUDIO_FORMAT_FLOAT_PLANAR;
-    ai.speakers = oai->speakers;
+    ai.speakers = speaker_layout::SPEAKERS_STEREO;
     ai.input_callback = lite_obs_core_audio::audio_callback;
     ai.input_param = this;
 

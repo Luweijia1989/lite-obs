@@ -5,9 +5,11 @@
 #include "lite-obs/lite_encoder_info.h"
 #include "lite-obs/lite_encoder.h"
 #include "lite-obs/lite_obs.h"
-#include "lite-obs/obs-defs.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
+#include "lite-obs/obs-defs.h"
+#include "lite-obs/media-io/video_output.h"
+#include "lite-obs/media-io/audio_output.h"
 
 #include <atomic>
 #include <thread>

@@ -3,12 +3,13 @@
 #include <memory>
 #include <string>
 #include "lite_encoder_info.h"
-#include "lite_obs.h"
-
 
 class video_output;
 class audio_output;
+class lite_obs_core_video;
+class lite_obs_core_audio;
 class lite_obs_encoder;
+class lite_obs_output_callbak;
 struct lite_obs_output_private;
 class lite_obs_output : public std::enable_shared_from_this<lite_obs_output>
 {

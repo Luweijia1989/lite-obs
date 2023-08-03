@@ -1,6 +1,5 @@
 #include "lite-obs/lite_encoder.h"
 
-#include "lite-obs/lite_obs.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_output.h"
