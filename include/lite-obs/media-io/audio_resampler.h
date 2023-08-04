@@ -1,7 +1,7 @@
 #ifndef AUDIO_RESAMPLER_H
 #define AUDIO_RESAMPLER_H
 
-#include "audio_info.h"
+#include "lite-obs/lite_obs_defines.h"
 #include <memory>
 
 struct resample_info {

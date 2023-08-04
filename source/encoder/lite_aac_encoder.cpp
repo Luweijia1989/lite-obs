@@ -1,7 +1,7 @@
 #include "lite-obs/encoder/lite_aac_encoder.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/media-io/audio_output.h"
-#include "lite-obs/media-io/ffmpeg-formats.h"
+#include "lite-obs/media-io/ffmpeg_formats.h"
 
 extern "C"
 {

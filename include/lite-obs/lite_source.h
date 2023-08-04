@@ -20,8 +20,8 @@ public:
         const uint8_t *data[MAX_AV_PLANES];
         uint32_t frames{};
 
-        enum class speaker_layout speakers{};
-        enum class audio_format format{};
+        speaker_layout speakers{};
+        audio_format format{};
         uint32_t samples_per_sec{};
 
         uint64_t timestamp{};
@@ -144,7 +144,7 @@ public:
         uint64_t timestamp{};
 
         enum video_format format{};
-        enum video_range_type range{};
+        enum class video_range_type range{};
         float color_matrix[16]{};
         float color_range_min[3]{};
         float color_range_max[3]{};
@@ -167,7 +167,7 @@ public:
 
 public:
     static std::recursive_mutex sources_mutex;
-    static std::map<uintptr_t, std::list<std::pair<source_type,std::shared_ptr<lite_source>>>> sources;
+    static std::map<uintptr_t, std::map<uintptr_t, std::pair<source_type,std::shared_ptr<lite_source>>>> sources;
 
 private:
     bool audio_pending();

@@ -272,6 +272,9 @@ std::unique_ptr<graphics_subsystem> graphics_subsystem::gs_create_graphics_syste
 
 void gs_enter_contex(std::unique_ptr<graphics_subsystem> &graphics)
 {
+    if (!graphics)
+        return;
+
     bool is_current = thread_graphics == graphics.get();
     if (thread_graphics && !is_current) {
         while (thread_graphics)
@@ -289,6 +292,9 @@ void gs_enter_contex(std::unique_ptr<graphics_subsystem> &graphics)
 
 void gs_leave_context()
 {
+    if (!thread_graphics)
+        return;
+
     if (gs_valid("gs_leave_context")) {
         if (!--thread_graphics->d_ptr->ref) {
             graphics_subsystem *graphics = thread_graphics;

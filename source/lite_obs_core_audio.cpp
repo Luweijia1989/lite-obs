@@ -36,7 +36,7 @@ void lite_obs_core_audio::find_min_ts(uint64_t *min_ts)
 {
     auto &sources = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-        auto &pair = *iter;
+        auto &pair = iter->second;
         if(!(pair.first & source_type::Source_Audio))
             continue;
 
@@ -53,7 +53,7 @@ bool lite_obs_core_audio::mark_invalid_sources(size_t sample_rate, uint64_t min_
 
     auto &sources = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-        auto &pair = *iter;
+        auto &pair = iter->second;
         if(!(pair.first & source_type::Source_Audio))
             continue;
 
@@ -140,7 +140,7 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     {
         auto &sources = lite_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-            auto &pair = *iter;
+            auto &pair = iter->second;
             if (pair.first & source_type::Source_Audio) {
                 audio_sources.push_back(pair.second);
             }
@@ -186,7 +186,7 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     {
         auto &sources = lite_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-            auto &pair = *iter;
+            auto &pair = iter->second;
             if(!(pair.first & source_type::Source_Audio))
                 continue;
 

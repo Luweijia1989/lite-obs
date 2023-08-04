@@ -1,5 +1,5 @@
 #include "lite-obs/lite_obs_core_video.h"
-#include "lite-obs/obs-defs.h"
+#include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/lite_source.h"
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/graphics/gs_texture.h"
@@ -7,7 +7,7 @@
 #include "lite-obs/graphics/gs_program.h"
 #include "lite-obs/graphics/gs_device.h"
 #include "lite-obs/media-io/video_output.h"
-#include "lite-obs/media-io/video-matrices.h"
+#include "lite-obs/media-io/video_matrices.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/circlebuf.h"
@@ -160,7 +160,7 @@ void lite_obs_core_video::render_all_sources()
     lite_source::sources_mutex.lock();
     auto &s = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = s.begin(); iter != s.end(); iter++) {
-        auto &pair = *iter;
+        auto &pair = iter->second;
         if (pair.first & source_type::Source_Video)
             sources.push_back(pair.second);
     }

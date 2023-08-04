@@ -1,4 +1,4 @@
-#include "lite-obs/media-io/video-matrices.h"
+#include "lite-obs/media-io/video_matrices.h"
 #include <memory>
 
 static struct {

@@ -4,8 +4,8 @@
 #include <list>
 #include <thread>
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/obs-defs.h"
-#include "lite-obs/media-io/ffmpeg-formats.h"
+#include "lite-obs/lite_obs_defines.h"
+#include "lite-obs/media-io/ffmpeg_formats.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
 

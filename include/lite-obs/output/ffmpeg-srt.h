@@ -18,7 +18,7 @@
 #pragma once
 #include "ffmpeg-url.h"
 #include "lite-obs/util/log.h"
-#include "lite-obs/obs-defs.h"
+#include "lite-obs/lite_obs_defines.h"
 #include <srt/srt.h>
 
 extern "C"

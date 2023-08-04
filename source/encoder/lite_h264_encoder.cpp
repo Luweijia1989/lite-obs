@@ -1,5 +1,5 @@
 #include "lite-obs/encoder/lite_h264_encoder.h"
-#include "lite-obs/media-io/ffmpeg-formats.h"
+#include "lite-obs/media-io/ffmpeg_formats.h"
 #include "lite-obs/lite_obs_avc.h"
 
 #include <vector>

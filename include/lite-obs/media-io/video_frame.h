@@ -1,7 +1,6 @@
 #pragma once
 
-#include "media-io-defs.h"
-#include "video_info.h"
+#include "lite-obs/lite_obs_defines.h"
 #include <stdint.h>
 #include <memory>
 #include <vector>

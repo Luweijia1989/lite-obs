@@ -7,8 +7,9 @@ extern "C"
 #include <libswresample/swresample.h>
 }
 
+#include "lite-obs/media-io/audio_info.h"
 #include "lite-obs/util/log.h"
-#include "lite-obs/media-io/media-io-defs.h"
+#include "lite-obs/lite_obs_defines.h"
 
 struct audio_resampler_private {
     SwrContext *context{};

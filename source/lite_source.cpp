@@ -4,6 +4,7 @@
 #include "lite-obs/util/threading.h"
 #include "lite-obs/media-io/audio_resampler.h"
 #include "lite-obs/media-io/audio_output.h"
+#include "lite-obs/media-io/video_info.h"
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/graphics/gs_texture.h"
@@ -315,7 +316,7 @@ struct lite_source_private
     }
 };
 std::recursive_mutex lite_source::sources_mutex{};
-std::map<uintptr_t, std::list<std::pair<source_type,std::shared_ptr<lite_source>>>> lite_source::sources{};
+std::map<uintptr_t, std::map<uintptr_t, std::pair<source_type,std::shared_ptr<lite_source>>>> lite_source::sources{};
 
 lite_source::lite_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a)
 {

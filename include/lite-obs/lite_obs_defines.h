@@ -20,6 +20,9 @@
 /** Maximum number of source channels for output and per display */
 #define MAX_CHANNELS 64
 
+/** Audio max planes */
+#define MAX_AV_PLANES 8
+
 #define OBS_ALIGN_CENTER (0)
 #define OBS_ALIGN_LEFT (1 << 0)
 #define OBS_ALIGN_RIGHT (1 << 1)
@@ -48,3 +51,68 @@
 #define OBS_VIDEO_INVALID_PARAM -3
 #define OBS_VIDEO_CURRENTLY_ACTIVE -4
 #define OBS_VIDEO_MODULE_NOT_FOUND -5
+
+enum class video_format {
+    VIDEO_FORMAT_NONE,
+
+    /* planar 420 format */
+    VIDEO_FORMAT_I420, /* three-plane */
+    VIDEO_FORMAT_NV12, /* two-plane, luma and packed chroma */
+
+    /* packed 422 formats */
+    VIDEO_FORMAT_YVYU,
+    VIDEO_FORMAT_YUY2, /* YUYV */
+    VIDEO_FORMAT_UYVY,
+
+    /* packed uncompressed formats */
+    VIDEO_FORMAT_RGBA,
+    VIDEO_FORMAT_BGRA,
+    VIDEO_FORMAT_BGRX,
+    VIDEO_FORMAT_Y800, /* grayscale */
+
+    /* planar 4:4:4 */
+    VIDEO_FORMAT_I444,
+
+    /* more packed uncompressed formats */
+    VIDEO_FORMAT_BGR3,
+
+    /* planar 4:2:2 */
+    VIDEO_FORMAT_I422,
+
+    /* planar 4:2:0 with alpha */
+    VIDEO_FORMAT_I40A,
+
+    /* planar 4:2:2 with alpha */
+    VIDEO_FORMAT_I42A,
+
+    /* planar 4:4:4 with alpha */
+    VIDEO_FORMAT_YUVA,
+
+    /* packed 4:4:4 with alpha */
+    VIDEO_FORMAT_AYUV,
+};
+
+enum class audio_format {
+    AUDIO_FORMAT_UNKNOWN,
+
+    AUDIO_FORMAT_U8BIT,
+    AUDIO_FORMAT_16BIT,
+    AUDIO_FORMAT_32BIT,
+    AUDIO_FORMAT_FLOAT,
+
+    AUDIO_FORMAT_U8BIT_PLANAR,
+    AUDIO_FORMAT_16BIT_PLANAR,
+    AUDIO_FORMAT_32BIT_PLANAR,
+    AUDIO_FORMAT_FLOAT_PLANAR,
+};
+
+enum class speaker_layout {
+    SPEAKERS_UNKNOWN,     /**< Unknown setting, fallback is stereo. */
+    SPEAKERS_MONO,        /**< Channels: MONO */
+    SPEAKERS_STEREO,      /**< Channels: FL, FR */
+    SPEAKERS_2POINT1,     /**< Channels: FL, FR, LFE */
+    SPEAKERS_4POINT0,     /**< Channels: FL, FR, FC, RC */
+    SPEAKERS_4POINT1,     /**< Channels: FL, FR, FC, LFE, RC */
+    SPEAKERS_5POINT1,     /**< Channels: FL, FR, FC, LFE, RL, RR */
+    SPEAKERS_7POINT1 = 8, /**< Channels: FL, FR, FC, LFE, RL, RR, SL, SR */
+};

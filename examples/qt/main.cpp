@@ -1,6 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-#include "lite-obs/lite_obs.h"
+#include <QQmlContext>
+#include <QQuickView>
+#include <QDebug>
+#include "lite-obs-example.h"
 
 int main(int argc, char *argv[])
 {
@@ -9,17 +12,19 @@ int main(int argc, char *argv[])
 #endif
     QGuiApplication app(argc, argv);
 
-    auto obs = std::make_shared<lite_obs>();
-    auto ss = obs->lite_obs_create_source(source_type::Source_Audio);
+    LiteObsExample example;
 
     QQmlApplicationEngine engine;
+    engine.rootContext()->setContextProperty("example", &example);
+    QQuickView view(&engine, nullptr);
+    QObject::connect(&view, &QQuickView::sceneGraphInitialized, [&example](){
+        //reset here for share texture
+        example.resetLiteObs(1280, 720, 20);
+    });
+
     const QUrl url(QStringLiteral("qrc:/main.qml"));
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated,
-                     &app, [url](QObject *obj, const QUrl &objUrl) {
-        if (!obj && url == objUrl)
-            QCoreApplication::exit(-1);
-    }, Qt::QueuedConnection);
-    engine.load(url);
+    view.setSource(url);
+    view.show();
 
     return app.exec();
 }
