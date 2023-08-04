@@ -1,15 +1,27 @@
 ##################################################    Project     ##################################################
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+#add ANDROID_PLATFORM will cause windows configure fail
+#set                   (ANDROID_PLATFORM "android-21")
 project               (lite-obs VERSION 1.0 LANGUAGES CXX)
 list                  (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set_property          (GLOBAL PROPERTY USE_FOLDERS ON)
-set                   (CMAKE_BUILD_TYPE Debug)
 set                   (CMAKE_CXX_STANDARD 20)
 set                   (CMAKE_CXX_VISIBILITY_PRESET hidden)
 set                   (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+if(ANDROID)
+    #library search issue. https://stackoverflow.com/questions/46055431/cmake-on-android-find-library-fail-to-find-with-custom-path
+    set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+    set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
+endif()
 
-set(DepsPath "D:/vcpkg/installed/x64-windows-static-md" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-set(FFmpegPath "D:/lite-obs/src/third-party/ffmpeg/windows" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
+if(ANDROID)
+    set(DepsPath "D:/vcpkg/installed/arm-android" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
+    set(FFmpegPath "D:/lite-obs/src/third-party/ffmpeg/android" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
+else()
+    set(DepsPath "D:/vcpkg/installed/x64-windows-static-md" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
+    set(FFmpegPath "D:/lite-obs/src/third-party/ffmpeg/windows" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
+endif()
 
 if (DepsPath OR DEFINED ENV{DepsPath})
     # Dependencies path set by user or env var
@@ -33,7 +45,7 @@ endif()
 
 ##################################################    Options     ##################################################
 option(BUILD_SHARED_LIBS "Build shared (dynamic) libraries." ON)
-option(BUILD_EXAMPLES "Build examples." OFF)
+option(BUILD_EXAMPLES "Build examples." ON)
 
 ##################################################    Sources     ##################################################
 unset(PROJECT_SOURCES CACHE)
@@ -93,6 +105,25 @@ if(WIN32)
     add_subdirectory(source/platform-dep/windows/glad ${CMAKE_BINARY_DIR}/libs)
     target_link_libraries(${PROJECT_NAME} PRIVATE glad)
     target_link_libraries(${PROJECT_NAME} PRIVATE Ws2_32 Winmm Crypt32)
+elseif(ANDROID)
+    if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+        set(ARCH "arm-linux-androideabi")
+    endif()
+
+    string(REPLACE "-" ";" output_list ${ANDROID_PLATFORM})
+    list(GET output_list 1 ANDROID_API_LEVEL)
+
+    find_path(GLES3_INCLUDE_DIR GLES3/gl3.h
+        PATHS ${CMAKE_SYSROOT}
+        PATH_SUFFIXES usr/include)
+
+    find_library(GLES3_LIBRARY libGLESv3.so
+        HINTS ${GLES3_INCLUDE_DIR}/../lib/${ARCH}/${ANDROID_API_LEVEL})
+
+    find_library(EGL_LIBRARY libEGL.so
+        HINTS ${GLES3_INCLUDE_DIR}/../lib/${ARCH}/${ANDROID_API_LEVEL})
+
+    target_link_libraries(lite-obs PRIVATE ${GLES3_LIBRARY} ${EGL_LIBRARY})
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC

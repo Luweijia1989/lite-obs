@@ -1,9 +1,13 @@
 find_path(FFmpeg_INCLUDE_DIRS NAMES libavcodec/avcodec.h libavformat/avformat.h PATHS ${FFmpegPath}/include)
 
-if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(FFMPEG_LIB_SUFFIX x64)
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set(FFMPEG_LIB_SUFFIX x86)
+if(MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(FFMPEG_LIB_SUFFIX x64)
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set(FFMPEG_LIB_SUFFIX x86)
+    endif()
+elseif(ANDROID)
+    set(FFMPEG_LIB_SUFFIX ${CMAKE_ANDROID_ARCH_ABI})
 endif()
 
 find_library(

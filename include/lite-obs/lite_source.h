@@ -7,9 +7,12 @@
 #include <list>
 #include "lite_obs.h"
 #include "media-io/video_frame.h"
+#include "media-io/video_info.h"
 
 class gs_texture_render;
 class gs_texture;
+class lite_obs_core_video;
+class lite_obs_core_audio;
 struct lite_source_private;
 class lite_source : public std::enable_shared_from_this<lite_source>
 {
@@ -144,7 +147,7 @@ public:
         uint64_t timestamp{};
 
         video_format format{};
-        enum class video_range_type range{};
+        video_range_type range{};
         float color_matrix[16]{};
         float color_range_min[3]{};
         float color_range_max[3]{};

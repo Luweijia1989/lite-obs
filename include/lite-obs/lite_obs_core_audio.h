@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "lite_obs_defines.h"
 
 #define MAX_BUFFERING_TICKS 45
 
@@ -16,7 +17,7 @@ class lite_obs_core_audio
 public:
     struct output_audio_info {
         uint32_t samples_per_sec{};
-        enum class speaker_layout speakers{};
+        speaker_layout speakers{};
     };
 
     lite_obs_core_audio(uintptr_t core_ptr);

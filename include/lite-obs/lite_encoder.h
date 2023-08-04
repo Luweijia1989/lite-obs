@@ -43,8 +43,8 @@ public:
     uint32_t lite_obs_encoder_get_sample_rate();
     size_t lite_obs_encoder_get_frame_size();
 
-    void lite_obs_encoder_set_preferred_video_format(enum class video_format format);
-    enum class video_format lite_obs_encoder_get_preferred_video_format();
+    void lite_obs_encoder_set_preferred_video_format(video_format format);
+    video_format lite_obs_encoder_get_preferred_video_format();
 
     bool lite_obs_encoder_get_extra_data(uint8_t **extra_data, size_t *size);
 

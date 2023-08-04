@@ -20,7 +20,17 @@ struct gl_platform
     }
 };
 
-void *gs_device::gl_platform_create()
+void *gs_device::gs_create_platform_rc()
+{
+    return nullptr;
+}
+
+void gs_device::gs_destroy_platform_rc(void *plat)
+{
+    (void)plat;
+}
+
+void *gs_device::gl_platform_create(void *)
 {
     const EGLint attribs[] = {
         EGL_RENDERABLE_TYPE,

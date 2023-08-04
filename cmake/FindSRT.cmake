@@ -5,15 +5,27 @@ find_library(
     NAMES srt
     PATHS ${DepsPath}/${SUFFIX}/lib)
 
-find_library(
-    SSL_LIB
-    NAMES libssl
-    PATHS ${DepsPath}/${SUFFIX}/lib)
+if(MSVC)
+    find_library(
+        SSL_LIB
+        NAMES libssl
+        PATHS ${DepsPath}/${SUFFIX}/lib)
 
-find_library(
-    CRYPTO_LIB
-    NAMES libcrypto
-    PATHS ${DepsPath}/${SUFFIX}/lib)
+    find_library(
+        CRYPTO_LIB
+        NAMES libcrypto
+        PATHS ${DepsPath}/${SUFFIX}/lib)
+else()
+    find_library(
+        SSL_LIB
+        NAMES ssl
+        PATHS ${DepsPath}/${SUFFIX}/lib)
+
+    find_library(
+        CRYPTO_LIB
+        NAMES crypto
+        PATHS ${DepsPath}/${SUFFIX}/lib)
+endif()
 
 set(SRT_LIBS ${SRT_LIB} ${SSL_LIB} ${CRYPTO_LIB})
 
