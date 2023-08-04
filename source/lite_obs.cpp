@@ -174,3 +174,11 @@ void lite_obs::lite_obs_source_output_audio(uintptr_t source_ptr, const uint8_t 
     if(source)
         source->lite_source_output_audio(af);
 }
+
+void lite_obs::lite_obs_source_output_video(uintptr_t source_ptr, int texId, uint32_t width, uint32_t height)
+{
+    std::lock_guard<std::recursive_mutex> locker(lite_source::sources_mutex);
+    auto source = source_from_ptr(reinterpret_cast<uintptr_t>(d_ptr), source_ptr);
+    if(source)
+        source->lite_source_output_video(texId, width, height);
+}

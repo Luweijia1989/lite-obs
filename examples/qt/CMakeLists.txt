@@ -14,10 +14,14 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Quick)
 
 set(PROJECT_HEADERS
         lite-obs-example.h
+        logorenderer.h
+        fboinsgrenderer.h
 )
 
 set(PROJECT_SOURCES
         lite-obs-example.cpp
+        logorenderer.cpp
+        fboinsgrenderer.cpp
         main.cpp
         qml.qrc
 )

@@ -25,6 +25,14 @@ LiteObsExample::LiteObsExample(QObject *parent)
     : QObject(parent)
     , m_liteObs(std::make_shared<lite_obs>())
 {
+    qDebug() << "main thread id: " << QThread::currentThreadId();
+}
+
+LiteObsExample::~LiteObsExample()
+{
+    audioTestRunning = false;
+    if (m_audioTestThread.joinable())
+        m_audioTestThread.join();
 }
 
 void LiteObsExample::resetLiteObs(int width, int height, int fps)
@@ -35,7 +43,6 @@ void LiteObsExample::resetLiteObs(int width, int height, int fps)
 
 void LiteObsExample::doAudioMixTest(bool start)
 {
-    static bool audioTestRunning = false;
     if (start) {
         audioTestRunning = true;
         m_audioTestThread = std::thread([=](){
@@ -81,4 +88,14 @@ void LiteObsExample::doStartOutput()
 void LiteObsExample::doStopOutput()
 {
     m_liteObs->lite_obs_stop_output();
+}
+
+void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
+{
+    qDebug() << "texture mix: " << id << width <<height << QThread::currentThreadId();
+    static uintptr_t source{};
+    if (!source)
+        source = m_liteObs->lite_obs_create_source(source_type::Source_Video);
+
+    m_liteObs->lite_obs_source_output_video(source, id, width, height);
 }

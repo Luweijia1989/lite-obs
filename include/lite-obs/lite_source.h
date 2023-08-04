@@ -35,7 +35,7 @@ public:
         uint32_t height{};
         uint64_t timestamp{};
 
-        enum video_format format{};
+        video_format format{};
         float color_matrix[16]{};
         bool full_range{};
         float color_range_min[3]{};
@@ -143,7 +143,7 @@ public:
         uint32_t height{};
         uint64_t timestamp{};
 
-        enum video_format format{};
+        video_format format{};
         enum class video_range_type range{};
         float color_matrix[16]{};
         float color_range_min[3]{};
