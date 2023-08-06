@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QQuickView>
 #include <QDebug>
+#include <QSurfaceFormat>
 #include "lite-obs-example.h"
 #include "fboinsgrenderer.h"
 

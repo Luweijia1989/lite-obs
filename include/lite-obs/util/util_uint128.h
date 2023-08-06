@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 struct util_uint128 {
 	union {
 		uint32_t i32[4];

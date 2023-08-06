@@ -117,7 +117,8 @@ bool lite_ffmpeg_mux::i_create()
 void lite_ffmpeg_mux::i_destroy()
 {
     if (d_ptr->initilized) {
-        av_write_trailer(d_ptr->output);
+        if (d_ptr->output)
+            av_write_trailer(d_ptr->output);
     }
 
     free_avformat();
@@ -268,8 +269,8 @@ void lite_ffmpeg_mux::init_params()
     d_ptr->params.colorspace = spc;
 
     const enum AVColorRange range = (output_info->range == video_range_type::VIDEO_RANGE_FULL)
-            ? AVCOL_RANGE_JPEG
-            : AVCOL_RANGE_MPEG;
+                                        ? AVCOL_RANGE_JPEG
+                                        : AVCOL_RANGE_MPEG;
     d_ptr->params.color_range = range;
     d_ptr->params.chroma_sample_location = determine_chroma_location(lite_obs_to_ffmpeg_video_format(output_info->format), spc);
 
@@ -335,12 +336,13 @@ void lite_ffmpeg_mux::create_video_stream()
     d_ptr->video_stream->time_base = context->time_base;
 #if LIBAVFORMAT_VERSION_MAJOR < 59
     // codec->time_base may still be used if LIBAVFORMAT_VERSION_MAJOR < 59
-    PRAGMA_WARN_PUSH
-            PRAGMA_WARN_DEPRECATION
-            d_ptr->video_stream->codec->time_base = context->time_base;
-    PRAGMA_WARN_POP
-        #endif
-            d_ptr->video_stream->avg_frame_rate = av_inv_q(context->time_base);
+#pragma warning(push)
+#pragma deprecated
+    d_ptr->video_stream->codec->time_base = context->time_base;
+#pragma warning(pop)
+#endif
+
+    d_ptr->video_stream->avg_frame_rate = av_inv_q(context->time_base);
 
     if (d_ptr->output->oformat->flags & AVFMT_GLOBALHEADER)
         context->flags |= CODEC_FLAG_GLOBAL_H;
@@ -496,7 +498,7 @@ bool lite_ffmpeg_mux::mux_init()
 
 #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(60, 0, 100)
     /* Allow FLAC/OPUS in MP4 */
-    ffm->output->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
+    d_ptr->output->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 #endif
 
     if (!init_streams()) {

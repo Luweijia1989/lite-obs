@@ -14,6 +14,7 @@ extern "C"
 
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/util/log.h"
+#include "lite-obs/lite_obs_platform_config.h"
 
 static inline bool valid_format(video_format format)
 {
@@ -72,12 +73,14 @@ bool lite_h264_video_encoder::i_create()
     avcodec_register_all();
 #endif
 
-#ifdef WIN32
+#if TARGET_PLATFORM == PLATFORM_WIN32
     d_ptr->codec = avcodec_find_encoder_by_name("h264_nvenc");
     if (!d_ptr->codec)
         d_ptr->codec = avcodec_find_encoder_by_name("nvenc_h264");
-#else
+#elif TARGET_PLATFORM == PLATFORM_ANDROID
     d_ptr->codec = avcodec_find_encoder_by_name("h264_mediacodec");
+#elif TARGET_PLATFORM == PLATFORM_MAC
+    d_ptr->codec = avcodec_find_encoder_by_name("h264_videotoolbox");
 #endif
     d_ptr->first_packet = true;
 

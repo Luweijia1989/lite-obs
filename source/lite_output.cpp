@@ -243,6 +243,9 @@ void lite_obs_output::obs_output_stop_internal()
 
 void lite_obs_output::lite_obs_output_stop()
 {
+    if (!i_output_valid() || !d_ptr->active)
+        return;
+
     if (!stopping()) {
         d_ptr->stop_code = 0;
         if (d_ptr->signal_callback)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstddef>
 #include "lite-obs/util/util_uint128.h"
 #include "lite-obs/lite_obs_defines.h"
 

@@ -1,16 +1,34 @@
 #pragma once
 
-#if defined __ANDROID__
+#include "lite-obs/lite_obs_platform_config.h"
+
+#if TARGET_PLATFORM == PLATFORM_IOS
+
+#include <OpenGLES/ES3/gl3.h>
+#include <OpenGLES/ES3/glext.h>
+
+#elif TARGET_PLATFORM == PLATFORM_ANDROID
+
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #include <EGL/egl.h>
-
 #define GL_BGRA GL_BGRA_EXT
 
-#elif defined WIN32
+#elif TARGET_PLATFORM == PLATFORM_MAC
+
+#include <OpenGL/gl3.h>
+#include <OpenGL/glext.h>
+
+#define glGenVertexArrays glGenVertexArraysAPPLE
+#define glBindVertexArray glBindVertexArrayAPPLE
+#define glDeleteVertexArrays glDeleteVertexArraysAPPLE
+
+#elif TARGET_PLATFORM == PLATFORM_WIN32
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <glad/glad_wgl.h>
+
 #endif
 
 #include <stdint.h>

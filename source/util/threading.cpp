@@ -1,4 +1,5 @@
 #include "lite-obs/util/threading.h"
+#include "lite-obs/lite_obs_platform_config.h"
 #include <chrono>
 #include <thread>
 #include <mutex>
@@ -123,7 +124,7 @@ void os_sleep_ms(uint32_t duration)
     std::this_thread::sleep_for (std::chrono::milliseconds(duration));
 }
 
-#if defined(WIN32)
+#if TARGET_PLATFORM == PLATFORM_WIN32
 #include <Windows.h>
 #include <timeapi.h>
 class global_task_helper {
@@ -161,7 +162,7 @@ bool os_sleepto_ns(uint64_t time_target)
 #endif
     }
 }
-#elif defined(__ANDROID__)
+#else
 bool os_sleepto_ns(uint64_t time_target)
 {
     uint64_t current = os_gettime_ns();
