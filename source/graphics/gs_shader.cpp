@@ -1,6 +1,7 @@
 #include "lite-obs/graphics/gs_shader.h"
 #include "lite-obs/graphics/shaders.h"
 #include "lite-obs/graphics/gl-helpers.h"
+#include "lite-obs/lite_obs_platform_config.h"
 
 struct gs_sampler_info {
     gs_sample_filter filter;
@@ -57,14 +58,13 @@ bool gs_shader::gs_shader_init(const gs_shader_info &info)
     d_ptr->type = info.type;
     GLenum type = convert_shader_type(info.type);
 
-    int compiled = 0;
     bool success = true;
 
     d_ptr->obj = glCreateShader(type);
-    if (!gl_success("glCreateShader") || !d_ptr->obj)
+    if (!gl_success("glCreateShader"))
         return false;
 
-#if defined WIN32
+#ifdef PLATFORM_PC
     std::string shader_str = "#version 150\n" + info.shader;
 #else
     std::string shader_str = "#version 300 es\n" + info.shader;
@@ -76,35 +76,26 @@ bool gs_shader::gs_shader_init(const gs_shader_info &info)
         return false;
 
     glCompileShader(d_ptr->obj);
-    if (!gl_success("glCompileShader"))
+    if (!gl_success("glCompileShader")) {
+        int compiled = 0;
+        glGetShaderiv(d_ptr->obj, GL_COMPILE_STATUS, &compiled);
+        if (gl_success("glGetShaderiv")) {
+            if (!compiled) {
+                GLint infoLength = 0;
+                glGetShaderiv(d_ptr->obj, GL_INFO_LOG_LENGTH, &infoLength);
+
+                char *infoLog = (char *)malloc(sizeof(char) * infoLength);
+
+                GLsizei returnedLength = 0;
+                glGetShaderInfoLog(d_ptr->obj, infoLength, &returnedLength,
+                                   infoLog);
+                blog(LOG_ERROR, "Error compiling shader:\n%s\n", infoLog);
+
+                free(infoLog);
+            }
+        }
+
         return false;
-
-#if 0
-    blog(LOG_DEBUG, "+++++++++++++++++++++++++++++++++++");
-    blog(LOG_DEBUG, "  GL shader string for: %s", file);
-    blog(LOG_DEBUG, "-----------------------------------");
-    blog(LOG_DEBUG, "%s", glsp->gl_string.array);
-    blog(LOG_DEBUG, "+++++++++++++++++++++++++++++++++++");
-#endif
-
-    glGetShaderiv(d_ptr->obj, GL_COMPILE_STATUS, &compiled);
-    if (!gl_success("glGetShaderiv"))
-        return false;
-
-    if (!compiled) {
-        GLint infoLength = 0;
-        glGetShaderiv(d_ptr->obj, GL_INFO_LOG_LENGTH, &infoLength);
-
-        char *infoLog = (char *)malloc(sizeof(char) * infoLength);
-
-        GLsizei returnedLength = 0;
-        glGetShaderInfoLog(d_ptr->obj, infoLength, &returnedLength,
-                           infoLog);
-        blog(LOG_ERROR, "Error compiling shader:\n%s\n", infoLog);
-
-        free(infoLog);
-
-        success = false;
     }
 
     gl_get_shader_info(d_ptr->obj);

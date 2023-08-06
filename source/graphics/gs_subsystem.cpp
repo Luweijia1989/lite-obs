@@ -167,8 +167,8 @@ struct graphics_subsystem_private
                     effects.insert({name, program});
                     blog(LOG_DEBUG, "gs program create: %s, obj id: %d.", name.c_str(), program->gs_effect_obj());
                 } else {
-                    return false;
                     blog(LOG_DEBUG, "effect %s init error!", name.c_str());
+                    return false;
                 }
             } else {
                 blog(LOG_DEBUG, "create shader error.");

@@ -66,8 +66,6 @@ static void print_link_errors(GLuint program)
 
 bool gs_program::gs_program_create(std::shared_ptr<gs_shader> vertex_shader, std::shared_ptr<gs_shader> pixel_shader)
 {
-    int linked = false;
-
     d_ptr->vertex_shader = vertex_shader;
     d_ptr->pixel_shader = pixel_shader;
 
@@ -84,16 +82,16 @@ bool gs_program::gs_program_create(std::shared_ptr<gs_shader> vertex_shader, std
         goto error_detach_vertex;
 
     glLinkProgram(d_ptr->obj);
-    if (!gl_success("glLinkProgram"))
-        goto error;
+    if (!gl_success("glLinkProgram")) {
+        GLint linked = 0;
+        glGetProgramiv(d_ptr->obj, GL_LINK_STATUS, &linked);
+        if (!gl_success("glGetProgramiv"))
+            goto error;
 
-    glGetProgramiv(d_ptr->obj, GL_LINK_STATUS, &linked);
-    if (!gl_success("glGetProgramiv"))
-        goto error;
-
-    if (linked == GL_FALSE) {
-        print_link_errors(d_ptr->obj);
-        goto error;
+        if (!linked) {
+            print_link_errors(d_ptr->obj);
+            goto error;
+        }
     }
 
     if (!assign_program_attribs())
