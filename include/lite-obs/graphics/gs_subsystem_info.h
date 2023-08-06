@@ -19,10 +19,6 @@
 #include <OpenGL/gl3.h>
 #include <OpenGL/glext.h>
 
-#define glGenVertexArrays glGenVertexArraysAPPLE
-#define glBindVertexArray glBindVertexArrayAPPLE
-#define glDeleteVertexArrays glDeleteVertexArraysAPPLE
-
 #elif TARGET_PLATFORM == PLATFORM_WIN32
 
 #define WIN32_LEAN_AND_MEAN

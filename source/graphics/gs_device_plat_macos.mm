@@ -28,19 +28,29 @@ void gs_device::gs_destroy_platform_rc(void *plat)
 
 void *gs_device::gl_platform_create(void *)
 {
+    NSOpenGLContext *ctx = nil;
     NSOpenGLContext *current_ctx = [NSOpenGLContext currentContext];
+    if (current_ctx) {
+        GLint major, minor;
+        glGetIntegerv(GL_MAJOR_VERSION, &major);
+        glGetIntegerv(GL_MINOR_VERSION, &minor);
+        if (major >= 3 && minor >= 0) {
+            ctx = [[NSOpenGLContext alloc] initWithFormat:[current_ctx pixelFormat] shareContext:current_ctx];
+        }
+    }
 
-    NSOpenGLPixelFormatAttribute pixelFormatAttributes[] = {
-      NSOpenGLPFANoRecovery,    NSOpenGLPFAAccelerated,
-      NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
-      NSOpenGLPFAColorSize,     (NSOpenGLPixelFormatAttribute)32,
-      NSOpenGLPFAAlphaSize,     (NSOpenGLPixelFormatAttribute)8,
-      NSOpenGLPFADepthSize,     (NSOpenGLPixelFormatAttribute)24,
-      NSOpenGLPFADoubleBuffer,  (NSOpenGLPixelFormatAttribute)0};
+    if (!ctx) {
+        NSOpenGLPixelFormatAttribute pixelFormatAttributes[] = {
+            NSOpenGLPFANoRecovery,    NSOpenGLPFAAccelerated,
+            NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion3_2Core,
+            NSOpenGLPFAColorSize,     (NSOpenGLPixelFormatAttribute)32,
+            NSOpenGLPFAAlphaSize,     (NSOpenGLPixelFormatAttribute)8,
+            NSOpenGLPFADepthSize,     (NSOpenGLPixelFormatAttribute)24,
+            NSOpenGLPFADoubleBuffer,  (NSOpenGLPixelFormatAttribute)0};
 
-    NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:pixelFormatAttributes];
-    auto ctx = [[NSOpenGLContext alloc] initWithFormat:pf shareContext:current_ctx];
-
+        NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:pixelFormatAttributes];
+        ctx = [[NSOpenGLContext alloc] initWithFormat:pf shareContext:nil];
+    }
     [ctx makeCurrentContext];
     [ctx clearDrawable];
 

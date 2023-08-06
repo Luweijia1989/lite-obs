@@ -23,6 +23,13 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("example", &example);
     QQuickView view(&engine, nullptr);
+#ifdef Q_OS_MACOS
+    QSurfaceFormat format;
+    format.setMajorVersion(3);
+    format.setMinorVersion(3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    view.setFormat(format);
+#endif
     QObject::connect(&view, &QQuickView::sceneGraphInitialized, [&example](){
         //reset here for share texture
         example.resetLiteObs(1280, 720, 20);
