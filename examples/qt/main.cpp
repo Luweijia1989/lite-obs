@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("example", &example);
     QQuickView view(&engine, nullptr);
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
 #ifdef Q_OS_MACOS
     QSurfaceFormat format;
     format.setMajorVersion(3);
@@ -44,6 +45,7 @@ int main(int argc, char *argv[])
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     view.setSource(url);
+    view.resize(1280, 720);
     view.show();
 
     return app.exec();

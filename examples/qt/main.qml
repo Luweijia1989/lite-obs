@@ -5,8 +5,6 @@ import QtQuick.Controls 2.5
 import com.ypp 1.0
 
 Item {
-    width: 640
-    height: 480
     visible: true
 
     Render {
