@@ -7,8 +7,15 @@
 #include "lite-obs-example.h"
 #include "fboinsgrenderer.h"
 
+static void log_handler(int log_level, const char *msg)
+{
+    qDebug() << msg;
+}
+
 int main(int argc, char *argv[])
 {
+    lite_obs::set_log_callback(log_handler);
+
     qmlRegisterType<FboInSGRenderer>("com.ypp", 1, 0, "Render");
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)

@@ -10,6 +10,7 @@
 #include "lite-obs/encoder/lite_h264_encoder.h"
 #include "lite-obs/encoder/lite_aac_encoder.h"
 #include "lite-obs/util/threading.h"
+#include "lite-obs/util/log.h"
 
 struct lite_obs_private
 {
@@ -56,6 +57,11 @@ lite_obs::~lite_obs()
     }
 
     delete d_ptr;
+}
+
+void lite_obs::set_log_callback(void (*log_callback)(int, const char *))
+{
+    base_set_log_handler(log_callback);
 }
 
 #define OBS_SIZE_MIN 2

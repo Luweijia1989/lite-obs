@@ -1,5 +1,4 @@
 #include "lite-obs-example.h"
-#include <lite-obs/lite_obs.h>
 #include <QDebug>
 #include <QStandardPaths>
 #include <QFile>

@@ -37,6 +37,8 @@ public:
     lite_obs();
     ~lite_obs();
 
+    static void set_log_callback(void (*log_callback)(int, const char *));
+
     int obs_reset_video(uint32_t width, uint32_t height, uint32_t fps);
     bool obs_reset_audio(uint32_t sample_rate);
 

@@ -2,8 +2,8 @@
 
 #include <QObject>
 #include <thread>
+#include <lite-obs/lite_obs.h>
 
-class lite_obs;
 class LiteObsExample : public QObject
 {
     Q_OBJECT
