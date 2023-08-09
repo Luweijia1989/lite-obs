@@ -10,8 +10,10 @@ extern "C"
 #include <libavutil/error.h>
 }
 
+#include "lite-obs/lite_obs_platform_config.h"
+
 #include <stdio.h>
-#ifdef WIN32
+#if TARGET_PLATFORM == PLATFORM_WIN32
 #include <sys/timeb.h>
 #endif
 #include <time.h>

@@ -895,7 +895,7 @@ static inline void make_video_info(video_output_info *vi, lite_obs_core_video::o
 
 int lite_obs_core_video::lite_obs_start_video(uint32_t width, uint32_t height, uint32_t fps)
 {
-#ifdef WIN32
+#if TARGET_PLATFORM == PLATFORM_WIN32
     if (!d_ptr->plat)
         return OBS_VIDEO_FAIL;
 #endif

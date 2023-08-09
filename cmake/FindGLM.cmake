@@ -1,4 +1,7 @@
-find_path(GLM_INCLUDE_DIRS NAMES glm/glm.hpp PATHS ${DepsPath} PATH_SUFFIXES include)
+find_path(GLM_INCLUDE_DIRS NAMES glm/glm.hpp
+    PATHS ${DepsPath}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH)
 
 if (NOT GLM_INCLUDE_DIRS)
     message(FATAL_ERROR "Could not find GLM library")

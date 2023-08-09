@@ -1,30 +1,38 @@
-find_path(SRT_INCLUDE_DIRS NAMES srt/srt.h PATHS ${DepsPath} PATH_SUFFIXES include)
+find_path(SRT_INCLUDE_DIRS NAMES srt/srt.h
+    PATHS ${DepsPath}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH)
 
 find_library(
     SRT_LIB
     NAMES srt
-    PATHS ${DepsPath}/${SUFFIX}/lib)
+    PATHS ${DepsPath}/${SUFFIX}/lib
+    NO_DEFAULT_PATH)
 
 if(MSVC)
     find_library(
         SSL_LIB
         NAMES libssl
-        PATHS ${DepsPath}/${SUFFIX}/lib)
+        PATHS ${DepsPath}/${SUFFIX}/lib
+        NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES libcrypto
-        PATHS ${DepsPath}/${SUFFIX}/lib)
+        PATHS ${DepsPath}/${SUFFIX}/lib
+        NO_DEFAULT_PATH)
 else()
     find_library(
         SSL_LIB
         NAMES ssl
-        PATHS ${DepsPath}/${SUFFIX}/lib)
+        PATHS ${DepsPath}/${SUFFIX}/lib
+        NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES crypto
-        PATHS ${DepsPath}/${SUFFIX}/lib)
+        PATHS ${DepsPath}/${SUFFIX}/lib
+        NO_DEFAULT_PATH)
 endif()
 
 set(SRT_LIBS ${SRT_LIB} ${SSL_LIB} ${CRYPTO_LIB})
