@@ -58,7 +58,7 @@ void LiteObsExample::doAudioMixTest(bool start)
 
                 const uint8_t *data[MAX_AV_PLANES] = {};
                 data[0] = (uint8_t *)alldata.data() + tt * (index++);
-                m_liteObs->lite_obs_source_output_audio(source, data, 441 * 2, audio_format::AUDIO_FORMAT_FLOAT, speaker_layout::SPEAKERS_STEREO, 44100);
+                source->output_audio(data, 441 * 2, audio_format::AUDIO_FORMAT_FLOAT, speaker_layout::SPEAKERS_STEREO, 44100);
 
                 QThread::msleep(QRandomGenerator::global()->bounded(17, 22));
                 if (!audioTestRunning) {
@@ -93,9 +93,9 @@ void LiteObsExample::doStopOutput()
 void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
 {
     qDebug() << "texture mix: " << id << width <<height << QThread::currentThreadId();
-    static uintptr_t source{};
+    static lite_obs_media_source *source{};
     if (!source)
         source = m_liteObs->lite_obs_create_source(source_type::Source_Video);
 
-    m_liteObs->lite_obs_source_output_video(source, id, width, height);
+    source->output_video(id, width, height);
 }

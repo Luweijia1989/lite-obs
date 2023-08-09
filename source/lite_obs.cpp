@@ -13,6 +13,45 @@
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/log.h"
 
+#include <set>
+
+
+struct lite_obs_media_source_private
+{
+    std::shared_ptr<lite_source> internal_source{};
+};
+
+lite_obs_media_source::lite_obs_media_source()
+{
+    d_ptr = new lite_obs_media_source_private;
+}
+
+lite_obs_media_source::~lite_obs_media_source()
+{
+    delete d_ptr;
+}
+
+void lite_obs_media_source::output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate)
+{
+    lite_source::lite_obs_source_audio_frame af{};
+
+    for (int i=0; i<MAX_AV_PLANES; i++)
+        af.data[i] = audio_data[i];
+
+    af.frames = frames;
+    af.format = format;
+    af.samples_per_sec = sample_rate;
+    af.speakers = layout;
+    af.timestamp = os_gettime_ns();
+
+    d_ptr->internal_source->lite_source_output_audio(af);
+}
+
+void lite_obs_media_source::output_video(int texId, uint32_t width, uint32_t height)
+{
+    d_ptr->internal_source->lite_source_output_video(texId, width, height);
+}
+
 struct lite_obs_private
 {
     std::shared_ptr<lite_obs_core_video> video{};
@@ -21,6 +60,8 @@ struct lite_obs_private
     std::shared_ptr<lite_obs_output> output{};
     std::shared_ptr<lite_obs_encoder> video_encoder{};
     std::shared_ptr<lite_obs_encoder> audio_encoder{};
+
+    std::set<lite_obs_media_source *> sources;
 
     lite_obs_private() {
         auto ptr = reinterpret_cast<uintptr_t>(this);
@@ -44,6 +85,17 @@ lite_obs::lite_obs()
 
 lite_obs::~lite_obs()
 {
+    {
+        std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
+        auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
+        sources.clear();
+    }
+
+    for (auto iter : d_ptr->sources) {
+        delete iter;
+    }
+    d_ptr->sources.clear();
+
     if(d_ptr->output) {
         d_ptr->output->lite_obs_output_destroy();
         d_ptr->output.reset();
@@ -127,66 +179,32 @@ void lite_obs::lite_obs_stop_output()
     d_ptr->output->lite_obs_output_stop();
 }
 
-uintptr_t lite_obs::lite_obs_create_source(source_type type)
+lite_obs_media_source *lite_obs::lite_obs_create_source(source_type type)
 {
     auto source = std::make_shared<lite_source>(type, d_ptr->video, d_ptr->audio);
+    auto source_wrapper = new lite_obs_media_source;
+    source_wrapper->d_ptr->internal_source = source;
+    d_ptr->sources.emplace(source_wrapper);
 
     {
         std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
         auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
-        sources.emplace(reinterpret_cast<uintptr_t>(source.get()), std::make_pair(type, source));
+        sources.emplace(reinterpret_cast<uintptr_t>(source_wrapper), std::make_pair(type, source));
     }
 
-    return reinterpret_cast<uintptr_t>(source.get());
+    return source_wrapper;
 }
 
-void lite_obs::lite_obs_destroy_source(uintptr_t source_ptr)
+void lite_obs::lite_obs_destroy_source(lite_obs_media_source *source)
 {
-    std::shared_ptr<lite_source> cache_source{};
+    auto ptr = reinterpret_cast<uintptr_t>(source);
+
     {
         std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
         auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
-        if (sources.contains(source_ptr)) {
-            cache_source = sources[source_ptr].second;
-        }
-        sources.erase(source_ptr);
+        sources.erase(ptr);
     }
 
-    cache_source.reset();
-}
-
-std::shared_ptr<lite_source> source_from_ptr(uintptr_t lite_obs_private_ptr, uintptr_t source_ptr)
-{
-    auto &sources = lite_source::sources[lite_obs_private_ptr];
-    if (!sources.contains(source_ptr))
-        return nullptr;
-
-    return sources[source_ptr].second;
-}
-
-void lite_obs::lite_obs_source_output_audio(uintptr_t source_ptr, const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate)
-{
-    lite_source::lite_obs_source_audio_frame af{};
-
-    for (int i=0; i<MAX_AV_PLANES; i++)
-        af.data[i] = audio_data[i];
-
-    af.frames = frames;
-    af.format = format;
-    af.samples_per_sec = sample_rate;
-    af.speakers = layout;
-    af.timestamp = os_gettime_ns();
-
-    std::lock_guard<std::recursive_mutex> locker(lite_source::sources_mutex);
-    auto source = source_from_ptr(reinterpret_cast<uintptr_t>(d_ptr), source_ptr);
-    if(source)
-        source->lite_source_output_audio(af);
-}
-
-void lite_obs::lite_obs_source_output_video(uintptr_t source_ptr, int texId, uint32_t width, uint32_t height)
-{
-    std::lock_guard<std::recursive_mutex> locker(lite_source::sources_mutex);
-    auto source = source_from_ptr(reinterpret_cast<uintptr_t>(d_ptr), source_ptr);
-    if(source)
-        source->lite_source_output_video(texId, width, height);
+    d_ptr->sources.erase(source);
+    delete source;
 }

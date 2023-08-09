@@ -14,7 +14,6 @@ enum source_type {
     Source_AudioVideo = Source_Audio | Source_AsyncVideo,
 };
 
-class lite_source;
 class LITE_OBS_EXPORT lite_obs_output_callbak
 {
 public:
@@ -31,6 +30,7 @@ public:
 };
 
 struct lite_obs_private;
+class lite_obs_media_source;
 class LITE_OBS_EXPORT lite_obs
 {
 public:
@@ -42,16 +42,30 @@ public:
     int obs_reset_video(uint32_t width, uint32_t height, uint32_t fps);
     bool obs_reset_audio(uint32_t sample_rate);
 
-    uintptr_t lite_obs_create_source(source_type type);
-    void lite_obs_destroy_source(uintptr_t source_ptr);
-    void lite_obs_source_output_audio(uintptr_t source_ptr, const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate);
-    void lite_obs_source_output_video(uintptr_t source_ptr, int texId, uint32_t width, uint32_t height);
+    lite_obs_media_source *lite_obs_create_source(source_type type);
+    void lite_obs_destroy_source(lite_obs_media_source *source);
 
     bool lite_obs_start_output(std::string output_info, int vb, int ab, std::shared_ptr<lite_obs_output_callbak> callback);
     void lite_obs_stop_output();
 
 private:
     lite_obs_private* d_ptr{};
+};
+
+struct lite_obs_media_source_private;
+class LITE_OBS_EXPORT lite_obs_media_source
+{
+    friend class lite_obs;
+public:
+    lite_obs_media_source();
+    void output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate);
+    void output_video(int texId, uint32_t width, uint32_t height);
+
+private:
+    ~lite_obs_media_source();
+
+private:
+    lite_obs_media_source_private *d_ptr{};
 };
 
 #endif // LITE_OBS_H
