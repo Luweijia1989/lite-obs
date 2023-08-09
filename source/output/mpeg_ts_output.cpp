@@ -179,8 +179,10 @@ bool mpeg_ts_output::i_create()
     if (os_event_init(&d_ptr->stop_event, OS_EVENT_TYPE_AUTO) != 0)
         return false;
 
-    if (os_sem_init(&d_ptr->write_sem, 0) != 0)
+    if (os_sem_init(&d_ptr->write_sem, 0) != 0) {
+        os_event_destroy(d_ptr->stop_event);
         return false;
+    }
 
     d_ptr->initilized = true;
     return true;
