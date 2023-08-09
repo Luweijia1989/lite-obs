@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>main.qml</file>
+        <file>resource/44100_2_float.pcm</file>
     </qresource>
 </RCC>

@@ -47,7 +47,7 @@ void LiteObsExample::doAudioMixTest(bool start)
         m_audioTestThread = std::thread([=](){
             auto source = m_liteObs->lite_obs_create_source(source_type::Source_Audio);
 
-            QFile audiofile("D:/44100_2_float.pcm");
+            QFile audiofile(":/resource/44100_2_float.pcm");
             audiofile.open(QFile::ReadOnly);
             auto alldata = audiofile.readAll();
             int index = 0;
