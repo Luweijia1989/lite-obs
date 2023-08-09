@@ -186,7 +186,7 @@ bool gs_stagesurface::gs_stagesurface_map(uint8_t **data, uint32_t *linesize)
 
 #if defined __ANDROID__
     *data = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, d_ptr->size, GL_MAP_READ_BIT);
-#elif defined WIN32
+#else
     *data = (uint8_t *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 #endif
 
