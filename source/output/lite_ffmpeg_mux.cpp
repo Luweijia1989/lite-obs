@@ -52,9 +52,9 @@ struct lite_ffmpeg_mux_private
     uint64_t total_bytes{};
     std::string path{};
     bool mux_inited{};
-    std::atomic_bool active;
-    std::atomic_bool stopping;
-    std::atomic_bool capturing;
+    std::atomic_bool active{};
+    std::atomic_bool stopping{};
+    std::atomic_bool capturing{};
     bool initilized{};
 
     AVFormatContext *output{};

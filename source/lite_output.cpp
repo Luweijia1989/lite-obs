@@ -47,7 +47,7 @@ struct lite_obs_output_private
 
     int total_frames{};
 
-    std::atomic_bool active;
+    std::atomic_bool active{};
     std::weak_ptr<video_output> video{};
     std::weak_ptr<audio_output> audio{};
     std::weak_ptr<lite_obs_core_video> core_video{};
