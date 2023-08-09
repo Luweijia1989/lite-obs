@@ -7,7 +7,7 @@ class lite_aac_encoder : public lite_obs_encoder
 {
 public:
     lite_aac_encoder(int bitrate, size_t mixer_idx);
-    ~lite_aac_encoder();
+    virtual ~lite_aac_encoder();
 
     virtual const char *i_encoder_codec();
     virtual obs_encoder_type i_encoder_type();

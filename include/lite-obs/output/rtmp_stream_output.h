@@ -7,7 +7,7 @@ class rtmp_stream_output : public lite_obs_output
 {
 public:
     rtmp_stream_output();
-    ~rtmp_stream_output();
+    virtual ~rtmp_stream_output();
 
     virtual void i_set_output_info(const std::string &info) override;
     virtual bool i_output_valid() override;

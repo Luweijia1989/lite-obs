@@ -13,7 +13,7 @@ class lite_ffmpeg_mux : public lite_obs_output
 {
 public:
     lite_ffmpeg_mux();
-    ~lite_ffmpeg_mux();
+    virtual  ~lite_ffmpeg_mux();
 
     virtual void i_set_output_info(const std::string &info) override;
     virtual bool i_output_valid() override;

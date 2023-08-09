@@ -20,7 +20,7 @@ public:
     ~lite_obs_encoder();
 
     virtual const char *i_encoder_codec() = 0;
-    virtual obs_encoder_type i_encoder_type() = 0;;
+    virtual obs_encoder_type i_encoder_type() = 0;
     virtual bool i_create() = 0;
     virtual void i_destroy() = 0;
     virtual bool i_encoder_valid() = 0;
