@@ -98,7 +98,6 @@ lite_aac_encoder::lite_aac_encoder(int bitrate, size_t mixer_idx)
     : lite_obs_encoder(bitrate, mixer_idx)
 {
     d_ptr = std::make_unique<lite_aac_encoder_private>();
-    d_ptr->packet_buffer = std::make_shared<std::vector<uint8_t>>();
 }
 
 lite_aac_encoder::~lite_aac_encoder()
@@ -127,15 +126,14 @@ void lite_aac_encoder::init_sizes(std::shared_ptr<audio_output> audio)
 
 bool lite_aac_encoder::initialize_codec()
 {
-    int ret;
-
+    d_ptr->packet_buffer = std::make_shared<std::vector<uint8_t>>();
     d_ptr->aframe = av_frame_alloc();
     if (!d_ptr->aframe) {
         blog(LOG_WARNING, "Failed to allocate audio frame");
         return false;
     }
 
-    ret = avcodec_open2(d_ptr->context, d_ptr->codec, NULL);
+    auto ret = avcodec_open2(d_ptr->context, d_ptr->codec, NULL);
     if (ret < 0) {
         blog(LOG_WARNING, "Failed to open AAC codec: %d", ret);
         return false;

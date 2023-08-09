@@ -728,6 +728,9 @@ int rtmp_stream_output::init_send()
     os_sem_destroy(d_ptr->send_sem);
     os_sem_init(&d_ptr->send_sem, 0);
 
+    if (d_ptr->send_thread.joinable())
+        d_ptr->send_thread.join();
+
     d_ptr->send_thread = std::thread(rtmp_stream_output::send_thread, this);
 
     d_ptr->active = true;

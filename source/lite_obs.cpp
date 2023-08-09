@@ -29,11 +29,6 @@ struct lite_obs_private
     }
 
     ~lite_obs_private() {
-        if(output) {
-            output->lite_obs_output_destroy();
-            output.reset();
-        }
-
         video_encoder.reset();
         audio_encoder.reset();
 
@@ -49,6 +44,11 @@ lite_obs::lite_obs()
 
 lite_obs::~lite_obs()
 {
+    if(d_ptr->output) {
+        d_ptr->output->lite_obs_output_destroy();
+        d_ptr->output.reset();
+    }
+
     d_ptr->video->lite_obs_stop_video();
     d_ptr->audio->lite_obs_stop_audio();
 
