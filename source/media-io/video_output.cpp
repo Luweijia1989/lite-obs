@@ -72,7 +72,7 @@ void video_output::video_thread(void *arg)
 static inline bool valid_video_params(const struct video_output_info *info)
 {
     return info->height != 0 && info->width != 0 && info->fps_den != 0 &&
-            info->fps_num != 0;
+           info->fps_num != 0;
 }
 
 int video_output::video_output_open(video_output_info *info)
@@ -116,6 +116,11 @@ uint32_t video_output::video_output_get_width()
 uint32_t video_output::video_output_get_height()
 {
     return d_ptr->info.height;
+}
+
+double video_output::video_output_get_frame_rate()
+{
+    return (double)d_ptr->info.fps_num / (double)d_ptr->info.fps_den;
 }
 
 video_output_info *video_output::video_output_get_info()
@@ -344,14 +349,14 @@ int video_output::video_get_input_idx(void (*callback)(void *, video_data *), vo
 bool video_output::video_input_init(std::shared_ptr<video_input> input)
 {
     if (input->conversion.width != d_ptr->info.width ||
-            input->conversion.height != d_ptr->info.height ||
-            input->conversion.format != d_ptr->info.format) {
+        input->conversion.height != d_ptr->info.height ||
+        input->conversion.format != d_ptr->info.format) {
         struct video_scale_info from = {
-            .format = d_ptr->info.format,
-                    .width = d_ptr->info.width,
-                    .height = d_ptr->info.height,
-                    .range = d_ptr->info.range,
-                    .colorspace = d_ptr->info.colorspace};
+                                        .format = d_ptr->info.format,
+                                        .width = d_ptr->info.width,
+                                        .height = d_ptr->info.height,
+                                        .range = d_ptr->info.range,
+                                        .colorspace = d_ptr->info.colorspace};
 
         input->scaler = std::make_unique<video_scaler>();
         int ret = input->scaler->create(&input->conversion, &from, video_scale_type::VIDEO_SCALE_FAST_BILINEAR);
@@ -383,8 +388,8 @@ void video_output::log_skipped()
 {
     long skipped = d_ptr->skipped_frames;
     double percentage_skipped =
-            (double)skipped /
-            (double)d_ptr->total_frames * 100.0;
+        (double)skipped /
+        (double)d_ptr->total_frames * 100.0;
 
     if (skipped)
         blog(LOG_INFO,

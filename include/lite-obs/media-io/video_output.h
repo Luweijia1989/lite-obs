@@ -44,6 +44,8 @@ public:
     uint32_t video_output_get_width();
     uint32_t video_output_get_height();
 
+    double video_output_get_frame_rate();
+
     video_output_info *video_output_get_info();
 
     bool video_output_connect(const video_scale_info *conversion, void (*callback)(void *param, struct video_data *frame), void *param);

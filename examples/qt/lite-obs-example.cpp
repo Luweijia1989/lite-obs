@@ -79,8 +79,9 @@ void LiteObsExample::doAudioMixTest(bool start)
 void LiteObsExample::doStartOutput()
 {
     auto callback = std::make_shared<output_callback>();
-    auto path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-    path = path + "/output.flv";
+//    auto path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+//    path = path + "/output.flv";
+    QString path = "rtmp://192.168.16.28/live/test";
     m_liteObs->lite_obs_start_output(path.toStdString(), 4000, 160, callback);
 }
 

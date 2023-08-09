@@ -31,6 +31,7 @@ public:
     virtual void i_get_audio_info(struct audio_convert_info *info) {}
     virtual void i_get_video_info(struct video_scale_info *info) {}
     virtual bool i_gpu_encode_available() { return false; }
+    virtual void i_update_encode_bitrate(int bitrate) {}
 
     void lite_obs_encoder_update_bitrate(int bitrate);
     int lite_obs_encoder_bitrate();

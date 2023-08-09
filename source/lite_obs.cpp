@@ -7,6 +7,7 @@
 #include "lite-obs/output/null_output.h"
 #include "lite-obs/output/lite_ffmpeg_mux.h"
 #include "lite-obs/output/mpeg_ts_output.h"
+#include "lite-obs/output/rtmp_stream_output.h"
 #include "lite-obs/encoder/lite_h264_encoder.h"
 #include "lite-obs/encoder/lite_aac_encoder.h"
 #include "lite-obs/util/threading.h"
@@ -98,7 +99,8 @@ bool lite_obs::lite_obs_start_output(std::string output_info, int vb, int ab, st
     if (!d_ptr->output)
     {
         //auto output = std::make_shared<mpeg_ts_output>();
-        auto output = std::make_shared<lite_ffmpeg_mux>();
+        //auto output = std::make_shared<lite_ffmpeg_mux>();
+        auto output = std::make_shared<rtmp_stream_output>();
         output->i_set_output_info(output_info);
         if (!output->lite_obs_output_create(d_ptr->video, d_ptr->audio))
             return false;

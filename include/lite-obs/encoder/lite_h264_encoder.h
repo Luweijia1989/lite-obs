@@ -19,6 +19,7 @@ public:
     virtual void i_get_audio_info(struct audio_convert_info *info);
     virtual void i_get_video_info(struct video_scale_info *info);
     virtual bool i_gpu_encode_available();
+    virtual void i_update_encode_bitrate(int bitrate);
 
 private:
     bool update_settings();

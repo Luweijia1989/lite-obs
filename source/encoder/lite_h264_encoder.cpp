@@ -255,6 +255,12 @@ bool lite_h264_video_encoder::i_gpu_encode_available()
     return false;
 }
 
+void lite_h264_video_encoder::i_update_encode_bitrate(int bitrate)
+{
+    d_ptr->context->bit_rate = bitrate * 1000;
+    d_ptr->context->rc_max_rate = bitrate * 1000;
+}
+
 bool lite_h264_video_encoder::update_settings()
 {
     int bitrate = lite_obs_encoder_bitrate();

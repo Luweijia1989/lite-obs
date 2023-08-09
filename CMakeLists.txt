@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 #add ANDROID_PLATFORM will cause windows configure fail
 #set                   (ANDROID_PLATFORM "android-21")
-project               (lite-obs VERSION 1.0 LANGUAGES CXX)
+project               (lite-obs VERSION 1.0)
 list                  (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set_property          (GLOBAL PROPERTY USE_FOLDERS ON)
 set                   (CMAKE_CXX_STANDARD 20)
@@ -21,7 +21,7 @@ endif()
 
 if(ANDROID)
     set(DepsPath "D:/vcpkg/installed/arm-android" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-    set(FFmpegPath "D:/lite-obs/src/third-party/ffmpeg/android" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
+    set(FFmpegPath "D:/ffmpeg-6.0-android-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
 elseif(APPLE)
     if(IOS)
     else()
@@ -30,7 +30,7 @@ elseif(APPLE)
     endif()
 else()
     set(DepsPath "D:/vcpkg/installed/x64-windows-static-md" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-    set(FFmpegPath "D:/lite-obs/src/third-party/ffmpeg/windows" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
+    set(FFmpegPath "D:/ffmpeg-master-windows-desktop-vs2022-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
 endif()
 
 if (DepsPath OR DEFINED ENV{DepsPath})
@@ -60,13 +60,13 @@ option(BUILD_EXAMPLES "Build examples." ON)
 ##################################################    Sources     ##################################################
 unset(PROJECT_SOURCES CACHE)
 file(GLOB_RECURSE PROJECT_HEADERS include/*.h include/*.hpp include/*.ipp)
-file(GLOB_RECURSE PROJECT_SOURCES source/*.cpp source/*.mm)
+file(GLOB_RECURSE PROJECT_SOURCES source/*.cpp source/*.mm source/*.c source/*.h)
 list(FILTER PROJECT_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/source/platform-dep/.*$")
 file(GLOB_RECURSE PROJECT_CMAKE_UTILS cmake/*.cmake)
 file(GLOB_RECURSE PROJECT_MISC *.bat *.gitignore *.md *.py *.sh *.txt)
 
 set (PROJECT_EXPORT_HPP include/${PROJECT_NAME}/export.hpp)
-set (PROJECT_FILES 
+set (PROJECT_FILES
     ${PROJECT_HEADERS}
     ${PROJECT_SOURCES}
     ${PROJECT_PLATFORM_HEADERS}
@@ -109,6 +109,9 @@ import_library(SRT_INCLUDE_DIRS SRT_LIBS)
 
 ##################################################    Targets     ##################################################
 add_library(${PROJECT_NAME} ${PROJECT_FILES})
+
+#define NO_CRYPTO to disable rtmps. openssl exists because srt depends on it, so define HAVE_OPENSSL
+target_compile_definitions(${PROJECT_NAME} PUBLIC NO_CRYPTO HAVE_OPENSSL)
 
 if(WIN32)
     set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /wd4996")
