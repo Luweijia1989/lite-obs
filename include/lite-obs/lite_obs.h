@@ -14,6 +14,12 @@ enum source_type {
     Source_AudioVideo = Source_Audio | Source_AsyncVideo,
 };
 
+enum source_aspect_ratio_mode {
+    Ignore_Aspect_Ratio,
+    Keep_Aspect_Ratio,
+    Keep_Aspect_Ratio_By_Expanding,
+};
+
 class LITE_OBS_EXPORT lite_obs_output_callbak
 {
 public:
@@ -63,6 +69,7 @@ public:
 
     void set_pos(float x, float y);
     void set_scale(float s_w, float s_h);
+    void set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
 
 private:
     ~lite_obs_media_source();

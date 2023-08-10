@@ -62,6 +62,11 @@ void lite_obs_media_source::set_scale(float s_w, float s_h)
     d_ptr->internal_source->lite_source_set_scale(s_w, s_h);
 }
 
+void lite_obs_media_source::set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
+{
+    d_ptr->internal_source->lite_source_set_render_box(x, y, width, height, mode);
+}
+
 struct lite_obs_private
 {
     std::shared_ptr<lite_obs_core_video> video{};

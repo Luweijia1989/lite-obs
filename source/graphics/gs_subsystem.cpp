@@ -540,9 +540,9 @@ void gs_reset_blend_state()
         gs_enable_blending(true);
 
     if (thread_graphics->d_ptr->cur_blend_state.src_c != gs_blend_type::GS_BLEND_SRCALPHA ||
-            thread_graphics->d_ptr->cur_blend_state.dest_c != gs_blend_type::GS_BLEND_INVSRCALPHA ||
-            thread_graphics->d_ptr->cur_blend_state.src_a != gs_blend_type::GS_BLEND_ONE ||
-            thread_graphics->d_ptr->cur_blend_state.dest_a != gs_blend_type::GS_BLEND_INVSRCALPHA)
+        thread_graphics->d_ptr->cur_blend_state.dest_c != gs_blend_type::GS_BLEND_INVSRCALPHA ||
+        thread_graphics->d_ptr->cur_blend_state.src_a != gs_blend_type::GS_BLEND_ONE ||
+        thread_graphics->d_ptr->cur_blend_state.dest_a != gs_blend_type::GS_BLEND_INVSRCALPHA)
         gs_blend_function_separate(gs_blend_type::GS_BLEND_SRCALPHA, gs_blend_type::GS_BLEND_INVSRCALPHA, gs_blend_type::GS_BLEND_ONE, gs_blend_type::GS_BLEND_INVSRCALPHA);
 }
 
@@ -617,6 +617,30 @@ void gs_matrix_mul(const glm::mat4x4 &matrix)
     if (!stack.empty()) {
         auto &top_mat = stack.back();
         top_mat = top_mat * matrix;
+    }
+}
+
+void gs_matrix_scale(const glm::vec3 &scale)
+{
+    if (!gs_valid("gs_matrix_mul"))
+        return;
+
+    auto &stack = thread_graphics->d_ptr->matrix_stack;
+    if (!stack.empty()) {
+        auto &top_mat = stack.back();
+        top_mat = glm::scale(top_mat, scale);
+    }
+}
+
+void gs_matrix_translate(const glm::vec3 &offset)
+{
+    if (!gs_valid("gs_matrix_mul"))
+        return;
+
+    auto &stack = thread_graphics->d_ptr->matrix_stack;
+    if (!stack.empty()) {
+        auto &top_mat = stack.back();
+        top_mat = glm::translate(top_mat, offset);
     }
 }
 

@@ -59,6 +59,8 @@ void gs_projection_pop();
 void gs_matrix_push();
 void gs_matrix_pop();
 void gs_matrix_mul(const glm::mat4x4 &matrix);
+void gs_matrix_scale(const glm::vec3 &scale);
+void gs_matrix_translate(const glm::vec3 &offset);
 void gs_matrix_identity();
 
 std::shared_ptr<gs_texture> gs_get_render_target();

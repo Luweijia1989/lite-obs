@@ -49,6 +49,45 @@ static inline bool close_float(float f1, float f2, float precision)
     return fabsf(f1 - f2) <= precision;
 }
 
+static void scaled_to(uint32_t src_width, uint32_t src_height,
+                      uint32_t target_width, uint32_t target_height, source_aspect_ratio_mode mode,
+                      uint32_t &out_width, uint32_t &out_height) {
+    if (mode == source_aspect_ratio_mode::Ignore_Aspect_Ratio || src_width == 0 || src_height == 0) {
+        out_width = target_width;
+        out_height = target_height;
+    } else {
+        bool useHeight = false;
+        auto rw = target_height * src_width / src_height;
+        if (mode == source_aspect_ratio_mode::Keep_Aspect_Ratio) {
+            useHeight = (rw <= target_width);
+        } else { // mode == source_aspect_ratio_mode::Keep_Aspect_Ratio_By_Expanding
+            useHeight = (rw >= target_width);
+        }
+        if (useHeight) {
+            out_width = rw;
+            out_height = target_height;
+        } else {
+            out_width = target_width;
+            out_height = target_width * src_height / src_width;
+        }
+    }
+}
+
+static void calc_size(uint32_t tex_width, uint32_t tex_height,
+                      uint32_t box_width, uint32_t box_height,
+                      uint32_t &out_width, uint32_t &out_height)
+{
+    float origin_ratio = (float) tex_width / (float)tex_height;
+    float target_ratio = (float)box_width / (float)box_height;
+    if (origin_ratio > target_ratio) {
+        out_height = tex_height;
+        out_width = (uint32_t)(out_height * target_ratio);
+    } else {
+        out_width = tex_width;
+        out_height = (uint32_t)(out_width / target_ratio);
+    }
+}
+
 enum convert_type {
     CONVERT_NONE,
     CONVERT_NV12,
@@ -270,8 +309,20 @@ struct lite_source_private
         glm::vec3 scale{1};
     };
 
+    struct render_box_info {
+        bool enabled{};
+        int x{};
+        int y{};
+        int width{};
+        int height{};
+        source_aspect_ratio_mode mode{};
+    };
+
+    std::atomic_bool should_update_tranform{};
     glm::mat4x4 draw_transform{1};
     transform_info source_transform;
+    std::shared_ptr<gs_texture_render> item_render{};
+    render_box_info source_render_box;
 
     lite_source_private(source_type t) {
         type = t;
@@ -1417,10 +1468,59 @@ void lite_source::update_async_video(uint64_t sys_time)
     }
 }
 
-void lite_source::render_texture(const std::shared_ptr<gs_texture> texture)
+bool lite_source::render_crop_texture(const std::shared_ptr<gs_texture> &texture)
+{
+    if (!d_ptr->item_render)
+        return false;
+
+    auto width = texture->gs_texture_get_width();
+    auto height = texture->gs_texture_get_height();
+    uint32_t cx, cy;
+    calc_size(width, height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, cx, cy);
+    d_ptr->item_render->gs_texrender_reset();
+    if (!d_ptr->item_render->gs_texrender_begin(cx, cy))
+        return false;
+
+    glm::vec4 clear_color(1, 0, 0, 1);
+    gs_clear(GS_CLEAR_COLOR, &clear_color, 0.0f, 0);
+    gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f, 100.0f);
+
+    float cx_scale = (float)width / (float)cx;
+    float cy_scale = (float)height / (float)cy;
+    gs_matrix_translate(glm::vec3((int)(cx - width) / 2, (int)(height - cy) / 2, 0.0f));
+    gs_matrix_scale(glm::vec3(cx_scale, cy_scale, 1.0f));
+
+    auto program = gs_get_effect_by_name("Default_Draw");
+    if(program) {
+        gs_set_cur_effect(program);
+        gs_technique_begin();
+        program->gs_effect_set_texture("image", texture);
+        gs_draw_sprite(texture, 0, 0, 0);
+        gs_technique_end();
+    }
+
+    d_ptr->item_render->gs_texrender_end();
+
+    auto mat = glm::mat4x4{1};
+    mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
+    mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)cx, (float)d_ptr->source_render_box.height / (float)cy, 1.0f));
+    d_ptr->draw_transform = mat;
+
+    return true;
+}
+
+void lite_source::render_texture(std::shared_ptr<gs_texture> texture)
 {
     if (!texture)
         return;
+
+    if (d_ptr->should_update_tranform) {
+        do_update_transform(texture);
+        d_ptr->should_update_tranform = false;
+    }
+
+    if (render_crop_texture(texture))
+        texture = d_ptr->item_render->gs_texrender_get_texture();
 
     auto program = gs_get_effect_by_name("Default_Draw");
     if( !program)
@@ -1466,24 +1566,60 @@ void lite_source::render()
     }
 }
 
-void lite_source::do_update_transform()
+void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
 {
-    auto mat = glm::mat4x4{1};
-    mat = glm::scale(mat, d_ptr->source_transform.scale);
-    mat = glm::translate(mat, d_ptr->source_transform.pos);
-    d_ptr->draw_transform = mat;
+    if (d_ptr->source_render_box.enabled) {
+        auto tex_width = tex->gs_texture_get_width();
+        auto tex_height = tex->gs_texture_get_height();
+        bool crop_enabled = d_ptr->source_render_box.mode == source_aspect_ratio_mode::Keep_Aspect_Ratio_By_Expanding
+                            && (tex_width != d_ptr->source_render_box.width || tex_height != d_ptr->source_render_box.height);
+        if (d_ptr->item_render && !crop_enabled)
+            d_ptr->item_render.reset();
+        else if (!d_ptr->item_render && crop_enabled)
+            d_ptr->item_render = std::make_shared<gs_texture_render>(gs_color_format::GS_RGBA, gs_zstencil_format::GS_ZS_NONE);
+
+        auto mat = glm::mat4x4{1};
+        if (!crop_enabled) {
+            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::Keep_Aspect_Ratio) {
+                uint32_t cx, cy;
+                scaled_to(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, d_ptr->source_render_box.mode, cx, cy);
+                mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x + (d_ptr->source_render_box.width - cx) / 2, d_ptr->source_render_box.y + (d_ptr->source_render_box.height -cy) / 2, 0.0f));
+                mat = glm::scale(mat, glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f));
+            } else {
+                mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
+                if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::Ignore_Aspect_Ratio) {
+                    mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)tex_width, (float)d_ptr->source_render_box.height / (float)tex_height, 1.0f));
+                }
+            }
+        } else {
+            mat = glm::translate(mat, d_ptr->source_transform.pos);
+            mat = glm::scale(mat, d_ptr->source_transform.scale);
+        }
+        d_ptr->draw_transform = mat;
+    }
 }
 
 void lite_source::lite_source_set_pos(float x, float y)
 {
     d_ptr->source_transform.pos.x = x;
     d_ptr->source_transform.pos.y = y;
-    do_update_transform();
+    d_ptr->should_update_tranform = true;
 }
 
 void lite_source::lite_source_set_scale(float width_scale, float height_scale)
 {
     d_ptr->source_transform.scale.x = width_scale;
     d_ptr->source_transform.scale.y = height_scale;
-    do_update_transform();
+    d_ptr->should_update_tranform = true;
+}
+
+void lite_source::lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
+{
+    if (!width || !height) {
+        blog(LOG_INFO, "invalid render box settings, width:%d, height: %d.", width, height);
+        return;
+    }
+
+    d_ptr->source_render_box = {true, x, y, width, height, mode};
+    d_ptr->should_update_tranform = true;
 }

@@ -170,6 +170,7 @@ public:
 
     void lite_source_set_pos(float x, float y);
     void lite_source_set_scale(float width_scale, float height_scale);
+    void lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
 
 public:
     static std::recursive_mutex sources_mutex;
@@ -230,11 +231,12 @@ private:
     bool update_async_texrender(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender);
     bool update_async_textures(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender);
     void update_async_video(uint64_t sys_time);
+    bool render_crop_texture(const std::shared_ptr<gs_texture> &texture);
     void async_render();
-    void render_texture(const std::shared_ptr<gs_texture> texture);
+    void render_texture(std::shared_ptr<gs_texture> texture);
     void render();
 
-    void do_update_transform();
+    void do_update_transform(const std::shared_ptr<gs_texture> &tex);
 
 private:
     std::unique_ptr<lite_source_private> d_ptr{};
