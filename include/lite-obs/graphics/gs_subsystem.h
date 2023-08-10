@@ -7,6 +7,7 @@
 #include "gs_subsystem_info.h"
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/ext.hpp>
 
 struct graphics_subsystem_private;
 class gs_device;
@@ -57,6 +58,7 @@ void gs_projection_push();
 void gs_projection_pop();
 void gs_matrix_push();
 void gs_matrix_pop();
+void gs_matrix_mul(const glm::mat4x4 &matrix);
 void gs_matrix_identity();
 
 std::shared_ptr<gs_texture> gs_get_render_target();

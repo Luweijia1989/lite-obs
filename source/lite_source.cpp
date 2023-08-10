@@ -265,6 +265,14 @@ struct lite_source_private
     std::shared_ptr<gs_texture> sync_texture{};
     std::mutex sync_mutex{};
 
+    struct transform_info {
+        glm::vec3 pos{0};
+        glm::vec3 scale{1};
+    };
+
+    glm::mat4x4 draw_transform{1};
+    transform_info source_transform;
+
     lite_source_private(source_type t) {
         type = t;
         user_volume = 1.0f;
@@ -366,8 +374,8 @@ void lite_source::reset_resampler(const lite_obs_source_audio_frame &audio)
     d_ptr->resample_offset = 0;
 
     if (d_ptr->sample_info.samples_per_sec == audio_output_info->samples_per_sec &&
-            d_ptr->sample_info.format == audio_output_info->format &&
-            d_ptr->sample_info.speakers == audio_output_info->speakers) {
+        d_ptr->sample_info.format == audio_output_info->format &&
+        d_ptr->sample_info.speakers == audio_output_info->speakers) {
         d_ptr->audio_failed = false;
         return;
     }
@@ -413,8 +421,8 @@ bool lite_source::copy_audio_data(const uint8_t *const data[], uint32_t frames, 
 bool lite_source::process_audio(const lite_obs_source_audio_frame &audio)
 {
     if (d_ptr->sample_info.samples_per_sec != audio.samples_per_sec ||
-            d_ptr->sample_info.format != audio.format ||
-            d_ptr->sample_info.speakers != audio.speakers)
+        d_ptr->sample_info.format != audio.format ||
+        d_ptr->sample_info.speakers != audio.speakers)
         reset_resampler(audio);
 
     if (d_ptr->audio_failed)
@@ -465,7 +473,7 @@ void lite_source::handle_ts_jump(uint64_t expected, uint64_t ts, uint64_t diff, 
 {
     blog(LOG_DEBUG,
          "Timestamp for source jumped by '%" PRIu64 "', "
-                                                    "expected value %" PRIu64 ", input value %" PRIu64, diff, expected, ts);
+         "expected value %" PRIu64 ", input value %" PRIu64, diff, expected, ts);
 
     d_ptr->audio_buf_mutex.lock();
     reset_audio_timing(ts, os_time);
@@ -542,7 +550,7 @@ void lite_source::output_audio_data_internal(const audio_data *data)
     in.timestamp -= d_ptr->resample_offset;
 
     d_ptr->next_audio_sys_ts_min =
-            d_ptr->next_audio_ts_min + d_ptr->timing_adjust;
+        d_ptr->next_audio_ts_min + d_ptr->timing_adjust;
 
     if (d_ptr->last_sync_offset != sync_offset) {
         if (d_ptr->last_sync_offset)
@@ -884,7 +892,7 @@ bool lite_source::async_texture_changed(const lite_obs_source_video_frame *frame
     cur = get_convert_type(frame->format, frame->full_range);
 
     return d_ptr->async_cache_width != frame->width ||
-            d_ptr->async_cache_height != frame->height || prev != cur;
+           d_ptr->async_cache_height != frame->height || prev != cur;
 }
 
 #define MAX_ASYNC_FRAMES 30
@@ -1219,9 +1227,9 @@ bool lite_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_v
     auto cur = get_convert_type(frame->format, frame->full_range);
 
     if (d_ptr->async_width == frame->width &&
-            d_ptr->async_height == frame->height &&
-            d_ptr->async_format == frame->format &&
-            d_ptr->async_full_range == frame->full_range)
+        d_ptr->async_height == frame->height &&
+        d_ptr->async_format == frame->format &&
+        d_ptr->async_full_range == frame->full_range)
         return true;
 
     d_ptr->async_width = frame->width;
@@ -1418,6 +1426,9 @@ void lite_source::render_texture(const std::shared_ptr<gs_texture> texture)
     if( !program)
         return;
 
+    gs_matrix_push();
+    gs_matrix_mul(d_ptr->draw_transform);
+
     gs_set_cur_effect(program);
     gs_technique_begin();
 
@@ -1431,6 +1442,8 @@ void lite_source::render_texture(const std::shared_ptr<gs_texture> texture)
     gs_draw_sprite(texture, flag, 0, 0);
 
     gs_technique_end();
+
+    gs_matrix_pop();
 }
 
 void lite_source::async_render()
@@ -1451,4 +1464,26 @@ void lite_source::render()
         std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
         render_texture(d_ptr->sync_texture);
     }
+}
+
+void lite_source::do_update_transform()
+{
+    auto mat = glm::mat4x4{1};
+    mat = glm::scale(mat, d_ptr->source_transform.scale);
+    mat = glm::translate(mat, d_ptr->source_transform.pos);
+    d_ptr->draw_transform = mat;
+}
+
+void lite_source::lite_source_set_pos(float x, float y)
+{
+    d_ptr->source_transform.pos.x = x;
+    d_ptr->source_transform.pos.y = y;
+    do_update_transform();
+}
+
+void lite_source::lite_source_set_scale(float width_scale, float height_scale)
+{
+    d_ptr->source_transform.scale.x = width_scale;
+    d_ptr->source_transform.scale.y = height_scale;
+    do_update_transform();
 }

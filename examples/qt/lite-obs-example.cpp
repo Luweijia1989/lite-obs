@@ -98,4 +98,6 @@ void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
         source = m_liteObs->lite_obs_create_source(source_type::Source_Video);
 
     source->output_video(id, width, height);
+    source->set_scale(0.2f, 0.2f);
+    source->set_pos(100, 100);
 }

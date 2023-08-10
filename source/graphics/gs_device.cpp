@@ -194,7 +194,7 @@ void gs_device::update_viewproj_matrix()
 
     gl_success("glFrontFace");
 
-    d_ptr->cur_viewproj = d_ptr->cur_view * cur_proj;
+    d_ptr->cur_viewproj = cur_proj * d_ptr->cur_view;
     d_ptr->cur_viewproj = glm::transpose(d_ptr->cur_viewproj);
 
     vs->gs_shader_set_matrix4(d_ptr->cur_viewproj);

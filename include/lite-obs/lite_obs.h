@@ -61,6 +61,9 @@ public:
     void output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate);
     void output_video(int texId, uint32_t width, uint32_t height);
 
+    void set_pos(float x, float y);
+    void set_scale(float s_w, float s_h);
+
 private:
     ~lite_obs_media_source();
 

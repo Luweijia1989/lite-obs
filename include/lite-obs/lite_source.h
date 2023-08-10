@@ -168,6 +168,9 @@ public:
     void lite_source_output_video(const lite_obs_source_video_frame *frame);
     void lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height);
 
+    void lite_source_set_pos(float x, float y);
+    void lite_source_set_scale(float width_scale, float height_scale);
+
 public:
     static std::recursive_mutex sources_mutex;
     static std::map<uintptr_t, std::map<uintptr_t, std::pair<source_type,std::shared_ptr<lite_source>>>> sources;
@@ -230,6 +233,9 @@ private:
     void async_render();
     void render_texture(const std::shared_ptr<gs_texture> texture);
     void render();
+
+    void do_update_transform();
+
 private:
     std::unique_ptr<lite_source_private> d_ptr{};
 };

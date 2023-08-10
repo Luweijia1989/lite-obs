@@ -591,8 +591,7 @@ void gs_matrix_push()
     if (!gs_valid("gs_matrix_push"))
         return;
 
-    auto mat = thread_graphics->d_ptr->matrix_stack.back();
-    thread_graphics->d_ptr->matrix_stack.push_back(mat);
+    thread_graphics->d_ptr->matrix_stack.emplace_back(thread_graphics->d_ptr->matrix_stack.back());
 }
 
 void gs_matrix_pop()
@@ -607,6 +606,18 @@ void gs_matrix_pop()
     }
 
     stack.pop_back();
+}
+
+void gs_matrix_mul(const glm::mat4x4 &matrix)
+{
+    if (!gs_valid("gs_matrix_mul"))
+        return;
+
+    auto &stack = thread_graphics->d_ptr->matrix_stack;
+    if (!stack.empty()) {
+        auto &top_mat = stack.back();
+        top_mat = top_mat * matrix;
+    }
 }
 
 void gs_matrix_identity()

@@ -52,6 +52,16 @@ void lite_obs_media_source::output_video(int texId, uint32_t width, uint32_t hei
     d_ptr->internal_source->lite_source_output_video(texId, width, height);
 }
 
+void lite_obs_media_source::set_pos(float x, float y)
+{
+    d_ptr->internal_source->lite_source_set_pos(x, y);
+}
+
+void lite_obs_media_source::set_scale(float s_w, float s_h)
+{
+    d_ptr->internal_source->lite_source_set_scale(s_w, s_h);
+}
+
 struct lite_obs_private
 {
     std::shared_ptr<lite_obs_core_video> video{};
