@@ -1,4 +1,4 @@
-#include "lite-obs/encoder/lite_h264_encoder.h"
+#include "lite-obs/encoder/h264_encoder.h"
 #include "lite-obs/media-io/ffmpeg_formats.h"
 #include "lite-obs/lite_obs_avc.h"
 
@@ -236,7 +236,6 @@ bool lite_h264_video_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
 
 void lite_h264_video_encoder::i_get_audio_info(audio_convert_info *info)
 {
-    (void)info;
 }
 
 void lite_h264_video_encoder::i_get_video_info(video_scale_info *info)

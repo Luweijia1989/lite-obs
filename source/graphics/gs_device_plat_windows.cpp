@@ -132,7 +132,6 @@ void gs_device::device_enter_context_internal(void *param)
 
 void gs_device::device_leave_context_internal(void *param)
 {
-    (void)param;
     if (!wglMakeCurrent(NULL, NULL))
         blog(LOG_DEBUG, "device_leave_context (GL) failed");
 }

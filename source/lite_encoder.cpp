@@ -321,7 +321,6 @@ bool lite_obs_encoder::send_audio_data()
 
 void lite_obs_encoder::receive_audio_internal(size_t mix_idx, struct audio_data *data)
 {
-    (void)mix_idx;
     struct audio_data audio = *data;
 
     if (!d_ptr->first_received) {
@@ -854,8 +853,6 @@ void lite_obs_encoder::lite_obs_encoder_set_wait_for_video(bool wait)
 
 void lite_obs_encoder::lite_obs_encoder_set_sei(char *sei, int len)
 {
-    (void)sei;
-    (void)len;
 }
 
 void lite_obs_encoder::lite_obs_encoder_clear_sei()
@@ -865,8 +862,6 @@ void lite_obs_encoder::lite_obs_encoder_clear_sei()
 
 bool lite_obs_encoder::lite_obs_encoder_get_sei(uint8_t *sei, int *sei_len)
 {
-    (void)sei;
-    (void)sei_len;
     return false;
 }
 

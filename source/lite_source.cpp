@@ -694,8 +694,6 @@ void lite_source::multiply_output_audio(size_t mix, size_t channels, float vol)
 
 void lite_source::apply_audio_volume(uint32_t mixers, size_t channels, size_t sample_rate)
 {
-    (void)sample_rate;
-
     auto vol = get_source_volume();
     if (vol == 1.0f)
         return;
@@ -1043,8 +1041,6 @@ void lite_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video
 
 bool lite_source::ready_async_frame(uint64_t sys_time)
 {
-    (void)sys_time;
-
     auto next_frame = d_ptr->async_frames.front();
     while (d_ptr->async_frames.size() > 1) {
         d_ptr->async_frames.pop_front();

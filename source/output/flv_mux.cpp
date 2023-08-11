@@ -17,7 +17,7 @@
 
 #include <stdio.h>
 #include "lite-obs/output/flv_mux.h"
-#include "librtmp/rtmp-helpers.h"
+#include "librtmp/rtmp_helpers.h"
 #include "lite-obs/util/serialize_op.h"
 
 /* TODO: FIXME: this is currently hard-coded to h264 and aac!  ..not that we'll

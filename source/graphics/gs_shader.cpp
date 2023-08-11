@@ -1,6 +1,6 @@
 #include "lite-obs/graphics/gs_shader.h"
 #include "lite-obs/graphics/shaders.h"
-#include "lite-obs/graphics/gl-helpers.h"
+#include "lite-obs/graphics/gl_helpers.h"
 #include "lite-obs/lite_obs_platform_config.h"
 
 struct gs_sampler_info {

@@ -2,7 +2,7 @@
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/util/log.h"
 
-#include "lite-obs/graphics/gl-helpers.h"
+#include "lite-obs/graphics/gl_helpers.h"
 #include "lite-obs/graphics/gs_texture.h"
 #include "lite-obs/graphics/gs_program.h"
 #include "lite-obs/graphics/gs_shader.h"

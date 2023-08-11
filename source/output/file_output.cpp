@@ -1,4 +1,4 @@
-#include "lite-obs/output/lite_ffmpeg_mux.h"
+#include "lite-obs/output/file_output.h"
 #include "lite-obs/util/log.h"
 #include <atomic>
 #include <list>

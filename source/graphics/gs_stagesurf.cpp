@@ -1,6 +1,6 @@
 #include "lite-obs/graphics/gs_stagesurf.h"
 #include "lite-obs/graphics/gs_subsystem_info.h"
-#include "lite-obs/graphics/gl-helpers.h"
+#include "lite-obs/graphics/gl_helpers.h"
 #include "lite-obs/graphics/gs_texture.h"
 
 struct gs_stagesurface_private

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(qt-example VERSION 0.1 LANGUAGES CXX)
+project(liteobs-qt-example VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -27,51 +27,51 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(qt-example
+    qt_add_executable(liteobs-qt-example
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
         ${PROJECT_HEADERS}
     )
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET qt-example APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#    set_property(TARGET liteobs-qt-example APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
-        add_library(qt-example SHARED
+        add_library(liteobs-qt-example SHARED
             ${PROJECT_SOURCES}
             ${PROJECT_HEADERS}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
-        add_executable(qt-example
+        add_executable(liteobs-qt-example
           ${PROJECT_SOURCES}
           ${PROJECT_HEADERS}
         )
     endif()
 endif()
 
-target_link_libraries(qt-example
+target_link_libraries(liteobs-qt-example
   PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick lite-obs)
 
-set_target_properties(qt-example PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+set_target_properties(liteobs-qt-example PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER liteobs.luweijia.com
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
 
-set_target_properties(qt-example PROPERTIES
+set_target_properties(liteobs-qt-example PROPERTIES
     QT_ANDROID_EXTRA_LIBS ${FFmpeg_LIBS}
 )
 
-install(TARGETS qt-example
+install(TARGETS liteobs-qt-example
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_import_qml_plugins(qt-example)
-    qt_finalize_executable(qt-example)
+    qt_import_qml_plugins(liteobs-qt-example)
+    qt_finalize_executable(liteobs-qt-example)
 endif()

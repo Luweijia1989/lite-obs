@@ -1,4 +1,4 @@
-#include "lite-obs/output/mpeg_ts_output.h"
+#include "lite-obs/output/srt_stream_output.h"
 #include <thread>
 #include <mutex>
 #include <list>
@@ -11,8 +11,8 @@
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/lite_obs_defines.h"
-#include "lite-obs/output/ffmpeg-url.h"
-#include "lite-obs/output/ffmpeg-srt.h"
+#include "lite-obs/output/ffmpeg_url.h"
+#include "lite-obs/output/ffmpeg_srt.h"
 #include "lite-obs/lite_encoder_info.h"
 
 static bool is_srt(const char *url)

@@ -881,12 +881,10 @@ void rtmp_stream_output::i_stop(uint64_t ts)
 
 void rtmp_stream_output::i_raw_video(video_data *frame)
 {
-    (void)frame;
 }
 
 void rtmp_stream_output::i_raw_audio(audio_data *frames)
 {
-    (void)frames;
 }
 
 bool rtmp_stream_output::add_packet(const std::shared_ptr<encoder_packet> &packet)
@@ -960,8 +958,6 @@ std::shared_ptr<encoder_packet> rtmp_stream_output::find_first_video_packet()
 
 void rtmp_stream_output::drop_frames(const char *name, int highest_priority, bool pframes)
 {
-    (void)pframes;
-
 #ifdef _DEBUG
     int start_packets = (int)d_ptr->packets.size();
 #else

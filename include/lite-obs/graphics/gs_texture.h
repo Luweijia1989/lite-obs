@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gs_subsystem_info.h"
-#include "gl-helpers.h"
+#include "gl_helpers.h"
 #include <memory>
 
 struct gs_zstencil_buffer {

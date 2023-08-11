@@ -1,5 +1,5 @@
 #include "lite-obs/graphics/gs_vertexbuffer.h"
-#include "lite-obs/graphics/gl-helpers.h"
+#include "lite-obs/graphics/gl_helpers.h"
 #include <stdint.h>
 
 struct gs_vertexbuffer_private

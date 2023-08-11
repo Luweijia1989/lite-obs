@@ -16,7 +16,7 @@
  */
 
 #pragma once
-#include "ffmpeg-url.h"
+#include "ffmpeg_url.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/lite_obs_defines.h"
 #include <srt/srt.h>
@@ -611,7 +611,7 @@ static void libsrt_set_defaults(SRTContext *s)
     s->tsbpd = -1;
 }
 
-static int libsrt_open(URLContext *h, const char *uri)
+static inline int libsrt_open(URLContext *h, const char *uri)
 {
     SRTContext *s = (SRTContext *)h->priv_data;
     const char *p;
@@ -780,7 +780,7 @@ err:
     return ret;
 }
 
-static int libsrt_write(URLContext *h, const uint8_t *buf, int size)
+static inline int libsrt_write(URLContext *h, const uint8_t *buf, int size)
 {
     SRTContext *s = (SRTContext *)h->priv_data;
     int ret;
@@ -822,7 +822,7 @@ static int libsrt_write(URLContext *h, const uint8_t *buf, int size)
     return ret;
 }
 
-static int libsrt_close(URLContext *h)
+static inline int libsrt_close(URLContext *h)
 {
     SRTContext *s = (SRTContext *)h->priv_data;
 

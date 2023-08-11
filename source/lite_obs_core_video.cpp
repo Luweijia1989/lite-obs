@@ -354,8 +354,6 @@ void lite_obs_core_video::stage_output_texture(int cur_texture)
 
 void lite_obs_core_video::render_video(bool raw_active, const bool gpu_active, int cur_texture, int prev_texture)
 {
-    (void)prev_texture;
-
     gs_begin_scene();
 
     gs_enable_depth_test(false);
