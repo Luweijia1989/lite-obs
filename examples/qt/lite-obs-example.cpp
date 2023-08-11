@@ -8,6 +8,7 @@
 class output_callback : public lite_obs_output_callbak
 {
 public:
+    virtual ~output_callback(){}
     virtual void start(){qDebug() << "===start";}
     virtual void stop(int code, std::string msg){qDebug() << "===stop";}
     virtual void starting(){qDebug() << "===starting";}

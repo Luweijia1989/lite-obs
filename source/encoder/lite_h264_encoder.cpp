@@ -110,7 +110,7 @@ fail:
 void lite_h264_video_encoder::i_destroy()
 {
     if (d_ptr->initialized) {
-        AVPacket pkt = {0};
+        AVPacket pkt = {};
         int r_pkt = 1;
 
         while (r_pkt) {
@@ -236,7 +236,7 @@ bool lite_h264_video_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
 
 void lite_h264_video_encoder::i_get_audio_info(audio_convert_info *info)
 {
-    return;
+    (void)info;
 }
 
 void lite_h264_video_encoder::i_get_video_info(video_scale_info *info)

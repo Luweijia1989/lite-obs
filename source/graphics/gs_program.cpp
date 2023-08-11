@@ -193,7 +193,7 @@ static inline bool validate_param(const program_param &pp, size_t expected_size)
 
 void gs_program::gs_effect_upload_parameters(bool change_only)
 {
-    for (int i = 0; i < d_ptr->params.size(); ++i) {
+    for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         auto &param = d_ptr->params[i];
         if (change_only && !param.param->changed)
             continue;
@@ -261,7 +261,7 @@ void gs_program::gs_effect_upload_parameters(bool change_only)
 
 void gs_program::gs_effect_clear_tex_params()
 {
-    for (int i = 0; i < d_ptr->params.size(); ++i) {
+    for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         auto &param = d_ptr->params[i];
         if (param.param->type == gs_shader_param_type::GS_SHADER_PARAM_TEXTURE) {
             param.param->texture.reset();
@@ -271,7 +271,7 @@ void gs_program::gs_effect_clear_tex_params()
 
 void gs_program::gs_effect_clear_all_params()
 {
-    for (int i = 0; i < d_ptr->params.size(); ++i) {
+    for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         auto &param = d_ptr->params[i];
         param.param->cur_value.clear();
         param.param->changed = false;
@@ -319,7 +319,7 @@ bool gs_program::assign_program_attrib(const shader_attrib &attrib)
 bool gs_program::assign_program_attribs()
 {
     auto attribs = d_ptr->vertex_shader->gs_shader_attribs();
-    for (int i = 0; i < attribs.size(); i++) {
+    for (size_t i = 0; i < attribs.size(); i++) {
         auto attrib = attribs[i];
         if (!assign_program_attrib(attrib))
             return false;
@@ -348,7 +348,7 @@ bool gs_program::assign_program_param(const std::shared_ptr<gs_shader_param> &pa
 bool gs_program::assign_program_shader_params(std::shared_ptr<gs_shader> shader)
 {
     auto params = shader->gs_shader_params();
-    for (int i = 0; i < params.size(); i++) {
+    for (size_t i = 0; i < params.size(); i++) {
         auto param = params[i];
         if (!assign_program_param(param))
             return false;
@@ -369,7 +369,7 @@ bool gs_program::assign_program_params()
 
 program_param *gs_program::gs_effect_get_param_by_name(const char *name)
 {
-    for (int i = 0; i < d_ptr->params.size(); ++i) {
+    for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         program_param *p = &d_ptr->params[i];
         if (p->param->name == name)
             return p;

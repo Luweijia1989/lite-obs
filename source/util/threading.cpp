@@ -98,7 +98,7 @@ int os_sem_init(os_sem_t **sem, int value)
 
 void os_sem_destroy(os_sem_t *sem)
 {
-
+    delete sem;
 }
 
 int os_sem_post(os_sem_t *sem)

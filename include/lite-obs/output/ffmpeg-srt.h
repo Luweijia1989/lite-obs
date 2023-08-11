@@ -427,7 +427,7 @@ static int libsrt_set_options_pre(URLContext *h, SRTSOCKET fd)
 
 static int libsrt_setup(URLContext *h, const char *uri)
 {
-    struct addrinfo hints = {0}, *ai, *cur_ai;
+    struct addrinfo hints = {}, *ai, *cur_ai;
     int port;
     SRTSOCKET fd;
     SRTContext *s = (SRTContext *)h->priv_data;

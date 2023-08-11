@@ -133,7 +133,7 @@ const std::vector<std::shared_ptr<gs_shader_param> > &gs_shader::gs_shader_param
 
 std::shared_ptr<gs_shader_param> gs_shader::gs_shader_param_by_unit(int unit)
 {
-    for (int i = 0; i < d_ptr->params.size(); ++i) {
+    for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         auto param = d_ptr->params[i];
         if (param->type == gs_shader_param_type::GS_SHADER_PARAM_TEXTURE) {
             if (param->texture_id == unit)
@@ -211,7 +211,7 @@ bool gs_shader::gl_add_params(const std::vector<gl_parser_shader_var> &vars)
 {
     GLint tex_id = 0;
 
-    for (int i = 0; i < vars.size(); i++)
+    for (size_t i = 0; i < vars.size(); i++)
         if (!gl_add_param(vars[i], &tex_id))
             return false;
 
@@ -249,7 +249,7 @@ static void get_attrib_type(const std::string mapping, attrib_type *type, size_t
 
 bool gs_shader::gl_process_attribs(const std::vector<gl_parser_attrib> &attribs)
 {
-    for (int i = 0; i < attribs.size(); ++i) {
+    for (size_t i = 0; i < attribs.size(); ++i) {
         const gl_parser_attrib &pa = attribs[i];
         shader_attrib attrib = {};
 
@@ -287,7 +287,7 @@ void shader_sampler_convert(const gl_parser_shader_sampler *ss, gs_sampler_info 
 }
 bool gs_shader::gl_add_samplers(const std::vector<gl_parser_shader_sampler> &samplers)
 {
-    for (int i = 0; i < samplers.size(); ++i) {
+    for (size_t i = 0; i < samplers.size(); ++i) {
         const gl_parser_shader_sampler &sampler = samplers[i];
 
         gs_sampler_info info;

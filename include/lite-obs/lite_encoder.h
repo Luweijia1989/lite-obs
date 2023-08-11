@@ -26,12 +26,12 @@ public:
     virtual bool i_encoder_valid() = 0;
     virtual bool i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off) = 0;
     virtual size_t i_get_frame_size() { return 0; }
-    virtual bool i_get_extra_data(uint8_t **extra_data, size_t *size) { return false; }
-    virtual bool i_get_sei_data(uint8_t **sei_data, size_t *size) { return false; }
-    virtual void i_get_audio_info(struct audio_convert_info *info) {}
-    virtual void i_get_video_info(struct video_scale_info *info) {}
+    virtual bool i_get_extra_data(uint8_t **extra_data, size_t *size) { (void)extra_data; (void)size; return false; }
+    virtual bool i_get_sei_data(uint8_t **sei_data, size_t *size) { (void)sei_data; (void)size; return false; }
+    virtual void i_get_audio_info(struct audio_convert_info *info) { (void)info; }
+    virtual void i_get_video_info(struct video_scale_info *info) { (void)info; }
     virtual bool i_gpu_encode_available() { return false; }
-    virtual void i_update_encode_bitrate(int bitrate) {}
+    virtual void i_update_encode_bitrate(int bitrate) { (void)bitrate; }
 
     void lite_obs_encoder_update_bitrate(int bitrate);
     int lite_obs_encoder_bitrate();

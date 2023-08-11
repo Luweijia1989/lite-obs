@@ -178,7 +178,7 @@ void video_output::video_output_disconnect(void (*callback)(void *, video_data *
 
     std::lock_guard<std::recursive_mutex> lock(d_ptr->input_mutex);
 
-    size_t idx = video_get_input_idx(callback, param);
+    auto idx = video_get_input_idx(callback, param);
     if (idx != -1) {
         d_ptr->inputs.erase(d_ptr->inputs.begin() + idx);
 
@@ -337,7 +337,7 @@ void video_output::init_cache()
 
 int video_output::video_get_input_idx(void (*callback)(void *, video_data *), void *param)
 {
-    for (int i = 0; i < d_ptr->inputs.size(); i++) {
+    for (size_t i = 0; i < d_ptr->inputs.size(); i++) {
         auto input = d_ptr->inputs[i];
         if (input->callback == callback && input->param == param)
             return i;

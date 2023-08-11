@@ -1,16 +1,76 @@
 ##################################################    Project     ##################################################
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-#add ANDROID_PLATFORM will cause windows configure fail
-#set                   (ANDROID_PLATFORM "android-21")
-project               (lite-obs VERSION 1.0)
+project               (lite-obs VERSION 1.0 LANGUAGES CXX C)
 list                  (APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set_property          (GLOBAL PROPERTY USE_FOLDERS ON)
-set                   (CMAKE_CXX_STANDARD 20)
-set                   (CMAKE_CXX_VISIBILITY_PRESET hidden)
-set                   (CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+
+option(LITEOBS_WITH_SANITIZER "Use [address|thread|undefined] here" OFF)
+option(LITEOBS_WITH_RTTI "Compile with runtime type information" OFF)
+option(LITEOBS_WITH_WERROR "Make all compilation warnings errors" ON)
+
+add_library(
+    liteobs-compiler-options INTERFACE
+)
+
+set(UBSAN_BLACKLIST "")
+target_compile_options(
+    liteobs-compiler-options
+    INTERFACE
+    $<$<BOOL:${LITEOBS_WITH_SANITIZER}>:-DSANITIZE>
+    $<$<BOOL:${LITEOBS_WITH_SANITIZER}>:-fno-omit-frame-pointer>
+    $<$<BOOL:${LITEOBS_WITH_SANITIZER}>:-fno-optimize-sibling-calls>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},address>:-fsanitize=address>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},thread>:-fsanitize=thread>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=implicit-conversion,
+    -fsanitize-blacklist=${UBSAN_BLACKLIST}>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=undefined,
+    -fsanitize-blacklist=${UBSAN_BLACKLIST}>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=unsigned-integer-overflow,
+    -fsanitize-blacklist=${UBSAN_BLACKLIST}>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=nullability,
+    -fsanitize-blacklist=${UBSAN_BLACKLIST}>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=float-divide-by-zero,
+    -fsanitize-blacklist=${UBSAN_BLACKLIST}>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<BOOL:${LITEOBS_WITH_RTTI}>>,$<NOT:$<PLATFORM_ID:Windows>>>:-fno-rtti>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wall>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wshadow>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<PLATFORM_ID:Windows>>>:-Wextra>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<NOT:$<PLATFORM_ID:Windows>>,$<BOOL:${LITEOBS_WITH_WERROR}>>:-Werror>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<PLATFORM_ID:Android>>:-Wno-error=tautological-constant-compare>
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-error=maybe-uninitialized>
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-error=return-type>
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-error=unknown-pragmas>
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-error=deprecated-volatile>
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=deprecated-declarations>
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=unused-parameter>
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=unused-property-ivar>
+    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=deprecated-volatile>
+)
+
+target_link_libraries(
+    liteobs-compiler-options
+    INTERFACE
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},address>:-fsanitize=address>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},thread>:-fsanitize=thread>
+    $<$<STREQUAL:${LITEOBS_WITH_SANITIZER},undefined>:-fsanitize=undefined>
+)
+
+cmake_policy(SET CMP0063 NEW)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_C_EXTENSIONS OFF)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 if(ANDROID OR APPLE)
     #library search issue. https://stackoverflow.com/questions/46055431/cmake-on-android-find-library-fail-to-find-with-custom-path
+    #for cross compile
     set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
     set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
@@ -152,7 +212,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<INSTALL_INTERFACE:include> PRIVATE source)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS})
-target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES})
+target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options)
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${PROJECT_COMPILE_DEFINITIONS})
 target_compile_options    (${PROJECT_NAME} PUBLIC ${PROJECT_COMPILE_OPTIONS})
 set_target_properties     (${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
@@ -177,10 +237,10 @@ if(BUILD_EXAMPLES)
 endif()
 
 ##################################################  Installation  ##################################################
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-config
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin)
-install(DIRECTORY include/ DESTINATION include)
-install(EXPORT  ${PROJECT_NAME}-config DESTINATION cmake)
-export (TARGETS ${PROJECT_NAME}        FILE        ${PROJECT_NAME}-config.cmake)
+#install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}-config
+#    ARCHIVE DESTINATION lib
+#    LIBRARY DESTINATION lib
+#    RUNTIME DESTINATION bin)
+#install(DIRECTORY include/ DESTINATION include)
+#install(EXPORT  ${PROJECT_NAME}-config DESTINATION cmake)
+#export (TARGETS ${PROJECT_NAME}        FILE        ${PROJECT_NAME}-config.cmake)

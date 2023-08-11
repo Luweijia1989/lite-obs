@@ -114,7 +114,7 @@ static inline audio_format convert_ffmpeg_sample_format(AVSampleFormat format)
     return audio_format::AUDIO_FORMAT_16BIT;
 }
 
-static enum AVChromaLocation
+static inline enum AVChromaLocation
         determine_chroma_location(enum AVPixelFormat pix_fmt,
                                   enum AVColorSpace colorspace)
 {

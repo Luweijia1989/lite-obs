@@ -301,21 +301,21 @@ void lite_obs_core_video::render_convert_texture(std::shared_ptr<gs_texture> tex
         if (!d_ptr->convert_textures[i])
             continue;
 
-        glm::vec4 vec0 = {d_ptr->color_matrix[4], d_ptr->color_matrix[5], d_ptr->color_matrix[6], d_ptr->color_matrix[7]};
-        glm::vec4 vec1 = {d_ptr->color_matrix[0], d_ptr->color_matrix[1], d_ptr->color_matrix[2], d_ptr->color_matrix[3]};
-        glm::vec4 vec2 = {d_ptr->color_matrix[8], d_ptr->color_matrix[9], d_ptr->color_matrix[10], d_ptr->color_matrix[11]};
+        glm::vec4 v0 = {d_ptr->color_matrix[4], d_ptr->color_matrix[5], d_ptr->color_matrix[6], d_ptr->color_matrix[7]};
+        glm::vec4 v1 = {d_ptr->color_matrix[0], d_ptr->color_matrix[1], d_ptr->color_matrix[2], d_ptr->color_matrix[3]};
+        glm::vec4 v2 = {d_ptr->color_matrix[8], d_ptr->color_matrix[9], d_ptr->color_matrix[10], d_ptr->color_matrix[11]};
 
         auto program = gs_get_effect_by_name(d_ptr->conversion_techs[i]);
         program->gs_effect_set_texture("image", texture);
         if (i == 0) {
-            program->gs_effect_set_param("color_vec0", vec0);
+            program->gs_effect_set_param("color_vec0", v0);
         } else if (i == 1) {
-            program->gs_effect_set_param("color_vec1", vec1);
+            program->gs_effect_set_param("color_vec1", v1);
             if (!d_ptr->convert_textures[i+1])
-                program->gs_effect_set_param("color_vec2", vec2);
+                program->gs_effect_set_param("color_vec2", v2);
             program->gs_effect_set_param("width_i", d_ptr->conversion_width_i);
         } else if (i == 2) {
-            program->gs_effect_set_param("color_vec2", vec2);
+            program->gs_effect_set_param("color_vec2", v2);
             program->gs_effect_set_param("width_i", d_ptr->conversion_width_i);
         }
     }
@@ -354,6 +354,8 @@ void lite_obs_core_video::stage_output_texture(int cur_texture)
 
 void lite_obs_core_video::render_video(bool raw_active, const bool gpu_active, int cur_texture, int prev_texture)
 {
+    (void)prev_texture;
+
     gs_begin_scene();
 
     gs_enable_depth_test(false);

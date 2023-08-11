@@ -113,7 +113,7 @@ static inline uint64_t audio_frames_to_ns(size_t sample_rate, uint64_t frames)
     util_uint128_t val;
     val = util_mul64_64(frames, 1000000000ULL);
     val = util_div128_32(val, (uint32_t)sample_rate);
-    return val.low;
+    return val.u.v.low;
 }
 
 static inline uint64_t ns_to_audio_frames(size_t sample_rate, uint64_t frames)
@@ -121,5 +121,5 @@ static inline uint64_t ns_to_audio_frames(size_t sample_rate, uint64_t frames)
     util_uint128_t val;
     val = util_mul64_64(frames, sample_rate);
     val = util_div128_32(val, 1000000000);
-    return val.low;
+    return val.u.v.low;
 }

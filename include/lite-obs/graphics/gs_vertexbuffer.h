@@ -34,19 +34,17 @@ struct gs_vb_data {
 
     void build_sprite(float fcx, float fcy, float start_u, float end_u, float start_v, float end_v) {
         auto arr = tvarray[0].array;
-        glm::vec2 *tvarray = (glm::vec2 *)arr;
+        glm::vec2 *array = (glm::vec2 *)arr;
 
         points[0] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
         points[1] = glm::vec4(fcx, 0.0f, 0.0f, 0.0f);
         points[2] = glm::vec4(0.0f, fcy, 0.0f, 0.0f);
         points[3] = glm::vec4(fcx, fcy, 0.0f, 0.0f);
 
-        tvarray[0] = glm::vec2(start_u, start_v);
-
-
-        tvarray[1] = glm::vec2(end_u, start_v);
-        tvarray[2] = glm::vec2(start_u, end_v);
-        tvarray[3] = glm::vec2(end_u, end_v);
+        array[0] = glm::vec2(start_u, start_v);
+        array[1] = glm::vec2(end_u, start_v);
+        array[2] = glm::vec2(start_u, end_v);
+        array[3] = glm::vec2(end_u, end_v);
     }
 
     void build_sprite_norm(float fcx, float fcy, uint32_t flip) {
@@ -59,7 +57,7 @@ struct gs_vb_data {
     }
 
     ~gs_vb_data() {
-        for (int i = 0; i < num_tex; ++i) {
+        for (size_t i = 0; i < num_tex; ++i) {
             free(tvarray[i].array);
         }
     }

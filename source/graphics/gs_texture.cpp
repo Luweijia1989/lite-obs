@@ -2,19 +2,6 @@
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/graphics/gs_shader.h"
 
-static inline uint32_t gs_get_total_levels(uint32_t width, uint32_t height)
-{
-    uint32_t size = width > height ? width : height;
-    uint32_t num_levels = 0;
-
-    while (size > 1) {
-        size /= 2;
-        num_levels++;
-    }
-
-    return num_levels;
-}
-
 bool fbo_info::attach_rendertarget(std::shared_ptr<gs_texture> tex) {
     if (cur_render_target.lock() == tex)
         return true;

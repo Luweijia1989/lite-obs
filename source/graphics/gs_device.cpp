@@ -370,7 +370,7 @@ void gs_device::gs_device_draw(gs_draw_mode draw_mode, uint32_t start_vert, uint
             goto fail;
         auto attribs = program->gs_effect_vertex_shader()->gs_shader_attribs();
         auto s_attribs = program->gs_effect_attribs();
-        for (int i = 0; i < attribs.size(); ++i) {
+        for (size_t i = 0; i < attribs.size(); ++i) {
             vb->gs_load_vb_buffers(attribs[i].type, attribs[i].index, s_attribs[i]);
         }
         // todo indexbuffer
@@ -474,7 +474,7 @@ void gs_device::gs_device_load_default_pixelshader_samplers()
         return;
 
     auto samplers = program->gs_effect_pixel_shader()->gs_shader_samplers();
-    int i = 0;
+    size_t i = 0;
     for (; i < samplers.size(); ++i) {
         d_ptr->cur_samplers[i] = samplers[i];
     }

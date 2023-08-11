@@ -144,8 +144,8 @@ void audio_output::do_audio_output(size_t mix_idx, uint64_t timestamp, uint32_t 
     for (size_t i = mix->inputs.size(); i > 0; i--) {
         auto input = mix->inputs.at(i - 1);
 
-        for (size_t i = 0; i < d_ptr->planes; i++)
-            data.data[i] = (uint8_t *)mix->buffer[i];
+        for (size_t j = 0; j < d_ptr->planes; j++)
+            data.data[j] = (uint8_t *)mix->buffer[j];
         data.frames = frames;
         data.timestamp = timestamp;
 
@@ -294,7 +294,7 @@ void audio_output::audio_output_close()
 int audio_output::get_input_index(size_t mix_idx, audio_output_callback_t callback, void *param)
 {
     const audio_mix *mix = &d_ptr->mixes[mix_idx];
-    for (int i = 0; i < mix->inputs.size(); i++) {
+    for (size_t i = 0; i < mix->inputs.size(); i++) {
         auto input = mix->inputs.at(i);
         if (input->callback == callback && input->param == param)
             return i;

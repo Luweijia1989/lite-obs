@@ -86,7 +86,7 @@ struct graphics_subsystem_private
 
         if (shader_param.length() > 0) {
             auto params = split(shader_param, "+++++++++++++++++++++++++++++++++++++++");
-            for (int i = 0; i < params.size(); ++i) {
+            for (size_t i = 0; i < params.size(); ++i) {
                 auto &param = params[i];
                 auto p = split(param, " ");
                 if (p.size() != 6)
@@ -105,7 +105,7 @@ struct graphics_subsystem_private
 
         if (shader_attribs.length() > 0) {
             auto attribs = split(shader_attribs, "+++++++++++++++++++++++++++++++++++++++");
-            for (int i = 0; i < attribs.size(); ++i) {
+            for (size_t i = 0; i < attribs.size(); ++i) {
                 auto &attrib = attribs[i];
                 auto a = split(attrib, " ");
                 if (a.size() != 3)
@@ -122,7 +122,7 @@ struct graphics_subsystem_private
 
         if (shader_samplers.length() > 0) {
             auto samplers = split(shader_samplers, "+++++++++++++++++++++++++++++++++++++++");
-            for (int i = 0; i < samplers.size(); ++i) {
+            for (size_t i = 0; i < samplers.size(); ++i) {
                 auto name = samplers[i];
                 if (name == "def_sampler") {
                     gl_parser_shader_sampler sampler;
@@ -154,7 +154,7 @@ struct graphics_subsystem_private
         conversion_shaders_total.erase(std::remove(conversion_shaders_total.begin(), conversion_shaders_total.end(), '\n'), conversion_shaders_total.end());
 
         auto strs = split(conversion_shaders_total, "=======================================");
-        for (int i = 0; i< strs.size(); i+=2) {
+        for (size_t i = 0; i < strs.size(); i+=2) {
             auto &v = strs[i];
             auto &p = strs[i+1];
             std::string name;

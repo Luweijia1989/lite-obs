@@ -694,6 +694,8 @@ void lite_source::multiply_output_audio(size_t mix, size_t channels, float vol)
 
 void lite_source::apply_audio_volume(uint32_t mixers, size_t channels, size_t sample_rate)
 {
+    (void)sample_rate;
+
     auto vol = get_source_volume();
     if (vol == 1.0f)
         return;
@@ -1041,6 +1043,8 @@ void lite_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video
 
 bool lite_source::ready_async_frame(uint64_t sys_time)
 {
+    (void)sys_time;
+
     auto next_frame = d_ptr->async_frames.front();
     while (d_ptr->async_frames.size() > 1) {
         d_ptr->async_frames.pop_front();
@@ -1572,7 +1576,7 @@ void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
         auto tex_width = tex->gs_texture_get_width();
         auto tex_height = tex->gs_texture_get_height();
         bool crop_enabled = d_ptr->source_render_box.mode == source_aspect_ratio_mode::Keep_Aspect_Ratio_By_Expanding
-                            && (tex_width != d_ptr->source_render_box.width || tex_height != d_ptr->source_render_box.height);
+                            && ((int)tex_width != d_ptr->source_render_box.width || (int)tex_height != d_ptr->source_render_box.height);
         if (d_ptr->item_render && !crop_enabled)
             d_ptr->item_render.reset();
         else if (!d_ptr->item_render && crop_enabled)

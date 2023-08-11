@@ -881,12 +881,12 @@ void rtmp_stream_output::i_stop(uint64_t ts)
 
 void rtmp_stream_output::i_raw_video(video_data *frame)
 {
-
+    (void)frame;
 }
 
 void rtmp_stream_output::i_raw_audio(audio_data *frames)
 {
-
+    (void)frames;
 }
 
 bool rtmp_stream_output::add_packet(const std::shared_ptr<encoder_packet> &packet)

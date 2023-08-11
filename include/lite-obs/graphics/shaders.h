@@ -2,7 +2,7 @@
 
 #include "gs_shader_info.h"
 
-static enum gs_shader_param_type get_shader_param_type(const char *type)
+static inline enum gs_shader_param_type get_shader_param_type(const char *type)
 {
     if (strcmp(type, "float") == 0)
         return gs_shader_param_type::GS_SHADER_PARAM_FLOAT;
@@ -34,7 +34,7 @@ static enum gs_shader_param_type get_shader_param_type(const char *type)
 
 int astrcmpi(const char *str1, const char *str2);
 
-static gs_sample_filter get_sample_filter(const char *filter)
+static inline gs_sample_filter get_sample_filter(const char *filter)
 {
     if (astrcmpi(filter, "Anisotropy") == 0)
         return gs_sample_filter::GS_FILTER_ANISOTROPIC;
@@ -68,7 +68,7 @@ static gs_sample_filter get_sample_filter(const char *filter)
     return gs_sample_filter::GS_FILTER_LINEAR;
 }
 
-static gs_address_mode get_address_mode(const char *mode)
+static inline gs_address_mode get_address_mode(const char *mode)
 {
     if (astrcmpi(mode, "Wrap") == 0 || astrcmpi(mode, "Repeat") == 0)
         return gs_address_mode::GS_ADDRESS_WRAP;
