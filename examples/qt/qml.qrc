@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>main.qml</file>
         <file>resource/44100_2_float.pcm</file>
+        <file>resource/640360420p.yuv</file>
     </qresource>
 </RCC>

@@ -92,6 +92,18 @@ enum class video_format {
     VIDEO_FORMAT_AYUV,
 };
 
+enum class video_colorspace {
+    VIDEO_CS_DEFAULT,
+    VIDEO_CS_601,
+    VIDEO_CS_709,
+};
+
+enum class video_range_type {
+    VIDEO_RANGE_DEFAULT,
+    VIDEO_RANGE_PARTIAL,
+    VIDEO_RANGE_FULL
+};
+
 enum class audio_format {
     AUDIO_FORMAT_UNKNOWN,
 

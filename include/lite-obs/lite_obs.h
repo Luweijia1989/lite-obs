@@ -66,6 +66,11 @@ public:
     lite_obs_media_source();
     void output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate);
     void output_video(int texId, uint32_t width, uint32_t height);
+    void output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES],
+                      video_format format, video_range_type range,
+                      video_colorspace color_space, uint32_t width,
+                      uint32_t height);
+    void clear_video();
 
     void set_pos(float x, float y);
     void set_scale(float s_w, float s_h);

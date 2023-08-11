@@ -5,6 +5,7 @@
 #include "lite-obs/media-io/audio_resampler.h"
 #include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/media-io/video_info.h"
+#include "lite-obs/media-io/video_matrices.h"
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/graphics/gs_texture.h"
@@ -237,6 +238,9 @@ struct lite_source_private
     std::weak_ptr<lite_obs_core_video> core_video{};
     std::weak_ptr<lite_obs_core_audio> core_audio{};
 
+    std::unique_ptr<lite_source::lite_obs_source_video_frame> video_frame{};
+    video_colorspace cur_space{};
+    video_range_type cur_range{};
     source_type type{};
 
     /* timing (if video is present, is based upon video) */
@@ -325,6 +329,7 @@ struct lite_source_private
     render_box_info source_render_box;
 
     lite_source_private(source_type t) {
+        video_frame = std::make_unique<lite_source::lite_obs_source_video_frame>();
         type = t;
         user_volume = 1.0f;
         volume = 1.0f;
@@ -1003,17 +1008,46 @@ void lite_source::output_video_internal(const lite_obs_source_video_frame *frame
     d_ptr->async_active = true;
 }
 
-void lite_source::lite_source_output_video(const lite_obs_source_video_frame *frame)
+void lite_source::lite_source_output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES], video_format format, video_range_type range, video_colorspace color_space, uint32_t width, uint32_t height)
 {
-    if (!frame) {
-        output_video_internal(NULL);
-        return;
+    auto flip = line_size[0] < 0 && line_size[1] == 0;
+    for (size_t i = 0; i < MAX_AV_PLANES; i++) {
+        d_ptr->video_frame->data[i] = (uint8_t *)video_data[i];
+        d_ptr->video_frame->linesize[i] = abs(line_size[i]);
     }
 
-    auto new_frame = *frame;
-    new_frame.full_range = format_is_yuv(frame->format) ? new_frame.full_range : true;
+    if (flip)
+        d_ptr->video_frame->data[0] -= d_ptr->video_frame->linesize[0] * (height - 1);
 
-    output_video_internal(&new_frame);
+    if (format != d_ptr->video_frame->format || color_space != d_ptr->cur_space || range != d_ptr->cur_range) {
+        d_ptr->video_frame->format = format;
+        d_ptr->video_frame->full_range = range == video_range_type::VIDEO_RANGE_FULL;
+
+        auto success = video_format_get_parameters(color_space, range,
+                                                   d_ptr->video_frame->color_matrix,
+                                                   d_ptr->video_frame->color_range_min,
+                                                   d_ptr->video_frame->color_range_max);
+
+        d_ptr->video_frame->format = format;
+        d_ptr->cur_space = color_space;
+        d_ptr->cur_range = range;
+
+        if (!success) {
+            d_ptr->video_frame->format = video_format::VIDEO_FORMAT_NONE;
+            return;
+        }
+    }
+
+    if (d_ptr->video_frame->format == video_format::VIDEO_FORMAT_NONE)
+        return;
+
+    d_ptr->video_frame->timestamp = os_gettime_ns();
+    d_ptr->video_frame->width = width;
+    d_ptr->video_frame->height = height;
+    d_ptr->video_frame->flip = flip;
+
+    d_ptr->video_frame->full_range = format_is_yuv(d_ptr->video_frame->format) ? d_ptr->video_frame->full_range : true;
+    output_video_internal(d_ptr->video_frame.get());
 }
 
 void lite_source::lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height)
@@ -1026,6 +1060,16 @@ void lite_source::lite_source_output_video(int texture_id, uint32_t texture_widt
     }
 
     d_ptr->sync_texture = gs_texture_create_with_external(texture_id, texture_width, texture_height);
+}
+
+void lite_source::lite_source_clear_video()
+{
+    if (d_ptr->type & source_type::Source_Async)
+        output_video_internal(NULL);
+    else {
+        std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
+        d_ptr->sync_texture.reset();
+    }
 }
 
 void lite_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video_frame> &frame)

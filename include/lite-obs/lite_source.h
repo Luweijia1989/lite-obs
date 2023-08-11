@@ -165,8 +165,12 @@ public:
 
     source_type lite_source_type();
     void lite_source_output_audio(const lite_obs_source_audio_frame &audio);
-    void lite_source_output_video(const lite_obs_source_video_frame *frame);
+    void lite_source_output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES],
+                                  video_format format, video_range_type range,
+                                  video_colorspace color_space, uint32_t width,
+                                  uint32_t height);
     void lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height);
+    void lite_source_clear_video();
 
     void lite_source_set_pos(float x, float y);
     void lite_source_set_scale(float width_scale, float height_scale);

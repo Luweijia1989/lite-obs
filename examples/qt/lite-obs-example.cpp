@@ -33,6 +33,10 @@ LiteObsExample::~LiteObsExample()
     audioTestRunning = false;
     if (m_audioTestThread.joinable())
         m_audioTestThread.join();
+
+    videoTestRunning = false;
+    if (m_videoTestThread.joinable())
+        m_videoTestThread.join();
 }
 
 void LiteObsExample::resetLiteObs(int width, int height, int fps)
@@ -74,6 +78,52 @@ void LiteObsExample::doAudioMixTest(bool start)
         audioTestRunning = false;
         if (m_audioTestThread.joinable())
             m_audioTestThread.join();
+    }
+}
+
+void LiteObsExample::doVideoFrameMixTest(bool start)
+{
+    if (start) {
+        videoTestRunning = true;
+        m_videoTestThread = std::thread([=](){
+            auto source = m_liteObs->lite_obs_create_source(source_type::Source_AsyncVideo);
+
+            QFile audiofile(":/resource/640360420p.yuv");
+            audiofile.open(QFile::ReadOnly);
+            auto alldata = audiofile.readAll();
+            int index = 0;
+            int tt = 640 * 360 * 1.5;
+            while (true) {
+                if (alldata.size() - tt * index < tt)
+                    index = 0;
+
+                uint8_t *p = (uint8_t *)alldata.data() + tt * (index++);
+                const uint8_t *data[MAX_AV_PLANES] = {};
+                data[0] = p;
+                data[1] = p + 640 * 360;
+                data[2] = p + 640 * 360 * 5 / 4;
+
+                int linesize[MAX_AV_PLANES] = {};
+                linesize[0] = 640;
+                linesize[1] = 320;
+                linesize[2] = 320;
+
+                source->output_video(data, linesize, video_format::VIDEO_FORMAT_I420, video_range_type::VIDEO_RANGE_FULL, video_colorspace::VIDEO_CS_709, 640, 360);
+
+                QThread::msleep(24);
+                if (!videoTestRunning) {
+                    qDebug() << "audio mix test stop.";
+                    break;
+                }
+            }
+
+            source->clear_video();
+            m_liteObs->lite_obs_destroy_source(source);
+        });
+    } else {
+        videoTestRunning = false;
+        if (m_videoTestThread.joinable())
+            m_videoTestThread.join();
     }
 }
 

@@ -52,6 +52,16 @@ void lite_obs_media_source::output_video(int texId, uint32_t width, uint32_t hei
     d_ptr->internal_source->lite_source_output_video(texId, width, height);
 }
 
+void lite_obs_media_source::output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES], video_format format, video_range_type range, video_colorspace color_space, uint32_t width, uint32_t height)
+{
+    d_ptr->internal_source->lite_source_output_video(video_data, line_size, format, range, color_space, width, height);
+}
+
+void lite_obs_media_source::clear_video()
+{
+    d_ptr->internal_source->lite_source_clear_video();
+}
+
 void lite_obs_media_source::set_pos(float x, float y)
 {
     d_ptr->internal_source->lite_source_set_pos(x, y);

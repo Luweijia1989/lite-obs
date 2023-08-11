@@ -58,6 +58,14 @@ Item {
         }
 
         Button {
+            text: "mix video frame"
+            checkable: true
+            onClicked: {
+                example.doVideoFrameMixTest(checked)
+            }
+        }
+
+        Button {
             text: "start output"
             onClicked: {
                 example.doStartOutput()
