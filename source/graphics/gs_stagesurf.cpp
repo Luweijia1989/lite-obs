@@ -94,7 +94,7 @@ bool gs_stagesurface::can_stage(std::shared_ptr<gs_texture> src)
 
     return true;
 }
-#ifdef __ANDROID__
+#ifdef PLATFORM_MOBILE
 
 /* Apparently for mac, PBOs won't do an asynchronous transfer unless you use
  * FBOs along with glReadPixels, which is really dumb. */
@@ -184,7 +184,7 @@ bool gs_stagesurface::gs_stagesurface_map(uint8_t **data, uint32_t *linesize)
     if (!gl_bind_buffer(GL_PIXEL_PACK_BUFFER, d_ptr->pack_buffer))
         goto fail;
 
-#if defined __ANDROID__
+#ifdef PLATFORM_MOBILE
     *data = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, d_ptr->size, GL_MAP_READ_BIT);
 #else
     *data = (uint8_t *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);

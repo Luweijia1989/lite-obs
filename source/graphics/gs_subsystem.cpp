@@ -397,7 +397,7 @@ void gs_clear(uint32_t clear_flags, glm::vec4 *color, float depth, uint8_t stenc
     }
 
     if (clear_flags & GS_CLEAR_DEPTH) {
-#if defined __ANDROID__
+#ifdef PLATFORM_MOBILE
         glClearDepthf(depth);
 #else
         glClearDepth(depth);

@@ -213,7 +213,7 @@ bool gs_texture::gs_texture_map(uint8_t **ptr, uint32_t *linesize)
     if (!gl_bind_buffer(GL_PIXEL_UNPACK_BUFFER, d_ptr->unpack_buffer))
         goto fail;
 
-#if TARGET_PLATFORM == PLATFORM_ANDROID
+#ifdef PLATFORM_MOBILE
     *ptr = (uint8_t *)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, d_ptr->size, GL_MAP_WRITE_BIT);
 #else
     *ptr = (uint8_t *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);

@@ -4,7 +4,7 @@
 
 #if TARGET_PLATFORM == PLATFORM_IOS
 
-#include <OpenGLES/ES3/gl3.h>
+#include <OpenGLES/ES3/gl.h>
 #include <OpenGLES/ES3/glext.h>
 
 #elif TARGET_PLATFORM == PLATFORM_ANDROID
