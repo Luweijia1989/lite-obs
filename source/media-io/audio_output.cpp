@@ -297,7 +297,7 @@ int audio_output::get_input_index(size_t mix_idx, audio_output_callback_t callba
     for (size_t i = 0; i < mix->inputs.size(); i++) {
         auto input = mix->inputs.at(i);
         if (input->callback == callback && input->param == param)
-            return i;
+            return (int)i;
     }
 
     return -1;

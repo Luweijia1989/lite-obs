@@ -340,7 +340,7 @@ int video_output::video_get_input_idx(void (*callback)(void *, video_data *), vo
     for (size_t i = 0; i < d_ptr->inputs.size(); i++) {
         auto input = d_ptr->inputs[i];
         if (input->callback == callback && input->param == param)
-            return i;
+            return (int)i;
     }
 
     return -1;
