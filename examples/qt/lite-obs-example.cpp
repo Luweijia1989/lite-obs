@@ -110,9 +110,9 @@ void LiteObsExample::doVideoFrameMixTest(bool start)
 
                 source->output_video(data, linesize, video_format::VIDEO_FORMAT_I420, video_range_type::VIDEO_RANGE_FULL, video_colorspace::VIDEO_CS_709, 640, 360);
 
-                QThread::msleep(24);
+                QThread::msleep(50);
                 if (!videoTestRunning) {
-                    qDebug() << "audio mix test stop.";
+                    qDebug() << "video frame mix test stop.";
                     break;
                 }
             }

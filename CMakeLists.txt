@@ -44,13 +44,13 @@ target_compile_options(
     $<$<CXX_COMPILER_ID:GNU>:-Wno-unused-parameter>
     $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations>
     $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-volatile>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=deprecated-declarations>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=unused-parameter>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=unused-property-ivar>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-error=deprecated-volatile>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-unused-parameter>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-deprecated-declarations>
-    $<$<CXX_COMPILER_ID:Clang>:-Wno-deprecated-volatile>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-error=deprecated-declarations>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-error=unused-parameter>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-error=unused-property-ivar>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-error=deprecated-volatile>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-unused-parameter>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-deprecated-declarations>
+    $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:-Wno-deprecated-volatile>
 )
 
 target_link_libraries(

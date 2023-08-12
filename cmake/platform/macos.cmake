@@ -1,4 +1,4 @@
-set(CMAKE_OSX_DEPLOYMENT_TARGET "10.11")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
 
@@ -11,16 +11,7 @@ target_compile_definitions(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PRIVATE OpenGL::GL
+    PRIVATE OpenGL::GL "-framework AppKit"
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fobjc-arc)
-
-target_link_libraries(
-    mbgl-core
-    PRIVATE
-    "-framework AppKit"
-    "-framework CoreGraphics"
-    "-framework CoreLocation"
-    "-framework SystemConfiguration"
-)

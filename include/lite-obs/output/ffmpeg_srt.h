@@ -636,7 +636,7 @@ static inline int libsrt_open(URLContext *h, const char *uri)
             s->maxbw = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "pbkeylen", p)) {
-            s->pbkeylen = strtol(buf, NULL, 10);
+            s->pbkeylen = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "passphrase", p)) {
             av_freep(&s->passphrase);
@@ -645,35 +645,35 @@ static inline int libsrt_open(URLContext *h, const char *uri)
 #if SRT_VERSION_VALUE >= 0x010302
         if (av_find_info_tag(buf, sizeof(buf), "enforced_encryption",
                              p)) {
-            s->enforced_encryption = strtol(buf, NULL, 10);
+            s->enforced_encryption = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "kmrefreshrate", p)) {
-            s->kmrefreshrate = strtol(buf, NULL, 10);
+            s->kmrefreshrate = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "kmpreannounce", p)) {
-            s->kmpreannounce = strtol(buf, NULL, 10);
+            s->kmpreannounce = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "snddropdelay", p)) {
             s->snddropdelay = strtoll(buf, NULL, 10);
         }
 #endif
         if (av_find_info_tag(buf, sizeof(buf), "mss", p)) {
-            s->mss = strtol(buf, NULL, 10);
+            s->mss = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "ffs", p)) {
-            s->ffs = strtol(buf, NULL, 10);
+            s->ffs = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "ipttl", p)) {
-            s->ipttl = strtol(buf, NULL, 10);
+            s->ipttl = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "iptos", p)) {
-            s->iptos = strtol(buf, NULL, 10);
+            s->iptos = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "inputbw", p)) {
             s->inputbw = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "oheadbw", p)) {
-            s->oheadbw = strtol(buf, NULL, 10);
+            s->oheadbw = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "latency", p)) {
             s->latency = strtoll(buf, NULL, 10);
@@ -688,17 +688,17 @@ static inline int libsrt_open(URLContext *h, const char *uri)
             s->peerlatency = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "tlpktdrop", p)) {
-            s->tlpktdrop = strtol(buf, NULL, 10);
+            s->tlpktdrop = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "nakreport", p)) {
-            s->nakreport = strtol(buf, NULL, 10);
+            s->nakreport = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "connect_timeout", p)) {
             s->connect_timeout = strtoll(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "payload_size", p) ||
                 av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
-            s->payload_size = strtol(buf, NULL, 10);
+            s->payload_size = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "mode", p)) {
             if (!strcmp(buf, "caller")) {
@@ -713,16 +713,16 @@ static inline int libsrt_open(URLContext *h, const char *uri)
             }
         }
         if (av_find_info_tag(buf, sizeof(buf), "sndbuf", p)) {
-            s->sndbuf = strtol(buf, NULL, 10);
+            s->sndbuf = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "rcvbuf", p)) {
-            s->rcvbuf = strtol(buf, NULL, 10);
+            s->rcvbuf = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "lossmaxttl", p)) {
-            s->lossmaxttl = strtol(buf, NULL, 10);
+            s->lossmaxttl = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "minversion", p)) {
-            s->minversion = strtol(buf, NULL, 0);
+            s->minversion = (int)strtol(buf, NULL, 0);
         }
         if (av_find_info_tag(buf, sizeof(buf), "streamid", p)) {
             av_freep(&s->streamid);
@@ -741,7 +741,7 @@ static inline int libsrt_open(URLContext *h, const char *uri)
             }
         }
         if (av_find_info_tag(buf, sizeof(buf), "messageapi", p)) {
-            s->messageapi = strtol(buf, NULL, 10);
+            s->messageapi = (int)strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "transtype", p)) {
             if (!strcmp(buf, "live")) {
@@ -754,7 +754,7 @@ static inline int libsrt_open(URLContext *h, const char *uri)
             }
         }
         if (av_find_info_tag(buf, sizeof(buf), "linger", p)) {
-            s->linger = strtol(buf, NULL, 10);
+            s->linger = (int)strtol(buf, NULL, 10);
         }
     }
     ret = libsrt_setup(h, uri);

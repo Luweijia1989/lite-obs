@@ -4,7 +4,6 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <semaphore>
 
 struct os_event_data {
     std::mutex mutex;
@@ -83,35 +82,126 @@ void os_event_reset(os_event_t *event)
     event->signalled = false;
 }
 
-struct os_sem_data {
-public:
-    os_sem_data(int value) : sem(value) {}
-    std::counting_semaphore<> sem;
-};
+#if TARGET_PLATFORM == PLATFORM_WIN32
 int os_sem_init(os_sem_t **sem, int value)
 {
-    auto s = new os_sem_data(value);
-    *sem = s;
+    HANDLE handle = CreateSemaphore(NULL, (LONG)value, 0x7FFFFFFF, NULL);
+    if (!handle)
+        return -1;
 
+    *sem = (os_sem_t *)handle;
     return 0;
 }
 
 void os_sem_destroy(os_sem_t *sem)
 {
-    delete sem;
+    if (sem)
+        CloseHandle((HANDLE)sem);
 }
 
 int os_sem_post(os_sem_t *sem)
 {
-    sem->sem.release();
-    return 0;
+    if (!sem)
+        return -1;
+    return ReleaseSemaphore((HANDLE)sem, 1, NULL) ? 0 : -1;
 }
 
 int os_sem_wait(os_sem_t *sem)
 {
-    sem->sem.acquire();
+    DWORD ret;
+
+    if (!sem)
+        return -1;
+    ret = WaitForSingleObject((HANDLE)sem, INFINITE);
+    return (ret == WAIT_OBJECT_0) ? 0 : -1;
+}
+#elif TARGET_PLATFORM == PLATFORM_IOS || TARGET_PLATFORM == PLATFORM_MAC
+#include <mach/semaphore.h>
+#include <mach/task.h>
+#include <mach/mach_init.h>
+struct os_sem_data {
+    semaphore_t sem{};
+    task_t task{};
+};
+
+int os_sem_init(os_sem_t **sem, int value)
+{
+    semaphore_t new_sem;
+    task_t task = mach_task_self();
+
+    if (semaphore_create(task, &new_sem, 0, value) != KERN_SUCCESS)
+        return -1;
+
+    *sem = new os_sem_data;
+    if (!*sem)
+        return -2;
+
+    (*sem)->sem = new_sem;
+    (*sem)->task = task;
     return 0;
 }
+
+void os_sem_destroy(os_sem_t *sem)
+{
+    if (sem) {
+        semaphore_destroy(sem->task, sem->sem);
+        delete sem;
+    }
+}
+
+int os_sem_post(os_sem_t *sem)
+{
+    if (!sem)
+        return -1;
+    return (semaphore_signal(sem->sem) == KERN_SUCCESS) ? 0 : -1;
+}
+
+int os_sem_wait(os_sem_t *sem)
+{
+    if (!sem)
+        return -1;
+    return (semaphore_wait(sem->sem) == KERN_SUCCESS) ? 0 : -1;
+}
+#else
+#include <semaphore.h>
+struct os_sem_data {
+    sem_t sem;
+};
+
+int os_sem_init(os_sem_t **sem, int value)
+{
+    sem_t new_sem;
+    int ret = sem_init(&new_sem, 0, value);
+    if (ret != 0)
+        return ret;
+
+    *sem = new os_sem_data;
+    (*sem)->sem = new_sem;
+    return 0;
+}
+
+void os_sem_destroy(os_sem_t *sem)
+{
+    if (sem) {
+        sem_destroy(&sem->sem);
+        delete sem;
+    }
+}
+
+int os_sem_post(os_sem_t *sem)
+{
+    if (!sem)
+        return -1;
+    return sem_post(&sem->sem);
+}
+
+int os_sem_wait(os_sem_t *sem)
+{
+    if (!sem)
+        return -1;
+    return sem_wait(&sem->sem);
+}
+#endif
 
 int64_t os_gettime_ns()
 {

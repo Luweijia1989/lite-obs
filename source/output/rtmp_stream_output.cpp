@@ -583,7 +583,7 @@ int rtmp_stream_output::send_packet(const std::shared_ptr<encoder_packet> &packe
     }
 
     std::vector<uint8_t> data;
-    flv_packet_mux(packet, is_header ? 0 : d_ptr->start_dts_offset, data, is_header);
+    flv_packet_mux(packet, is_header ? 0 : (int32_t)d_ptr->start_dts_offset, data, is_header);
 
     ret = RTMP_Write(&d_ptr->rtmp, (char *)data.data(), (int)data.size(), 0);
 
@@ -629,7 +629,7 @@ void rtmp_stream_output::dbr_set_bitrate()
     if (!vencoder)
         return;
 
-    vencoder->i_update_encode_bitrate(d_ptr->dbr_cur_bitrate);
+    vencoder->i_update_encode_bitrate((int)d_ptr->dbr_cur_bitrate);
 }
 
 void rtmp_stream_output::send_thread_internal()

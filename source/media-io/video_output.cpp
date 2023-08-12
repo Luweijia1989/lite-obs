@@ -252,7 +252,7 @@ uint64_t video_output::video_output_get_frame_time()
 
 uint32_t video_output::video_output_get_total_frames()
 {
-    return d_ptr->total_frames;
+    return (uint32_t)d_ptr->total_frames;
 }
 
 void video_output::video_thread_internal()
