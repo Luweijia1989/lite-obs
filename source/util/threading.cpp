@@ -83,6 +83,7 @@ void os_event_reset(os_event_t *event)
 }
 
 #if TARGET_PLATFORM == PLATFORM_WIN32
+#include <Windows.h>
 int os_sem_init(os_sem_t **sem, int value)
 {
     HANDLE handle = CreateSemaphore(NULL, (LONG)value, 0x7FFFFFFF, NULL);

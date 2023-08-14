@@ -111,11 +111,11 @@ option(BUILD_EXAMPLES "Build examples." ON)
 unset(PROJECT_SOURCES CACHE)
 file(GLOB_RECURSE PROJECT_HEADERS include/*.h include/*.hpp include/*.ipp)
 file(GLOB_RECURSE PROJECT_SOURCES source/*.cpp source/*.mm source/*.c source/*.h)
-list(FILTER PROJECT_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/source/platform-dep/.*$")
+list(FILTER PROJECT_SOURCES EXCLUDE REGEX "^${CMAKE_CURRENT_SOURCE_DIR}/source/third-party/.*$")
 file(GLOB_RECURSE PROJECT_CMAKE_UTILS cmake/*.cmake)
 file(GLOB_RECURSE PROJECT_MISC *.bat *.gitignore *.md *.py *.sh *.txt)
 
-set (PROJECT_EXPORT_HPP include/${PROJECT_NAME}/export.hpp)
+set (PROJECT_EXPORT_HPP include/${PROJECT_NAME}/lite_obs_export.hpp)
 set (PROJECT_FILES
     ${PROJECT_HEADERS}
     ${PROJECT_SOURCES}
@@ -143,9 +143,6 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     set(SUFFIX "debug")
 endif()
 
-find_package(GLM REQUIRED)
-import_library(GLM_INCLUDE_DIRS)
-
 find_package(FFmpeg REQUIRED)
 import_library(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
 
@@ -170,18 +167,20 @@ else()
     message(FATAL_ERROR "Unsupported target platform: " ${CMAKE_SYSTEM_NAME})
 endif()
 
+add_subdirectory(source/third-party/glm)
+
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
     $<INSTALL_INTERFACE:include> PRIVATE source)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS})
-target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options)
+target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options glm)
 
 ##################################################    Postbuild   ##################################################
 include               (GenerateExportHeader)
 string                (TOUPPER ${PROJECT_NAME} PROJECT_NAME_UPPER)
 generate_export_header(${PROJECT_NAME} 
-    EXPORT_FILE_NAME     ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/export.hpp
+    EXPORT_FILE_NAME     ${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/lite_obs_export.hpp
     EXPORT_MACRO_NAME    ${PROJECT_NAME_UPPER}_EXPORT
     STATIC_DEFINE        ${PROJECT_NAME_UPPER}_STATIC
 )

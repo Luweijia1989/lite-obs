@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 #include "lite_obs_defines.h"
-#include "export.hpp"
+#include "lite_obs_export.hpp"
 
 enum source_type {
     Source_Video = 1 << 0,

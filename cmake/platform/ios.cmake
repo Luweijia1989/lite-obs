@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
     ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
+    MACOSX_RPATH ON
     FRAMEWORK TRUE
     MACOSX_FRAMEWORK_IDENTIFIER com.bixin.LiteObsSDK
     PUBLIC_HEADER "${PUBLIC_HEADERS}"
