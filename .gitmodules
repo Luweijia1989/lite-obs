@@ -1,0 +1,6 @@
+[submodule "source/third-party/glad"]
+	path = source/third-party/glad
+	url = https://github.com/Luweijia1989/glad.git
+[submodule "source/third-party/glm"]
+	path = source/third-party/glm
+	url = https://github.com/g-truc/glm.git
