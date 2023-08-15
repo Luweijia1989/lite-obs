@@ -74,36 +74,6 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
-if(ANDROID)
-    set(DepsPath "D:/vcpkg/installed/arm-android" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-    set(FFmpegPath "D:/ffmpeg-6.0-android-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-elseif(APPLE)
-    if(IOS)
-        set(DepsPath "/Users/luweijia/vcpkg/installed/arm64-ios" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-        set(FFmpegPath "/Users/luweijia/Downloads/ffmpeg-6.0-iOS-gpl-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-    else()
-        set(DepsPath "/Users/luweijia/vcpkg/installed/x64-osx" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-        set(FFmpegPath "/Users/luweijia/Downloads/ffmpeg-6.0-macOS-gpl-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-    endif()
-else()
-    set(DepsPath "D:/vcpkg/installed/x64-windows-static-md" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-    set(FFmpegPath "D:/ffmpeg-master-windows-desktop-vs2022-lite" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-endif()
-
-if (DepsPath OR DEFINED ENV{DepsPath})
-    # Dependencies path set by user or env var
-else()
-    set(DepsPath "" CACHE PATH "Path to compiled dependencies (e.g. D:/dependencies/win64)")
-    message(WARNING "DepsPath variable is missing.  Please set this variable to specify path to compiled dependencies (e.g. D:/dependencies/win64)")
-endif()
-
-if (FFmpegPath OR DEFINED ENV{FFmpegPath})
-    # FFmpeg path set by user or env var
-else()
-    set(FFmpegPath "" CACHE PATH "Path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-    message(WARNING "FFmpeg variable is missing.  Please set this variable to specify path to compiled ffmpeg (e.g. D:/ffmpeg/windows)")
-endif()
-
 ##################################################    Options     ##################################################
 option(BUILD_EXAMPLES "Build examples." ON)
 
@@ -139,21 +109,8 @@ if(ANDROID OR APPLE)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
 endif()
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    set(SUFFIX "debug")
-endif()
-
-find_package(FFmpeg REQUIRED)
-import_library(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
-
-find_package(SRT REQUIRED)
-import_library(SRT_INCLUDE_DIRS SRT_LIBS)
-
 ##################################################    Targets     ##################################################
 add_library(${PROJECT_NAME} SHARED ${PROJECT_FILES})
-
-#define NO_CRYPTO to disable rtmps. openssl exists because srt depends on it, so define HAVE_OPENSSL
-target_compile_definitions(${PROJECT_NAME} PUBLIC NO_CRYPTO HAVE_OPENSSL)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     include(${PROJECT_SOURCE_DIR}/cmake/platform/android.cmake)
@@ -166,6 +123,21 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
 else()
     message(FATAL_ERROR "Unsupported target platform: " ${CMAKE_SYSTEM_NAME})
 endif()
+
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    set(SUFFIX "debug")
+endif()
+set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/ffmpeg-${TARGET_OS})
+set(SRT_PATH ${PROJECT_SOURCE_DIR}/external/srt-${TARGET_OS})
+
+find_package(FFmpeg REQUIRED)
+import_library(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
+
+find_package(SRT REQUIRED)
+import_library(SRT_INCLUDE_DIRS SRT_LIBS)
+
+#define NO_CRYPTO to disable rtmps. openssl exists because srt depends on it, so define HAVE_OPENSSL
+target_compile_definitions(${PROJECT_NAME} PUBLIC NO_CRYPTO HAVE_OPENSSL)
 
 add_subdirectory(source/third-party/glm)
 

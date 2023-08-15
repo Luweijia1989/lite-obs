@@ -1,5 +1,5 @@
 find_path(FFmpeg_INCLUDE_DIRS NAMES libavcodec/avcodec.h libavformat/avformat.h
-    PATHS ${FFmpegPath}/include
+    PATHS ${FFMPEG_PATH}/include
     NO_DEFAULT_PATH)
 
 if(MSVC)
@@ -15,7 +15,7 @@ endif()
 find_library(
     FFmpeg_LIBS
     NAMES ffmpeg
-    PATHS ${FFmpegPath}/lib/${FFMPEG_LIB_SUFFIX}
+    PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
     NO_DEFAULT_PATH)
 
 if (NOT FFmpeg_INCLUDE_DIRS OR NOT FFmpeg_LIBS)

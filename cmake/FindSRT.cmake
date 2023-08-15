@@ -1,37 +1,47 @@
+if(MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(ARCH x64)
+    elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set(ARCH x86)
+    endif()
+elseif(ANDROID)
+    set(ARCH ${CMAKE_ANDROID_ARCH_ABI})
+endif()
+
 find_path(SRT_INCLUDE_DIRS NAMES srt/srt.h
-    PATHS ${DepsPath}
-    PATH_SUFFIXES include
+    PATHS ${SRT_PATH}
+    PATH_SUFFIXES ${ARCH}/include
     NO_DEFAULT_PATH)
 
 find_library(
     SRT_LIB
     NAMES srt
-    PATHS ${DepsPath}/${SUFFIX}/lib
+    PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
     NO_DEFAULT_PATH)
 
 if(MSVC)
     find_library(
         SSL_LIB
         NAMES libssl
-        PATHS ${DepsPath}/${SUFFIX}/lib
+        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES libcrypto
-        PATHS ${DepsPath}/${SUFFIX}/lib
+        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 else()
     find_library(
         SSL_LIB
         NAMES ssl
-        PATHS ${DepsPath}/${SUFFIX}/lib
+        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES crypto
-        PATHS ${DepsPath}/${SUFFIX}/lib
+        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 endif()
 

@@ -2,6 +2,8 @@ if(NOT ANDROID_NDK_TOOLCHAIN_INCLUDED)
     message(FATAL_ERROR "-- Toolchain file not included, see https://developer.android.com/ndk/guides/cmake")
 endif()
 
+set(TARGET_OS android)
+
 target_compile_definitions(
     ${PROJECT_NAME}
     PUBLIC LITEOBS_USE_GLES
