@@ -18,6 +18,12 @@ find_library(
     PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
     NO_DEFAULT_PATH)
 
+if(MSVC)
+    find_file(FFmpeg_BIN_FILE NAMES ffmpeg-6.dll ffmpeg.dll
+        PATHS ${FFMPEG_PATH}/bin/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+endif()
+
 if (NOT FFmpeg_INCLUDE_DIRS OR NOT FFmpeg_LIBS)
     message(FATAL_ERROR "Could not find ffmpeg library")
 else()
@@ -26,4 +32,5 @@ endif()
 
 set(FFmpeg_INCLUDE_DIRS "${FFmpeg_INCLUDE_DIRS}" CACHE PATH "Path to ffmpeg include directory")
 set(FFmpeg_LIBS "${FFmpeg_LIBS}" CACHE PATH "Path to ffmpeg libs")
-mark_as_advanced(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
+set(FFmpeg_BIN_FILE "${FFmpeg_BIN_FILE}" CACHE PATH "Path to ffmpeg dlls")
+mark_as_advanced(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS FFmpeg_BIN_FILE)

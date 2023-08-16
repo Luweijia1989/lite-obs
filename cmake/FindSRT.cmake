@@ -1,3 +1,7 @@
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    set(SUFFIX "debug")
+endif()
+
 if(MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(ARCH x64)

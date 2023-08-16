@@ -75,7 +75,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 ##################################################    Options     ##################################################
-option(BUILD_EXAMPLES "Build examples." ON)
+option(BUILD_EXAMPLES "Build examples." OFF)
 
 ##################################################    Sources     ##################################################
 unset(PROJECT_SOURCES CACHE)
@@ -98,9 +98,6 @@ set (PROJECT_FILES
 include            (assign_source_group)
 assign_source_group(${PROJECT_FILES})
 
-##################################################  Dependencies  ##################################################
-include(import_library)
-
 if(ANDROID OR APPLE)
     #library search issue. https://stackoverflow.com/questions/46055431/cmake-on-android-find-library-fail-to-find-with-custom-path
     #for cross compile
@@ -109,9 +106,9 @@ if(ANDROID OR APPLE)
     set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE BOTH)
 endif()
 
-##################################################    Targets     ##################################################
 add_library(${PROJECT_NAME} SHARED ${PROJECT_FILES})
 
+##################################################    Depends     ##################################################
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     include(${PROJECT_SOURCE_DIR}/cmake/platform/android.cmake)
 elseif(CMAKE_SYSTEM_NAME STREQUAL iOS)
@@ -124,11 +121,10 @@ else()
     message(FATAL_ERROR "Unsupported target platform: " ${CMAKE_SYSTEM_NAME})
 endif()
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    set(SUFFIX "debug")
-endif()
 set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/ffmpeg-${TARGET_OS})
 set(SRT_PATH ${PROJECT_SOURCE_DIR}/external/srt-${TARGET_OS})
+
+include(import_library)
 
 find_package(FFmpeg REQUIRED)
 import_library(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
@@ -147,6 +143,33 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     $<INSTALL_INTERFACE:include> PRIVATE source)
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS})
 target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options glm)
+
+##################################################    install     ##################################################
+set(EXPORT_HEADERS
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_export.hpp
+)
+
+install(FILES ${EXPORT_HEADERS} DESTINATION include/lite-obs)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX} # *.dll
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX})
+    if (FFmpeg_BIN_FILE)
+        install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX})
+    endif()
+else()
+    install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # *.dll
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    if (FFmpeg_BIN_FILE)
+        install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
+endif()
+
 
 ##################################################    Postbuild   ##################################################
 include               (GenerateExportHeader)
