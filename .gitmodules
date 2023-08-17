@@ -4,3 +4,6 @@
 [submodule "source/third-party/glm"]
 	path = source/third-party/glm
 	url = https://github.com/g-truc/glm.git
+[submodule "cmake/tools"]
+	path = cmake/tools
+	url = https://github.com/Luweijia1989/cmake-tools.git
