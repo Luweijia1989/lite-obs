@@ -111,14 +111,16 @@ add_library(${PROJECT_NAME} SHARED ${PROJECT_FILES})
 ##################################################    Depends     ##################################################
 if(CMAKE_SYSTEM_NAME STREQUAL Android)
     include(${PROJECT_SOURCE_DIR}/cmake/platform/android.cmake)
-elseif(CMAKE_SYSTEM_NAME STREQUAL iOS)
-    include(${PROJECT_SOURCE_DIR}/cmake/platform/ios.cmake)
 elseif(CMAKE_SYSTEM_NAME STREQUAL Windows)
     include(${PROJECT_SOURCE_DIR}/cmake/platform/windows.cmake)
-elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
-    include(${PROJECT_SOURCE_DIR}/cmake/platform/macos.cmake)
 else()
-    message(FATAL_ERROR "Unsupported target platform: " ${CMAKE_SYSTEM_NAME})
+    if(IOS OR CMAKE_SYSTEM_NAME STREQUAL iOS)
+        include(${PROJECT_SOURCE_DIR}/cmake/platform/ios.cmake)
+    elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+        include(${PROJECT_SOURCE_DIR}/cmake/platform/macos.cmake)
+    else()
+        message(FATAL_ERROR "Unsupported target platform: " ${CMAKE_SYSTEM_NAME})
+    endif()
 endif()
 
 set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/ffmpeg-${TARGET_OS})
@@ -145,28 +147,34 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS})
 target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options glm)
 
 ##################################################    install     ##################################################
-set(EXPORT_HEADERS
-    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
-    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
-    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_export.hpp
-)
-
-install(FILES ${EXPORT_HEADERS} DESTINATION include/lite-obs)
-if (CMAKE_BUILD_TYPE MATCHES Debug)
+if (APPLE)
     install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX} # *.dll
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX})
-    if (FFmpeg_BIN_FILE)
-        install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX})
-    endif()
+        FRAMEWORK DESTINATION .)
 else()
-    install(TARGETS ${PROJECT_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # *.dll
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    if (FFmpeg_BIN_FILE)
-        install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR})
+    set(EXPORT_HEADERS
+        ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
+        ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
+        ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_export.hpp
+    )
+
+    install(FILES ${EXPORT_HEADERS} DESTINATION include/lite-obs)
+    if (CMAKE_BUILD_TYPE MATCHES Debug)
+        install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX} # *.dll
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/${SUFFIX})
+        if (FFmpeg_BIN_FILE)
+            install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR}/${SUFFIX})
+        endif()
+    else()
+        install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} # *.dll
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+        if (FFmpeg_BIN_FILE)
+            install(FILES ${FFmpeg_BIN_FILE} DESTINATION ${CMAKE_INSTALL_BINDIR})
+        endif()
     endif()
 endif()
 

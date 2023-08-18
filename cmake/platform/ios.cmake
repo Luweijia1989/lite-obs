@@ -1,11 +1,8 @@
-set(IOS_DEPLOYMENT_TARGET "9.0")
+set(IOS_DEPLOYMENT_TARGET "8.0")
 set(TARGET_OS iOS)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
 set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym")
-
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 target_compile_definitions(
     ${PROJECT_NAME}
@@ -17,24 +14,19 @@ set(BITCODE_GENERATION_VALUE marker)
 
 set(PUBLIC_HEADERS
     ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_export.hpp
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    MACOSX_RPATH ON
-    FRAMEWORK TRUE
+    FRAMEWORK ON
     MACOSX_FRAMEWORK_IDENTIFIER com.bixin.LiteObsSDK
-    PUBLIC_HEADER "${PUBLIC_HEADERS}"
     MACOSX_FRAMEWORK_BUNDLE_VERSION 1
     MACOSX_FRAMEWORK_SHORT_VERSION_STRING 1.0
-    INSTALL_NAME_DIR @rpath
-    XCODE_ATTRIBUTE_LD_DYLIB_INSTALL_NAME "@rpath/LiteObsSDK.framework/ListObsSDK"
     XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
-    #simulator disable arm64 architecture
-    XCODE_ATTRIBUTE_EXCLUDED_ARCHS[sdk=iphonesimulator*] arm64
-    XCODE_ATTRIBUTE_APPLECLANG_GENERATE_DEBUGGING_SYMBOLS YES
     XCODE_ATTRIBUTE_ENABLE_BITCODE ${BITCODE_VALUE}
-    XCODE_ATTRIBUTE_DEFINES_MODULE "YES"
     XCODE_ATTRIBUTE_BITCODE_GENERATION_MODE ${BITCODE_GENERATION_VALUE}
     CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET ${IOS_DEPLOYMENT_TARGET}
+    PUBLIC_HEADER "${PUBLIC_HEADERS}"
 )
 
 target_link_libraries(
@@ -42,6 +34,15 @@ target_link_libraries(
     PRIVATE
     "-framework GLKit"
     "-framework OpenGLES"
+    "-framework AudioToolBox"
+    "-framework VideoToolBox"
+    "-framework CoreMedia"
+    "-framework CoreVideo"
+    "-framework Security"
+    bz2
+    iconv
+    libz.tbd
+    xml2
 )
 
 

@@ -12,7 +12,18 @@ target_compile_definitions(
 
 target_link_libraries(
     ${PROJECT_NAME}
-    PRIVATE OpenGL::GL "-framework AppKit"
+    PRIVATE
+    OpenGL::GL
+    "-framework AppKit"
+    "-framework AudioToolBox"
+    "-framework VideoToolBox"
+    "-framework CoreMedia"
+    "-framework CoreVideo"
+    "-framework Security"
+    bz2
+    iconv
+    libz.tbd
+    xml2
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -fobjc-arc)
