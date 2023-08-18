@@ -75,7 +75,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 ##################################################    Options     ##################################################
-option(BUILD_EXAMPLES "Build examples." OFF)
+option(BUILD_EXAMPLES "Build examples." ON)
 
 ##################################################    Sources     ##################################################
 unset(PROJECT_SOURCES CACHE)

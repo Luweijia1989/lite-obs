@@ -12,16 +12,50 @@ elseif(ANDROID)
     set(FFMPEG_LIB_SUFFIX ${CMAKE_ANDROID_ARCH_ABI})
 endif()
 
-find_library(
-    FFmpeg_LIBS
-    NAMES ffmpeg
-    PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-    NO_DEFAULT_PATH)
-
 if(MSVC)
+    find_library(
+        FFmpeg_LIBS
+        NAMES ffmpeg
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
     find_file(FFmpeg_BIN_FILE NAMES ffmpeg-6.dll ffmpeg.dll
         PATHS ${FFMPEG_PATH}/bin/${FFMPEG_LIB_SUFFIX}
         NO_DEFAULT_PATH)
+else()
+    find_library(
+        AVCODEC
+        NAMES libavcodec.a
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
+    find_library(
+        AVFORMAT
+        NAMES libavformat.a
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
+    find_library(
+        AVUTIL
+        NAMES libavutil.a
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
+    find_library(
+        SWRESAMPLE
+        NAMES libswresample.a
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
+    find_library(
+        SWSCALE
+        NAMES libswscale.a
+        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+        NO_DEFAULT_PATH)
+
+    if (AVCODEC AND AVFORMAT AND AVUTIL AND SWRESAMPLE AND SWSCALE)
+        set(FFmpeg_LIBS ${AVCODEC} ${AVFORMAT} ${SWRESAMPLE} ${AVUTIL} ${SWSCALE})
+    endif()
 endif()
 
 if (NOT FFmpeg_INCLUDE_DIRS OR NOT FFmpeg_LIBS)

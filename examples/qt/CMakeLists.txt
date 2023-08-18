@@ -63,10 +63,6 @@ set_target_properties(liteobs-qt-example PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-set_target_properties(liteobs-qt-example PROPERTIES
-    QT_ANDROID_EXTRA_LIBS ${FFmpeg_LIBS}
-)
-
 install(TARGETS liteobs-qt-example
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

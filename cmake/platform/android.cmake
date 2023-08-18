@@ -26,4 +26,6 @@ target_link_libraries(
     PRIVATE
     EGL
     GLESv3
+    android
+    z
 )
