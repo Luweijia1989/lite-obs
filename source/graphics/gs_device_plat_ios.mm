@@ -11,7 +11,7 @@ struct gl_platform
     bool release_on_destroy = true;
     ~gl_platform() {
         if (release_on_destroy) {
-
+          [ctx release];
         }
     }
 };

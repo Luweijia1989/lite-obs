@@ -11,7 +11,7 @@ struct gl_platform
     bool release_on_destroy = true;
     ~gl_platform() {
         if (release_on_destroy) {
-//TODO destroy
+          [ctx release];
         }
     }
 };
@@ -50,6 +50,7 @@ void *gs_device::gl_platform_create(void *)
 
         NSOpenGLPixelFormat *pf = [[NSOpenGLPixelFormat alloc] initWithAttributes:pixelFormatAttributes];
         ctx = [[NSOpenGLContext alloc] initWithFormat:pf shareContext:nil];
+        [pf release];
     }
     [ctx makeCurrentContext];
     [ctx clearDrawable];

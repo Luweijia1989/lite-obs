@@ -1,7 +1,6 @@
 set(IOS_DEPLOYMENT_TARGET "8.0")
 set(TARGET_OS iOS)
 
-set_target_properties(${PROJECT_NAME} PROPERTIES XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
 set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym")
 
 target_compile_definitions(
