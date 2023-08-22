@@ -23,6 +23,13 @@ int main(int argc, char *argv[])
 #endif
 
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
+
+    QSurfaceFormat format;
+    format.setMajorVersion(3);
+    format.setMinorVersion(3);
+    format.setProfile(QSurfaceFormat::CoreProfile);
+    QSurfaceFormat::setDefaultFormat(format);
+
     QGuiApplication app(argc, argv);
 
     LiteObsExample example;
@@ -30,14 +37,6 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty("example", &example);
     QQuickView view(&engine, nullptr);
-    view.setResizeMode(QQuickView::SizeRootObjectToView);
-#ifdef Q_OS_MACOS
-    QSurfaceFormat format;
-    format.setMajorVersion(3);
-    format.setMinorVersion(3);
-    format.setProfile(QSurfaceFormat::CoreProfile);
-    view.setFormat(format);
-#endif
     QObject::connect(&view, &QQuickView::sceneGraphInitialized, [&example](){
         //reset here for share texture
         example.resetLiteObs(1280, 720, 20);
@@ -45,6 +44,7 @@ int main(int argc, char *argv[])
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     view.setSource(url);
+    view.setResizeMode(QQuickView::SizeRootObjectToView);
     view.resize(1280, 720);
     view.show();
 

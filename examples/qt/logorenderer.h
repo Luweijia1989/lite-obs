@@ -8,6 +8,8 @@
 #include <QtGui/qmatrix4x4.h>
 #include <qopenglshaderprogram.h>
 #include <qopenglfunctions.h>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
 
 #include <QTime>
 #include <QList>
@@ -37,5 +39,9 @@ private:
     int vertexAttr1;
     int normalAttr1;
     int matrixUniform1;
+
+    QOpenGLVertexArrayObject m_vao;
+    QOpenGLBuffer m_vertexBuffer;
+    QOpenGLBuffer m_normalBuffer;
 };
 #endif

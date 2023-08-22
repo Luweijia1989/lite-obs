@@ -17,27 +17,27 @@ LogoRenderer::~LogoRenderer()
 
 void LogoRenderer::paintQtLogo()
 {
-    program1.enableAttributeArray(normalAttr1);
-    program1.enableAttributeArray(vertexAttr1);
-    program1.setAttributeArray(vertexAttr1, vertices.constData());
-    program1.setAttributeArray(normalAttr1, normals.constData());
+    m_vao.bind();
     glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size());
-    program1.disableAttributeArray(normalAttr1);
-    program1.disableAttributeArray(vertexAttr1);
+    m_vao.release();
 }
 
 
 void LogoRenderer::initialize()
 {
+    m_fAngle = 0;
+    m_fScale = 1;
+    createGeometry();
+
     initializeOpenGLFunctions();
 
     glClearColor(0.1f, 0.1f, 0.2f, 1.0f);
 
     const char *vsrc1 =
-        "attribute highp vec4 vertex;\n"
-        "attribute mediump vec3 normal;\n"
-        "uniform mediump mat4 matrix;\n"
-        "varying mediump vec4 color;\n"
+        "in vec3 vertex;\n"
+        "in vec3 normal;\n"
+        "uniform mat4 matrix;\n"
+        "out vec4 color;\n"
         "void main(void)\n"
         "{\n"
         "    vec3 toLight = normalize(vec3(0.0, 0.3, 1.0));\n"
@@ -45,30 +45,55 @@ void LogoRenderer::initialize()
         "    vec3 col = vec3(0.40, 1.0, 0.0);\n"
         "    color = vec4(col * 0.2 + col * 0.8 * angle, 1.0);\n"
         "    color = clamp(color, 0.0, 1.0);\n"
-        "    gl_Position = matrix * vertex;\n"
+        "    gl_Position = matrix * vec4(vertex, 1.0);\n"
         "}\n";
 
     const char *fsrc1 =
-        "varying mediump vec4 color;\n"
+        "in vec4 color;\n"
+        "out vec4 out_color;\n"
         "void main(void)\n"
         "{\n"
-        "    gl_FragColor = color;\n"
+        "    out_color = color;\n"
         "}\n";
 
-    program1.addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vsrc1);
-    program1.addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, fsrc1);
+    bool ises = QOpenGLContext::currentContext()->isOpenGLES();
+    QString vs = QString("%1%2").arg(ises ? "#version 300 es\n" : "#version 150\n").arg(vsrc1);
+    QString fs = QString("%1%2").arg(ises ? "#version 300 es\n" : "#version 150\n").arg(fsrc1);
+
+    program1.addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vs);
+    program1.addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, fs);
     program1.link();
+    program1.bind();
 
     vertexAttr1 = program1.attributeLocation("vertex");
     normalAttr1 = program1.attributeLocation("normal");
     matrixUniform1 = program1.uniformLocation("matrix");
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+    m_vao.create();
+    m_vertexBuffer = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+    m_normalBuffer = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
+    m_vertexBuffer.create();
+    m_normalBuffer.create();
 
-    m_fAngle = 0;
-    m_fScale = 1;
-    createGeometry();
+    m_vao.bind();
+
+    m_vertexBuffer.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_vertexBuffer.bind();
+    m_vertexBuffer.allocate(vertices.constData(), (int)vertices.size() * sizeof(QVector3D));
+
+    program1.setAttributeBuffer(vertexAttr1, GL_FLOAT, 0, 3, sizeof(QVector3D));
+    program1.enableAttributeArray(vertexAttr1);
+
+    m_normalBuffer.setUsagePattern(QOpenGLBuffer::StaticDraw);
+    m_normalBuffer.bind();
+    m_normalBuffer.allocate(normals.constData(), (int)normals.size() * sizeof(QVector3D));
+
+    program1.setAttributeBuffer(normalAttr1, GL_FLOAT, 0, 3, sizeof(QVector3D));
+    program1.enableAttributeArray(normalAttr1);
+
+    m_vao.release();
+
+    program1.release();
 }
 
 void LogoRenderer::render()
