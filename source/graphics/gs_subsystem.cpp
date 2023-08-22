@@ -260,6 +260,14 @@ graphics_subsystem::~graphics_subsystem()
     blog(LOG_DEBUG, "graphics_subsystem destroyed.");
 }
 
+bool graphics_subsystem::gs_texture_share_enabled()
+{
+    if (!d_ptr->device)
+        return false;
+
+    return d_ptr->device->gs_device_texture_share_enabled();
+}
+
 std::unique_ptr<graphics_subsystem> graphics_subsystem::gs_create_graphics_system(void *plat)
 {
     gl_context_helper helper;

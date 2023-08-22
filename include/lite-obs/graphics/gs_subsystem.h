@@ -21,6 +21,8 @@ public:
     graphics_subsystem();
     ~graphics_subsystem();
 
+    bool gs_texture_share_enabled();
+
     static std::unique_ptr<graphics_subsystem> gs_create_graphics_system(void *plat);
 public:
     std::unique_ptr<graphics_subsystem_private> d_ptr{};

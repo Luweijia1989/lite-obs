@@ -36,6 +36,8 @@ void *gs_device::gl_platform_create(void *)
         glGetIntegerv(GL_MINOR_VERSION, &minor);
         if (major >= 3 && minor >= 0) {
             ctx = [[NSOpenGLContext alloc] initWithFormat:[current_ctx pixelFormat] shareContext:current_ctx];
+            if (ctx)
+              set_texture_share_enabled(true);
         }
     }
 

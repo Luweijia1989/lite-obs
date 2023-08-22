@@ -1052,6 +1052,16 @@ void lite_source::lite_source_output_video(const uint8_t *video_data[MAX_AV_PLAN
 
 void lite_source::lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height)
 {
+    auto core_video = d_ptr->core_video.lock();
+    if (!core_video) {
+        blog(LOG_ERROR, "no core video!!!");
+        return;
+    }
+
+    if (!core_video->graphics() || !core_video->graphics()->gs_texture_share_enabled()) {
+        blog(LOG_INFO, "texture share not support due to unsupport opengl context");
+        return;
+    }
     std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
 
     if (d_ptr->type & source_type::Source_Async) {

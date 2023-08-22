@@ -32,6 +32,8 @@ void *gs_device::gl_platform_create(void *)
     EAGLContext *current_ctx = [EAGLContext currentContext];
     if (current_ctx) {
         ctx = [[EAGLContext alloc] initWithAPI:[current_ctx API] sharegroup: [current_ctx sharegroup]];
+        if (ctx)
+          set_texture_share_enabled(true);
     }
 
     if (!ctx) {

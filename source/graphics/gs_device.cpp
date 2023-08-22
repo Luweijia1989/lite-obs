@@ -15,6 +15,7 @@
 struct gs_device_private
 {
     void *plat{};
+    bool texture_share_enabled{};
 
     GLuint empty_vao{};
 
@@ -31,7 +32,7 @@ struct gs_device_private
     std::weak_ptr<gs_program> cur_program{};
 
     gs_cull_mode cur_cull_mode{};
-    struct gs_rect cur_viewport{};
+    gs_rect cur_viewport{};
 
     glm::mat4x4 cur_proj{0};
     glm::mat4x4 cur_view{0};
@@ -94,6 +95,16 @@ void gs_device::device_destroy()
         gl_delete_vertex_arrays(1, &d_ptr->empty_vao);
         d_ptr->empty_vao = 0;
     }
+}
+
+void gs_device::set_texture_share_enabled(bool enabled)
+{
+    d_ptr->texture_share_enabled = enabled;
+}
+
+bool gs_device::gs_device_texture_share_enabled()
+{
+    return d_ptr->texture_share_enabled;
 }
 
 void gs_device::device_enter_context()

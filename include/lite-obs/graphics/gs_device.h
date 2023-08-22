@@ -64,9 +64,13 @@ public:
     void gs_device_clear_textures();
     void gs_device_load_default_pixelshader_samplers();
 
+    bool gs_device_texture_share_enabled();
+
 private:
     void *gl_platform_create(void *plat_info);
     void gl_platform_destroy(void *plat);
+
+    void set_texture_share_enabled(bool enabled);
 
     void device_enter_context_internal(void *param);
     void device_leave_context_internal(void *param);
