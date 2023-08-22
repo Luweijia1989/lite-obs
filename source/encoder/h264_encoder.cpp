@@ -79,7 +79,7 @@ bool lite_h264_video_encoder::i_create()
         d_ptr->codec = avcodec_find_encoder_by_name("nvenc_h264");
 #elif TARGET_PLATFORM == PLATFORM_ANDROID
     d_ptr->codec = avcodec_find_encoder_by_name("h264_mediacodec");
-#elif TARGET_PLATFORM == PLATFORM_MAC
+#elif TARGET_PLATFORM == PLATFORM_MAC || TARGET_PLATFORM == PLATFORM_IOS
     d_ptr->codec = avcodec_find_encoder_by_name("h264_videotoolbox");
 #endif
     d_ptr->first_packet = true;

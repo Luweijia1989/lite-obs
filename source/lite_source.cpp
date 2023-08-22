@@ -283,7 +283,6 @@ struct lite_source_private
     std::shared_ptr<gs_texture_render> async_texrender{};
     std::shared_ptr<lite_source::lite_obs_source_video_frame> cur_async_frame{};
     bool async_gpu_conversion{};
-    bool correct_pixel_render{}; // opengl es not support bgra, first convert to rgba, then do correct in render
     enum video_format async_format{};
     bool async_full_range{};
     enum video_format async_cache_format{};
@@ -1351,7 +1350,6 @@ bool lite_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_v
     d_ptr->async_texrender.reset();
 
     auto format = convert_video_format(frame->format);
-    d_ptr->correct_pixel_render = format == gs_color_format::GS_BGRA || format == gs_color_format::GS_BGRX;
     const bool async_gpu_conversion = (cur != CONVERT_NONE) && init_gpu_conversion(frame);
     d_ptr->async_gpu_conversion = async_gpu_conversion;
     if (async_gpu_conversion) {
@@ -1462,6 +1460,11 @@ bool lite_source::update_async_texrender(const std::shared_ptr<lite_obs_source_v
         if (!frame->full_range) {
             program->gs_effect_set_param("color_range_min", frame->color_range_min, sizeof(float) * 3);
             program->gs_effect_set_param("color_range_max", frame->color_range_max, sizeof(float) * 3);
+        } else {
+            float range_min[3] = {0.0, 0.0, 0.0};
+            float range_max[3] = {1.0, 1.0, 1.0};
+            program->gs_effect_set_param("color_range_min", range_min, sizeof(float) * 3);
+            program->gs_effect_set_param("color_range_max", range_max, sizeof(float) * 3);
         }
 
         gs_set_cur_effect(program);

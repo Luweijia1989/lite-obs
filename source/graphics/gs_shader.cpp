@@ -67,7 +67,10 @@ bool gs_shader::gs_shader_init(const gs_shader_info &info)
 #ifdef PLATFORM_PC
     std::string shader_str = "#version 150\n" + info.shader;
 #else
-    std::string shader_str = "#version 300 es\n" + info.shader;
+    std::string shader_str = "#version 300 es\n"
+                             "#ifdef GL_ES\n"
+                             "precision mediump float;\n"
+                             "#endif\n" + info.shader;
 #endif
     auto str = shader_str.data();
     glShaderSource(d_ptr->obj, 1, (const GLchar **)&str,

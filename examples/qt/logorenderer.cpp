@@ -57,8 +57,17 @@ void LogoRenderer::initialize()
         "}\n";
 
     bool ises = QOpenGLContext::currentContext()->isOpenGLES();
-    QString vs = QString("%1%2").arg(ises ? "#version 300 es\n" : "#version 150\n").arg(vsrc1);
-    QString fs = QString("%1%2").arg(ises ? "#version 300 es\n" : "#version 150\n").arg(fsrc1);
+    QString shader_prefix;
+    if (ises) {
+        shader_prefix = R"(#version 300 es
+                           #ifdef GL_ES
+                           precision mediump float;
+                           #endif)";
+    } else {
+        shader_prefix = "#version 150";
+    }
+    QString vs = QString("%1\n%2").arg(shader_prefix).arg(vsrc1);
+    QString fs = QString("%1\n%2").arg(shader_prefix).arg(fsrc1);
 
     program1.addCacheableShaderFromSourceCode(QOpenGLShader::Vertex, vs);
     program1.addCacheableShaderFromSourceCode(QOpenGLShader::Fragment, fs);
