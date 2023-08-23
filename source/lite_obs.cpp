@@ -3,7 +3,7 @@
 #include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
-#include "lite-obs/lite_source.h"
+#include "lite-obs/lite_obs_source.h"
 #include "lite-obs/output/null_output.h"
 #include "lite-obs/output/file_output.h"
 #include "lite-obs/output/srt_stream_output.h"
@@ -18,7 +18,7 @@
 
 struct lite_obs_media_source_private
 {
-    std::shared_ptr<lite_source> internal_source{};
+    std::shared_ptr<lite_obs_source> internal_source{};
     uintptr_t core_ptr{};
 };
 
@@ -34,7 +34,7 @@ lite_obs_media_source::~lite_obs_media_source()
 
 void lite_obs_media_source::output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate)
 {
-    lite_source::lite_obs_source_audio_frame af{};
+    lite_obs_source::lite_obs_source_audio_frame af{};
 
     for (int i=0; i<MAX_AV_PLANES; i++)
         af.data[i] = audio_data[i];
@@ -80,8 +80,8 @@ void lite_obs_media_source::set_render_box(int x, int y, int width, int height, 
 
 void lite_obs_media_source::set_order(order_movement movement)
 {
-    std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
-    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    std::lock_guard<std::recursive_mutex> lock(lite_obs_source::sources_mutex);
+    auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
     auto iter = std::find(sources.begin(), sources.end(), d_ptr->internal_source);
     if (iter == sources.end())
         return;
@@ -155,8 +155,8 @@ lite_obs::lite_obs()
 lite_obs::~lite_obs()
 {
     {
-        std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
-        auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
+        std::lock_guard<std::recursive_mutex> lock(lite_obs_source::sources_mutex);
+        auto &sources = lite_obs_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
         sources.clear();
     }
 
@@ -174,8 +174,8 @@ lite_obs::~lite_obs()
     d_ptr->audio->lite_obs_stop_audio();
 
     {
-        std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
-        lite_source::sources.erase(reinterpret_cast<uintptr_t>(d_ptr));
+        std::lock_guard<std::recursive_mutex> lock(lite_obs_source::sources_mutex);
+        lite_obs_source::sources.erase(reinterpret_cast<uintptr_t>(d_ptr));
     }
 
     delete d_ptr;
@@ -250,15 +250,15 @@ void lite_obs::lite_obs_stop_output()
 
 lite_obs_media_source *lite_obs::lite_obs_create_source(source_type type)
 {
-    auto source = std::make_shared<lite_source>(type, d_ptr->video, d_ptr->audio);
+    auto source = std::make_shared<lite_obs_source>(type, d_ptr->video, d_ptr->audio);
     auto source_wrapper = new lite_obs_media_source;
     source_wrapper->d_ptr->internal_source = source;
     source_wrapper->d_ptr->core_ptr = reinterpret_cast<uintptr_t>(d_ptr);
     d_ptr->sources.emplace(source_wrapper);
 
     {
-        std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
-        auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
+        std::lock_guard<std::recursive_mutex> lock(lite_obs_source::sources_mutex);
+        auto &sources = lite_obs_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
         sources.push_back(source);
     }
 
@@ -268,8 +268,8 @@ lite_obs_media_source *lite_obs::lite_obs_create_source(source_type type)
 void lite_obs::lite_obs_destroy_source(lite_obs_media_source *source)
 {
     {
-        std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
-        auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
+        std::lock_guard<std::recursive_mutex> lock(lite_obs_source::sources_mutex);
+        auto &sources = lite_obs_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
         sources.erase(std::find(sources.begin(), sources.end(), source->d_ptr->internal_source));
     }
 

@@ -1,4 +1,4 @@
-#include "lite-obs/lite_output.h"
+#include "lite-obs/lite_obs_output.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/log.h"

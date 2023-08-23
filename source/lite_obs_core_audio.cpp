@@ -1,7 +1,7 @@
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/log.h"
-#include "lite-obs/lite_source.h"
+#include "lite-obs/lite_obs_source.h"
 #include "lite-obs/media-io/audio_output.h"
 
 struct lite_obs_core_audio_private
@@ -34,7 +34,7 @@ std::shared_ptr<audio_output> lite_obs_core_audio::core_audio()
 
 void lite_obs_core_audio::find_min_ts(uint64_t *min_ts)
 {
-    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &source = *iter;
         if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
@@ -50,7 +50,7 @@ bool lite_obs_core_audio::mark_invalid_sources(size_t sample_rate, uint64_t min_
 {
     bool recalculate = false;
 
-    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &source = *iter;
         if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
@@ -133,10 +133,10 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
 
     audio_size = AUDIO_OUTPUT_FRAMES * sizeof(float);
 
-    std::list<std::shared_ptr<lite_source>> audio_sources;
-    lite_source::sources_mutex.lock();
+    std::list<std::shared_ptr<lite_obs_source>> audio_sources;
+    lite_obs_source::sources_mutex.lock();
     {
-        auto &sources = lite_source::sources[d_ptr->core_ptr];
+        auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
             auto &source = *iter;
             if (source->lite_source_type() & source_type::SOURCE_AUDIO) {
@@ -144,7 +144,7 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
             }
         }
     }
-    lite_source::sources_mutex.unlock();
+    lite_obs_source::sources_mutex.unlock();
 
     /* ------------------------------------------------ */
     /* render audio data */
@@ -155,9 +155,9 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
 
     /* ------------------------------------------------ */
     /* get minimum audio timestamp */
-    lite_source::sources_mutex.lock();
+    lite_obs_source::sources_mutex.lock();
     calc_min_ts(sample_rate, &min_ts);
-    lite_source::sources_mutex.unlock();
+    lite_obs_source::sources_mutex.unlock();
 
     /* ------------------------------------------------ */
     /* if a source has gone backward in time, buffer */
@@ -180,9 +180,9 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
 
     /* ------------------------------------------------ */
     /* discard audio */
-    lite_source::sources_mutex.lock();
+    lite_obs_source::sources_mutex.lock();
     {
-        auto &sources = lite_source::sources[d_ptr->core_ptr];
+        auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
             auto &source = *iter;
             if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
@@ -191,7 +191,7 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
             source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
         }
     }
-    lite_source::sources_mutex.unlock();
+    lite_obs_source::sources_mutex.unlock();
 
     /* ------------------------------------------------ */
     /* release audio sources */

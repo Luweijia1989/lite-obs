@@ -2,7 +2,7 @@
 
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
-#include "lite-obs/lite_output.h"
+#include "lite-obs/lite_obs_output.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/util/circlebuf.h"

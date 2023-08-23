@@ -1,6 +1,6 @@
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_defines.h"
-#include "lite-obs/lite_source.h"
+#include "lite-obs/lite_obs_source.h"
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/graphics/gs_texture.h"
 #include "lite-obs/graphics/gs_stagesurf.h"
@@ -156,15 +156,15 @@ void lite_obs_core_video::video_sleep(bool raw_active, const bool gpu_active, ui
 
 void lite_obs_core_video::render_all_sources()
 {
-    std::list<std::shared_ptr<lite_source>> sources;
-    lite_source::sources_mutex.lock();
-    auto &s = lite_source::sources[d_ptr->core_ptr];
+    std::list<std::shared_ptr<lite_obs_source>> sources;
+    lite_obs_source::sources_mutex.lock();
+    auto &s = lite_obs_source::sources[d_ptr->core_ptr];
     for (auto iter = s.begin(); iter != s.end(); iter++) {
         auto &source = *iter;
         if (source->lite_source_type() & source_type::SOURCE_VIDEO)
             sources.push_back(source);
     }
-    lite_source::sources_mutex.unlock();
+    lite_obs_source::sources_mutex.unlock();
 
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &source = *iter;

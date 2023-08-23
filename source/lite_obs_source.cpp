@@ -1,4 +1,4 @@
-#include "lite-obs/lite_source.h"
+#include "lite-obs/lite_obs_source.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/util/threading.h"
@@ -228,7 +228,7 @@ struct audio_cb_info {
 };
 
 struct async_frame {
-    std::shared_ptr<lite_source::lite_obs_source_video_frame> frame{};
+    std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> frame{};
     long unused_count{};
     bool used{};
 };
@@ -238,7 +238,7 @@ struct lite_source_private
     std::weak_ptr<lite_obs_core_video> core_video{};
     std::weak_ptr<lite_obs_core_audio> core_audio{};
 
-    std::unique_ptr<lite_source::lite_obs_source_video_frame> video_frame{};
+    std::unique_ptr<lite_obs_source::lite_obs_source_video_frame> video_frame{};
     video_colorspace cur_space{};
     video_range_type cur_range{};
     source_type type{};
@@ -270,7 +270,7 @@ struct lite_source_private
     std::mutex audio_buf_mutex;
     std::mutex audio_cb_mutex;
     std::list<audio_cb_info> audio_cb_list{};
-    lite_source::lite_obs_source_audio_frame audio_data{};
+    lite_obs_source::lite_obs_source_audio_frame audio_data{};
     size_t audio_storage_size{};
     uint32_t audio_mixers{};
     float user_volume{};
@@ -281,7 +281,7 @@ struct lite_source_private
     /* async video data */
     std::vector<std::shared_ptr<gs_texture>> async_textures{};
     std::shared_ptr<gs_texture_render> async_texrender{};
-    std::shared_ptr<lite_source::lite_obs_source_video_frame> cur_async_frame{};
+    std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> cur_async_frame{};
     bool async_gpu_conversion{};
     enum video_format async_format{};
     bool async_full_range{};
@@ -294,7 +294,7 @@ struct lite_source_private
     bool async_active{};
     bool async_update_texture{};
     std::list<std::shared_ptr<async_frame>> async_cache{};
-    std::list<std::shared_ptr<lite_source::lite_obs_source_video_frame>> async_frames{};
+    std::list<std::shared_ptr<lite_obs_source::lite_obs_source_video_frame>> async_frames{};
     std::mutex async_mutex{};
     uint32_t async_width{};
     uint32_t async_height{};
@@ -328,7 +328,7 @@ struct lite_source_private
     render_box_info source_render_box;
 
     lite_source_private(source_type t) {
-        video_frame = std::make_unique<lite_source::lite_obs_source_video_frame>();
+        video_frame = std::make_unique<lite_obs_source::lite_obs_source_video_frame>();
         type = t;
         user_volume = 1.0f;
         volume = 1.0f;
@@ -378,37 +378,37 @@ struct lite_source_private
         cur_async_frame.reset();
     }
 };
-std::recursive_mutex lite_source::sources_mutex{};
-std::map<uintptr_t, std::list<std::shared_ptr<lite_source>>> lite_source::sources{};
+std::recursive_mutex lite_obs_source::sources_mutex{};
+std::map<uintptr_t, std::list<std::shared_ptr<lite_obs_source>>> lite_obs_source::sources{};
 
-lite_source::lite_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a)
+lite_obs_source::lite_obs_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a)
 {
     d_ptr = std::make_unique<lite_source_private>(type);
     d_ptr->core_video = c_v;
     d_ptr->core_audio = c_a;
 }
 
-lite_source::~lite_source()
+lite_obs_source::~lite_obs_source()
 {
     blog(LOG_DEBUG, "source destroyed");
 }
 
-source_type lite_source::lite_source_type()
+source_type lite_obs_source::lite_source_type()
 {
     return d_ptr->type;
 }
 
-bool lite_source::audio_pending()
+bool lite_obs_source::audio_pending()
 {
     return d_ptr->audio_pending;
 }
 
-uint64_t lite_source::audio_ts()
+uint64_t lite_obs_source::audio_ts()
 {
     return d_ptr->audio_ts;
 }
 
-void lite_source::reset_resampler(const lite_obs_source_audio_frame &audio)
+void lite_obs_source::reset_resampler(const lite_obs_source_audio_frame &audio)
 {
     auto core_audio = d_ptr->core_audio.lock();
     if (!core_audio)
@@ -443,7 +443,7 @@ void lite_source::reset_resampler(const lite_obs_source_audio_frame &audio)
         blog(LOG_ERROR, "creation of resampler failed");
 }
 
-bool lite_source::copy_audio_data(const uint8_t *const data[], uint32_t frames, uint64_t ts)
+bool lite_obs_source::copy_audio_data(const uint8_t *const data[], uint32_t frames, uint64_t ts)
 {
     auto core_audio = d_ptr->core_audio.lock();
     if (!core_audio)
@@ -473,7 +473,7 @@ bool lite_source::copy_audio_data(const uint8_t *const data[], uint32_t frames, 
     return true;
 }
 
-bool lite_source::process_audio(const lite_obs_source_audio_frame &audio)
+bool lite_obs_source::process_audio(const lite_obs_source_audio_frame &audio)
 {
     if (d_ptr->sample_info.samples_per_sec != audio.samples_per_sec ||
         d_ptr->sample_info.format != audio.format ||
@@ -506,7 +506,7 @@ bool lite_source::process_audio(const lite_obs_source_audio_frame &audio)
  * possible */
 #define TS_SMOOTHING_THRESHOLD 70000000ULL
 
-void lite_source::reset_audio_data(uint64_t os_time)
+void lite_obs_source::reset_audio_data(uint64_t os_time)
 {
     for (size_t i = 0; i < MAX_AUDIO_CHANNELS; i++) {
         if (d_ptr->audio_input_buf[i].size)
@@ -518,13 +518,13 @@ void lite_source::reset_audio_data(uint64_t os_time)
     d_ptr->next_audio_sys_ts_min = os_time;
 }
 
-void lite_source::reset_audio_timing(uint64_t timestamp, uint64_t os_time)
+void lite_obs_source::reset_audio_timing(uint64_t timestamp, uint64_t os_time)
 {
     d_ptr->timing_set = true;
     d_ptr->timing_adjust = os_time - timestamp;
 }
 
-void lite_source::handle_ts_jump(uint64_t expected, uint64_t ts, uint64_t diff, uint64_t os_time)
+void lite_obs_source::handle_ts_jump(uint64_t expected, uint64_t ts, uint64_t diff, uint64_t os_time)
 {
     blog(LOG_DEBUG,
          "Timestamp for source jumped by '%" PRIu64 "', "
@@ -535,7 +535,7 @@ void lite_source::handle_ts_jump(uint64_t expected, uint64_t ts, uint64_t diff, 
     d_ptr->audio_buf_mutex.unlock();
 }
 
-void lite_source::output_audio_data_internal(const audio_data *data)
+void lite_obs_source::output_audio_data_internal(const audio_data *data)
 {
     auto core_audio = d_ptr->core_audio.lock();
     if (!core_audio)
@@ -621,7 +621,7 @@ void lite_source::output_audio_data_internal(const audio_data *data)
     d_ptr->audio_buf_mutex.unlock();
 }
 
-void lite_source::output_audio_push_back(const struct audio_data *in, size_t channels)
+void lite_obs_source::output_audio_push_back(const struct audio_data *in, size_t channels)
 {
     size_t size = in->frames * sizeof(float);
 
@@ -638,7 +638,7 @@ void lite_source::output_audio_push_back(const struct audio_data *in, size_t cha
     d_ptr->last_audio_input_buf_size = 0;
 }
 
-void lite_source::output_audio_place(const struct audio_data *in, size_t channels, size_t sample_rate)
+void lite_obs_source::output_audio_place(const struct audio_data *in, size_t channels, size_t sample_rate)
 {
     size_t size = in->frames * sizeof(float);
 
@@ -659,7 +659,7 @@ void lite_source::output_audio_place(const struct audio_data *in, size_t channel
     d_ptr->last_audio_input_buf_size = 0;
 }
 
-void lite_source::lite_source_output_audio(const lite_obs_source_audio_frame &audio)
+void lite_obs_source::lite_source_output_audio(const lite_obs_source_audio_frame &audio)
 {
     if (!process_audio(audio))
         return;
@@ -675,7 +675,7 @@ void lite_source::lite_source_output_audio(const lite_obs_source_audio_frame &au
     output_audio_data_internal(&data);
 }
 
-float lite_source::get_source_volume()
+float lite_obs_source::get_source_volume()
 {
     bool muted = d_ptr->muted;
 
@@ -687,7 +687,7 @@ float lite_source::get_source_volume()
     return d_ptr->volume;
 }
 
-void lite_source::multiply_output_audio(size_t mix, size_t channels, float vol)
+void lite_obs_source::multiply_output_audio(size_t mix, size_t channels, float vol)
 {
     float *out = d_ptr->audio_output_buf[mix][0];
     float *end = out + AUDIO_OUTPUT_FRAMES * channels;
@@ -696,7 +696,7 @@ void lite_source::multiply_output_audio(size_t mix, size_t channels, float vol)
         *(out++) *= vol;
 }
 
-void lite_source::apply_audio_volume(uint32_t mixers, size_t channels, size_t sample_rate)
+void lite_obs_source::apply_audio_volume(uint32_t mixers, size_t channels, size_t sample_rate)
 {
     auto vol = get_source_volume();
     if (vol == 1.0f)
@@ -714,7 +714,7 @@ void lite_source::apply_audio_volume(uint32_t mixers, size_t channels, size_t sa
     }
 }
 
-void lite_source::audio_source_tick(uint32_t mixers, size_t channels, size_t sample_rate, size_t size)
+void lite_obs_source::audio_source_tick(uint32_t mixers, size_t channels, size_t sample_rate, size_t size)
 {
     d_ptr->audio_buf_mutex.lock();
 
@@ -748,7 +748,7 @@ void lite_source::audio_source_tick(uint32_t mixers, size_t channels, size_t sam
     d_ptr->audio_pending = false;
 }
 
-void lite_source::audio_render(uint32_t mixers, size_t channels, size_t sample_rate, size_t size)
+void lite_obs_source::audio_render(uint32_t mixers, size_t channels, size_t sample_rate, size_t size)
 {
     if (!d_ptr->audio_output_buf[0][0]) {
         d_ptr->audio_pending = true;
@@ -763,7 +763,7 @@ void lite_source::audio_render(uint32_t mixers, size_t channels, size_t sample_r
     audio_source_tick(mixers, channels, sample_rate, size);
 }
 
-bool lite_source::audio_buffer_insuffient(size_t sample_rate, uint64_t min_ts)
+bool lite_obs_source::audio_buffer_insuffient(size_t sample_rate, uint64_t min_ts)
 {
     size_t total_floats = AUDIO_OUTPUT_FRAMES;
 
@@ -789,7 +789,7 @@ bool lite_source::audio_buffer_insuffient(size_t sample_rate, uint64_t min_ts)
     return false;
 }
 
-void lite_source::mix_audio(struct audio_output_data *mixes, size_t channels, size_t sample_rate, struct ts_info *ts)
+void lite_obs_source::mix_audio(struct audio_output_data *mixes, size_t channels, size_t sample_rate, struct ts_info *ts)
 {
     d_ptr->audio_buf_mutex.lock();
     if (d_ptr->audio_output_buf[0][0] && d_ptr->audio_ts) {
@@ -824,7 +824,7 @@ void lite_source::mix_audio(struct audio_output_data *mixes, size_t channels, si
     d_ptr->audio_buf_mutex.unlock();
 }
 
-bool lite_source::discard_if_stopped(size_t channels)
+bool lite_obs_source::discard_if_stopped(size_t channels)
 {
     size_t last_size;
     size_t size;
@@ -856,7 +856,7 @@ bool lite_source::discard_if_stopped(size_t channels)
     }
 }
 
-void lite_source::ignore_audio(size_t channels, size_t sample_rate)
+void lite_obs_source::ignore_audio(size_t channels, size_t sample_rate)
 {
     size_t num_floats = d_ptr->audio_input_buf[0].size / sizeof(float);
 
@@ -869,7 +869,7 @@ void lite_source::ignore_audio(size_t channels, size_t sample_rate)
     }
 }
 
-void lite_source::discard_audio(int total_buffering_ticks, size_t channels, size_t sample_rate, struct ts_info *ts)
+void lite_obs_source::discard_audio(int total_buffering_ticks, size_t channels, size_t sample_rate, struct ts_info *ts)
 {
     std::lock_guard<std::mutex> lock(d_ptr->audio_buf_mutex);
 
@@ -918,7 +918,7 @@ void lite_source::discard_audio(int total_buffering_ticks, size_t channels, size
 //video
 
 #define MAX_UNUSED_FRAME_DURATION 5
-void lite_source::clean_cache()
+void lite_obs_source::clean_cache()
 {
     auto iter = d_ptr->async_cache.begin();
     while (iter != d_ptr->async_cache.end()) {
@@ -933,14 +933,14 @@ void lite_source::clean_cache()
     }
 }
 
-void lite_source::free_async_cache()
+void lite_obs_source::free_async_cache()
 {
     d_ptr->async_cache.clear();
     d_ptr->async_frames.clear();
     d_ptr->cur_async_frame.reset();
 }
 
-bool lite_source::async_texture_changed(const lite_obs_source_video_frame *frame)
+bool lite_obs_source::async_texture_changed(const lite_obs_source_video_frame *frame)
 {
     enum convert_type prev, cur;
     prev = get_convert_type(d_ptr->async_cache_format, d_ptr->async_cache_full_range);
@@ -951,7 +951,7 @@ bool lite_source::async_texture_changed(const lite_obs_source_video_frame *frame
 }
 
 #define MAX_ASYNC_FRAMES 30
-void lite_source::output_video_internal(const lite_obs_source_video_frame *frame)
+void lite_obs_source::output_video_internal(const lite_obs_source_video_frame *frame)
 {
     if (!frame) {
         d_ptr->async_active = false;
@@ -993,7 +993,7 @@ void lite_source::output_video_internal(const lite_obs_source_video_frame *frame
     if (!new_frame) {
         auto new_af = std::make_shared<async_frame>();
 
-        new_frame = std::make_shared<lite_source::lite_obs_source_video_frame>();
+        new_frame = std::make_shared<lite_obs_source::lite_obs_source_video_frame>();
         new_frame->lite_obs_source_video_frame_init(format, frame->width, frame->height);
         new_af->frame = new_frame;
         new_af->used = true;
@@ -1007,7 +1007,7 @@ void lite_source::output_video_internal(const lite_obs_source_video_frame *frame
     d_ptr->async_active = true;
 }
 
-void lite_source::lite_source_output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES], video_format format, video_range_type range, video_colorspace color_space, uint32_t width, uint32_t height)
+void lite_obs_source::lite_source_output_video(const uint8_t *video_data[MAX_AV_PLANES], const int line_size[MAX_AV_PLANES], video_format format, video_range_type range, video_colorspace color_space, uint32_t width, uint32_t height)
 {
     auto flip = line_size[0] < 0 && line_size[1] == 0;
     for (size_t i = 0; i < MAX_AV_PLANES; i++) {
@@ -1049,7 +1049,7 @@ void lite_source::lite_source_output_video(const uint8_t *video_data[MAX_AV_PLAN
     output_video_internal(d_ptr->video_frame.get());
 }
 
-void lite_source::lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height)
+void lite_obs_source::lite_source_output_video(int texture_id, uint32_t texture_width, uint32_t texture_height)
 {
     auto core_video = d_ptr->core_video.lock();
     if (!core_video) {
@@ -1071,7 +1071,7 @@ void lite_source::lite_source_output_video(int texture_id, uint32_t texture_widt
     d_ptr->sync_texture = gs_texture_create_with_external(texture_id, texture_width, texture_height);
 }
 
-void lite_source::lite_source_clear_video()
+void lite_obs_source::lite_source_clear_video()
 {
     if (d_ptr->type & source_type::SOURCE_ASYNC)
         output_video_internal(NULL);
@@ -1081,7 +1081,7 @@ void lite_source::lite_source_clear_video()
     }
 }
 
-void lite_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+void lite_obs_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     for (auto iter = d_ptr->async_cache.begin(); iter != d_ptr->async_cache.end(); iter++) {
         auto &f = *iter;
@@ -1092,7 +1092,7 @@ void lite_source::remove_async_frame(const std::shared_ptr<lite_obs_source_video
     }
 }
 
-bool lite_source::ready_async_frame(uint64_t sys_time)
+bool lite_obs_source::ready_async_frame(uint64_t sys_time)
 {
     auto next_frame = d_ptr->async_frames.front();
     while (d_ptr->async_frames.size() > 1) {
@@ -1105,7 +1105,7 @@ bool lite_source::ready_async_frame(uint64_t sys_time)
     return true;
 }
 
-std::shared_ptr<lite_source::lite_obs_source_video_frame> lite_source::get_closest_frame(uint64_t sys_time)
+std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> lite_obs_source::get_closest_frame(uint64_t sys_time)
 {
     if (d_ptr->async_frames.empty())
         return nullptr;
@@ -1123,7 +1123,7 @@ std::shared_ptr<lite_source::lite_obs_source_video_frame> lite_source::get_close
     return nullptr;
 }
 
-bool lite_source::set_packed422_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_packed422_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width / 2;
     d_ptr->async_convert_height[0] = frame->height;
@@ -1132,7 +1132,7 @@ bool lite_source::set_packed422_sizes(const std::shared_ptr<lite_obs_source_vide
     return true;
 }
 
-bool lite_source::set_packed444_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_packed444_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_height[0] = frame->height;
@@ -1141,7 +1141,7 @@ bool lite_source::set_packed444_alpha_sizes(const std::shared_ptr<lite_obs_sourc
     return true;
 }
 
-bool lite_source::set_planar444_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar444_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width;
@@ -1156,7 +1156,7 @@ bool lite_source::set_planar444_sizes(const std::shared_ptr<lite_obs_source_vide
     return true;
 }
 
-bool lite_source::set_planar444_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar444_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width;
@@ -1174,7 +1174,7 @@ bool lite_source::set_planar444_alpha_sizes(const std::shared_ptr<lite_obs_sourc
     return true;
 }
 
-bool lite_source::set_planar420_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar420_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width / 2;
@@ -1189,7 +1189,7 @@ bool lite_source::set_planar420_sizes(const std::shared_ptr<lite_obs_source_vide
     return true;
 }
 
-bool lite_source::set_planar420_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar420_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width / 2;
@@ -1207,7 +1207,7 @@ bool lite_source::set_planar420_alpha_sizes(const std::shared_ptr<lite_obs_sourc
     return true;
 }
 
-bool lite_source::set_planar422_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar422_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width / 2;
@@ -1222,7 +1222,7 @@ bool lite_source::set_planar422_sizes(const std::shared_ptr<lite_obs_source_vide
     return true;
 }
 
-bool lite_source::set_planar422_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_planar422_alpha_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width / 2;
@@ -1240,7 +1240,7 @@ bool lite_source::set_planar422_alpha_sizes(const std::shared_ptr<lite_obs_sourc
     return true;
 }
 
-bool lite_source::set_nv12_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_nv12_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_width[1] = frame->width / 2;
@@ -1252,7 +1252,7 @@ bool lite_source::set_nv12_sizes(const std::shared_ptr<lite_obs_source_video_fra
     return true;
 }
 
-bool lite_source::set_y800_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_y800_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_height[0] = frame->height;
@@ -1261,7 +1261,7 @@ bool lite_source::set_y800_sizes(const std::shared_ptr<lite_obs_source_video_fra
     return true;
 }
 
-bool lite_source::set_rgb_limited_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_rgb_limited_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width;
     d_ptr->async_convert_height[0] = frame->height;
@@ -1270,7 +1270,7 @@ bool lite_source::set_rgb_limited_sizes(const std::shared_ptr<lite_obs_source_vi
     return true;
 }
 
-bool lite_source::set_bgr3_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_bgr3_sizes(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     d_ptr->async_convert_width[0] = frame->width * 3;
     d_ptr->async_convert_height[0] = frame->height;
@@ -1279,7 +1279,7 @@ bool lite_source::set_bgr3_sizes(const std::shared_ptr<lite_obs_source_video_fra
     return true;
 }
 
-bool lite_source::init_gpu_conversion(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::init_gpu_conversion(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     switch (get_convert_type(frame->format, frame->full_range)) {
     case CONVERT_422_PACK:
@@ -1326,7 +1326,7 @@ bool lite_source::init_gpu_conversion(const std::shared_ptr<lite_obs_source_vide
 }
 
 //opengl es 2 does not support bgra pixel format.
-bool lite_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_video_frame> &frame)
+bool lite_obs_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_video_frame> &frame)
 {
     auto cur = get_convert_type(frame->format, frame->full_range);
 
@@ -1366,7 +1366,7 @@ bool lite_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_v
     return d_ptr->async_textures[0] != NULL;
 }
 
-void lite_source::async_tick(uint64_t sys_time)
+void lite_obs_source::async_tick(uint64_t sys_time)
 {
     d_ptr->async_mutex.lock();
 
@@ -1386,9 +1386,9 @@ void lite_source::async_tick(uint64_t sys_time)
     d_ptr->async_rendered = false;
 }
 
-std::shared_ptr<lite_source::lite_obs_source_video_frame> lite_source::get_frame()
+std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> lite_obs_source::get_frame()
 {
-    std::shared_ptr<lite_source::lite_obs_source_video_frame> frame = nullptr;
+    std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> frame = nullptr;
     d_ptr->async_mutex.lock();
     frame = d_ptr->cur_async_frame;
     d_ptr->cur_async_frame = nullptr;
@@ -1397,7 +1397,7 @@ std::shared_ptr<lite_source::lite_obs_source_video_frame> lite_source::get_frame
     return frame;
 }
 
-bool lite_source::update_async_texrender(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
+bool lite_obs_source::update_async_texrender(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
 {
     texrender->gs_texrender_reset();
 
@@ -1483,7 +1483,7 @@ bool lite_source::update_async_texrender(const std::shared_ptr<lite_obs_source_v
     return success;
 }
 
-bool lite_source::update_async_textures(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
+bool lite_obs_source::update_async_textures(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
 {
     d_ptr->async_flip = frame->flip;
     d_ptr->async_flip_h = frame->flip_h;
@@ -1500,7 +1500,7 @@ bool lite_source::update_async_textures(const std::shared_ptr<lite_obs_source_vi
     return false;
 }
 
-void lite_source::update_async_video(uint64_t sys_time)
+void lite_obs_source::update_async_video(uint64_t sys_time)
 {
     bool async_video = d_ptr->type & source_type::SOURCE_ASYNC;
     if (!async_video)
@@ -1525,7 +1525,7 @@ void lite_source::update_async_video(uint64_t sys_time)
     }
 }
 
-bool lite_source::render_crop_texture(const std::shared_ptr<gs_texture> &texture)
+bool lite_obs_source::render_crop_texture(const std::shared_ptr<gs_texture> &texture)
 {
     if (!d_ptr->item_render)
         return false;
@@ -1566,7 +1566,7 @@ bool lite_source::render_crop_texture(const std::shared_ptr<gs_texture> &texture
     return true;
 }
 
-void lite_source::render_texture(std::shared_ptr<gs_texture> texture)
+void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
 {
     if (!texture)
         return;
@@ -1603,7 +1603,7 @@ void lite_source::render_texture(std::shared_ptr<gs_texture> texture)
     gs_matrix_pop();
 }
 
-void lite_source::async_render()
+void lite_obs_source::async_render()
 {
     if (d_ptr->async_textures[0] && d_ptr->async_active) {
         auto tex = d_ptr->async_textures[0];
@@ -1613,7 +1613,7 @@ void lite_source::async_render()
     }
 }
 
-void lite_source::render()
+void lite_obs_source::render()
 {
     if (d_ptr->type & source_type::SOURCE_ASYNC)
         async_render();
@@ -1623,7 +1623,7 @@ void lite_source::render()
     }
 }
 
-void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
+void lite_obs_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
 {
     if (d_ptr->source_render_box.enabled) {
         auto tex_width = tex->gs_texture_get_width();
@@ -1656,21 +1656,21 @@ void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
     }
 }
 
-void lite_source::lite_source_set_pos(float x, float y)
+void lite_obs_source::lite_source_set_pos(float x, float y)
 {
     d_ptr->source_transform.pos.x = x;
     d_ptr->source_transform.pos.y = y;
     d_ptr->should_update_tranform = true;
 }
 
-void lite_source::lite_source_set_scale(float width_scale, float height_scale)
+void lite_obs_source::lite_source_set_scale(float width_scale, float height_scale)
 {
     d_ptr->source_transform.scale.x = width_scale;
     d_ptr->source_transform.scale.y = height_scale;
     d_ptr->should_update_tranform = true;
 }
 
-void lite_source::lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
+void lite_obs_source::lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
 {
     if (!width || !height) {
         blog(LOG_INFO, "invalid render box settings, width:%d, height: %d.", width, height);

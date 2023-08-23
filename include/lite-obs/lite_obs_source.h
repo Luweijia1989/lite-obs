@@ -14,7 +14,7 @@ class gs_texture;
 class lite_obs_core_video;
 class lite_obs_core_audio;
 struct lite_source_private;
-class lite_source : public std::enable_shared_from_this<lite_source>
+class lite_obs_source : public std::enable_shared_from_this<lite_obs_source>
 {
     friend class lite_obs_core_audio;
     friend class lite_obs_core_video;
@@ -160,8 +160,8 @@ public:
         }
     };
 
-    lite_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a);
-    ~lite_source();
+    lite_obs_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a);
+    ~lite_obs_source();
 
     source_type lite_source_type();
     void lite_source_output_audio(const lite_obs_source_audio_frame &audio);
@@ -178,7 +178,7 @@ public:
 
 public:
     static std::recursive_mutex sources_mutex;
-    static std::map<uintptr_t, std::list<std::shared_ptr<lite_source>>> sources;
+    static std::map<uintptr_t, std::list<std::shared_ptr<lite_obs_source>>> sources;
 
 private:
     bool audio_pending();
@@ -246,4 +246,4 @@ private:
     std::unique_ptr<lite_source_private> d_ptr{};
 };
 
-typedef void (*obs_source_audio_capture)(void *param, std::shared_ptr<lite_source> source, const audio_data *audio_data, bool muted);
+typedef void (*obs_source_audio_capture)(void *param, std::shared_ptr<lite_obs_source> source, const audio_data *audio_data, bool muted);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lite-obs/lite_output.h"
+#include "lite-obs/lite_obs_output.h"
 
 struct null_output_private;
 class null_output : public lite_obs_output

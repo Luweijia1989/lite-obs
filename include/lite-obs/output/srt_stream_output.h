@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lite-obs/lite_output.h"
+#include "lite-obs/lite_obs_output.h"
 
 struct mpeg_ts_output_private;
 struct ffmpeg_data;
