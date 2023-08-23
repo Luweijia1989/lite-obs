@@ -7,17 +7,17 @@
 #include "lite_obs_export.hpp"
 
 enum source_type {
-    Source_Video = 1 << 0,
-    Source_Audio = 1 << 1,
-    Source_Async = 1 << 2,
-    Source_AsyncVideo = Source_Async | Source_Video,
-    Source_AudioVideo = Source_Audio | Source_AsyncVideo,
+    SOURCE_VIDEO = 1 << 0,
+    SOURCE_AUDIO = 1 << 1,
+    SOURCE_ASYNC = 1 << 2,
+    SOURCE_ASYNCVIDEO = SOURCE_ASYNC | SOURCE_VIDEO,
+    SOURCE_AUDIOVIDEO = SOURCE_AUDIO | SOURCE_ASYNCVIDEO,
 };
 
 enum source_aspect_ratio_mode {
-    Ignore_Aspect_Ratio,
-    Keep_Aspect_Ratio,
-    Keep_Aspect_Ratio_By_Expanding,
+    IGNORE_ASPECT_RATIO,
+    KEEP_ASPECT_RATIO,
+    KEEP_ASPECT_RATIO_BY_EXPANDING,
 };
 
 class LITE_OBS_EXPORT lite_obs_output_callbak
@@ -63,6 +63,13 @@ class LITE_OBS_EXPORT lite_obs_media_source
 {
     friend class lite_obs;
 public:
+    enum order_movement {
+        MOVE_UP,
+        MOVE_DOWN,
+        MOVE_TOP,
+        MOVE_BOTTOM,
+    };
+
     lite_obs_media_source();
     void output_audio(const uint8_t *audio_data[MAX_AV_PLANES], uint32_t frames, audio_format format, speaker_layout layout, uint32_t sample_rate);
     void output_video(int texId, uint32_t width, uint32_t height);
@@ -75,6 +82,7 @@ public:
     void set_pos(float x, float y);
     void set_scale(float s_w, float s_h);
     void set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
+    void set_order(order_movement movement);
 
 private:
     ~lite_obs_media_source();

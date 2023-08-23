@@ -1,18 +1,6 @@
 #include "lite-obs/graphics/gl_helpers.h"
 #include <memory>
 
-bool gl_init_face(GLenum target, GLenum type,
-                  GLenum format, GLint internal_format,
-                  uint32_t width, uint32_t height, uint32_t size,
-                  const uint8_t **p_data)
-{
-    glTexImage2D(target, 0, internal_format, width, height, 0, format, type, p_data ? *p_data : NULL);
-    if (!gl_success("glTexImage2D"))
-        return false;
-
-    return true;
-}
-
 //static bool gl_copy_fbo(struct gs_texture *dst, uint32_t dst_x, uint32_t dst_y,
 //			struct gs_texture *src, uint32_t src_x, uint32_t src_y,
 //			uint32_t width, uint32_t height)

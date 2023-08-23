@@ -46,9 +46,7 @@ Item {
         loops: Animation.Infinite
     }
 
-    RowLayout {
-        anchors.centerIn: parent
-
+    ColumnLayout {
         Button {
             text: "mix audio"
             checkable: true
@@ -76,6 +74,34 @@ Item {
             text: "stop output"
             onClicked: {
                 example.doStopOutput()
+            }
+        }
+
+        Button {
+            text: "up"
+            onClicked: {
+                example.setSourceOrder(0)
+            }
+        }
+
+        Button {
+            text: "down"
+            onClicked: {
+                example.setSourceOrder(1)
+            }
+        }
+
+        Button {
+            text: "top"
+            onClicked: {
+                example.setSourceOrder(2)
+            }
+        }
+
+        Button {
+            text: "bottom"
+            onClicked: {
+                example.setSourceOrder(3)
             }
         }
     }

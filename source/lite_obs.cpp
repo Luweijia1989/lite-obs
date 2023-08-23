@@ -19,6 +19,7 @@
 struct lite_obs_media_source_private
 {
     std::shared_ptr<lite_source> internal_source{};
+    uintptr_t core_ptr{};
 };
 
 lite_obs_media_source::lite_obs_media_source()
@@ -75,6 +76,49 @@ void lite_obs_media_source::set_scale(float s_w, float s_h)
 void lite_obs_media_source::set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
 {
     d_ptr->internal_source->lite_source_set_render_box(x, y, width, height, mode);
+}
+
+void lite_obs_media_source::set_order(order_movement movement)
+{
+    std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
+    auto &sources = lite_source::sources[d_ptr->core_ptr];
+    auto iter = std::find(sources.begin(), sources.end(), d_ptr->internal_source);
+    if (iter == sources.end())
+        return;
+
+    switch (movement) {
+    case MOVE_UP:
+    {
+        auto target = std::next(iter);
+        if (target != sources.end())
+            std::iter_swap(iter, target);
+    }
+    break;
+    case MOVE_DOWN:
+    {
+        if (iter != sources.begin()) {
+            auto target = std::prev(iter);
+            std::iter_swap(iter, target);
+        }
+    }
+    break;
+    case MOVE_TOP:
+    {
+        auto target = std::prev(sources.end());
+        if (iter != target)
+            std::iter_swap(iter, target);
+    }
+    break;
+    case MOVE_BOTTOM:
+    {
+        auto target = sources.begin();
+        if (iter != target)
+            std::iter_swap(iter, target);
+    }
+    break;
+    default:
+        break;
+    }
 }
 
 struct lite_obs_private
@@ -209,12 +253,13 @@ lite_obs_media_source *lite_obs::lite_obs_create_source(source_type type)
     auto source = std::make_shared<lite_source>(type, d_ptr->video, d_ptr->audio);
     auto source_wrapper = new lite_obs_media_source;
     source_wrapper->d_ptr->internal_source = source;
+    source_wrapper->d_ptr->core_ptr = reinterpret_cast<uintptr_t>(d_ptr);
     d_ptr->sources.emplace(source_wrapper);
 
     {
         std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
         auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
-        sources.emplace(reinterpret_cast<uintptr_t>(source_wrapper), std::make_pair(type, source));
+        sources.push_back(source);
     }
 
     return source_wrapper;
@@ -222,12 +267,10 @@ lite_obs_media_source *lite_obs::lite_obs_create_source(source_type type)
 
 void lite_obs::lite_obs_destroy_source(lite_obs_media_source *source)
 {
-    auto ptr = reinterpret_cast<uintptr_t>(source);
-
     {
         std::lock_guard<std::recursive_mutex> lock(lite_source::sources_mutex);
         auto &sources = lite_source::sources[reinterpret_cast<uintptr_t>(d_ptr)];
-        sources.erase(ptr);
+        sources.erase(std::find(sources.begin(), sources.end(), source->d_ptr->internal_source));
     }
 
     d_ptr->sources.erase(source);

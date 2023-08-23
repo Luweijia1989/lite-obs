@@ -178,7 +178,7 @@ public:
 
 public:
     static std::recursive_mutex sources_mutex;
-    static std::map<uintptr_t, std::map<uintptr_t, std::pair<source_type,std::shared_ptr<lite_source>>>> sources;
+    static std::map<uintptr_t, std::list<std::shared_ptr<lite_source>>> sources;
 
 private:
     bool audio_pending();

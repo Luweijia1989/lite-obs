@@ -213,9 +213,21 @@ static inline void init_dummy_pixel_format(PIXELFORMATDESCRIPTOR *pfd)
                    PFD_DOUBLEBUFFER;
 }
 
-static inline HGLRC gl_init_basic_context(HDC hdc)
+static inline HGLRC gl_init_basic_context(bool dummy, HDC hdc)
 {
-    HGLRC hglrc = wglCreateContext(hdc);
+    HGLRC hglrc{};
+    if (!dummy) {
+        int attribList[] = {
+            WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+            WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+            WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+            0
+        };
+
+        hglrc = wglCreateContextAttribsARB(hdc, nullptr, attribList);
+    } else
+        hglrc = wglCreateContext(hdc);
+
     if (!hglrc) {
         blog(LOG_ERROR, "wglCreateContext failed, %lu", GetLastError());
         return NULL;
@@ -255,7 +267,7 @@ static bool gl_dummy_context_init(dummy_context *dummy)
         return false;
     }
 
-    dummy->hrc = gl_init_basic_context(dummy->hdc);
+    dummy->hrc = gl_init_basic_context(true, dummy->hdc);
     if (!dummy->hrc) {
         blog(LOG_ERROR, "Failed to initialize dummy context");
         return false;
@@ -430,15 +442,17 @@ void *gs_device::gl_platform_create(void *plat_info)
     if (!init_default_swap(plat.get(), pixel_format, &pfd))
         return nullptr;
 
-    plat->hrc = gl_init_basic_context(plat->window.hdc);
+    plat->hrc = gl_init_basic_context(false, plat->window.hdc);
     if (!plat->hrc)
         return nullptr;
 
     if (ctx) {
         if (!wglShareLists(ctx, plat->hrc))
             blog(LOG_ERROR, "Failed to share OpenGL context.");
-        else
+        else {
+            set_texture_share_enabled(true);
             blog(LOG_INFO, "Share GL context with existing.");
+        }
     }
 
     if (!gladLoadGL()) {

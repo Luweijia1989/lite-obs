@@ -50,7 +50,7 @@ void LiteObsExample::doAudioMixTest(bool start)
     if (start) {
         audioTestRunning = true;
         m_audioTestThread = std::thread([=](){
-            auto source = m_liteObs->lite_obs_create_source(source_type::Source_Audio);
+            auto source = m_liteObs->lite_obs_create_source(source_type::SOURCE_AUDIO);
 
             QFile audiofile(":/resource/44100_2_float.pcm");
             audiofile.open(QFile::ReadOnly);
@@ -86,7 +86,7 @@ void LiteObsExample::doVideoFrameMixTest(bool start)
     if (start) {
         videoTestRunning = true;
         m_videoTestThread = std::thread([=](){
-            auto source = m_liteObs->lite_obs_create_source(source_type::Source_AsyncVideo);
+            auto source = m_liteObs->lite_obs_create_source(source_type::SOURCE_ASYNCVIDEO);
 
             QFile audiofile(":/resource/640360420p.yuv");
             audiofile.open(QFile::ReadOnly);
@@ -141,15 +141,22 @@ void LiteObsExample::doStopOutput()
     m_liteObs->lite_obs_stop_output();
 }
 
+static lite_obs_media_source *source{};
 void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
 {
     qDebug() << "texture mix: " << id << width <<height << QThread::currentThreadId();
-    static lite_obs_media_source *source{};
+
     if (!source)
-        source = m_liteObs->lite_obs_create_source(source_type::Source_Video);
+        source = m_liteObs->lite_obs_create_source(source_type::SOURCE_VIDEO);
 
     source->output_video(id, width, height);
 //    source->set_scale(0.2f, 0.2f);
 //    source->set_pos(100, 100);
-    source->set_render_box(50, 100, 600, 600, source_aspect_ratio_mode::Ignore_Aspect_Ratio);
+    source->set_render_box(50, 100, 600, 600, source_aspect_ratio_mode::IGNORE_ASPECT_RATIO);
+}
+
+void LiteObsExample::setSourceOrder(int order)
+{
+    if (source)
+        source->set_order((lite_obs_media_source::order_movement)order);
 }

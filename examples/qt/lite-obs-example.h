@@ -18,6 +18,7 @@ public slots:
     void doStartOutput();
     void doStopOutput();
     void doTextureMix(int id, uint32_t width, uint32_t height);
+    void setSourceOrder(int order);
 
 private:
     std::shared_ptr<lite_obs> m_liteObs{};

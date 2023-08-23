@@ -36,11 +36,10 @@ void lite_obs_core_audio::find_min_ts(uint64_t *min_ts)
 {
     auto &sources = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-        auto &pair = iter->second;
-        if(!(pair.first & source_type::Source_Audio))
+        auto &source = *iter;
+        if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
             continue;
 
-        auto &source = pair.second;
         if (!source->audio_pending() && source->audio_ts() && source->audio_ts() < *min_ts) {
             *min_ts = source->audio_ts();
         }
@@ -53,11 +52,10 @@ bool lite_obs_core_audio::mark_invalid_sources(size_t sample_rate, uint64_t min_
 
     auto &sources = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-        auto &pair = iter->second;
-        if(!(pair.first & source_type::Source_Audio))
+        auto &source = *iter;
+        if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
             continue;
 
-        auto &source = pair.second;
         recalculate |= source->audio_buffer_insuffient(sample_rate, min_ts);
     }
 
@@ -140,9 +138,9 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     {
         auto &sources = lite_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-            auto &pair = iter->second;
-            if (pair.first & source_type::Source_Audio) {
-                audio_sources.push_back(pair.second);
+            auto &source = *iter;
+            if (source->lite_source_type() & source_type::SOURCE_AUDIO) {
+                audio_sources.push_back(source);
             }
         }
     }
@@ -186,11 +184,10 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
     {
         auto &sources = lite_source::sources[d_ptr->core_ptr];
         for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-            auto &pair = iter->second;
-            if(!(pair.first & source_type::Source_Audio))
+            auto &source = *iter;
+            if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
                 continue;
 
-            auto &source = pair.second;
             source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
         }
     }

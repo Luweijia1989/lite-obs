@@ -53,15 +53,15 @@ static inline bool close_float(float f1, float f2, float precision)
 static void scaled_to(uint32_t src_width, uint32_t src_height,
                       uint32_t target_width, uint32_t target_height, source_aspect_ratio_mode mode,
                       uint32_t &out_width, uint32_t &out_height) {
-    if (mode == source_aspect_ratio_mode::Ignore_Aspect_Ratio || src_width == 0 || src_height == 0) {
+    if (mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO || src_width == 0 || src_height == 0) {
         out_width = target_width;
         out_height = target_height;
     } else {
         bool useHeight = false;
         auto rw = target_height * src_width / src_height;
-        if (mode == source_aspect_ratio_mode::Keep_Aspect_Ratio) {
+        if (mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
             useHeight = (rw <= target_width);
-        } else { // mode == source_aspect_ratio_mode::Keep_Aspect_Ratio_By_Expanding
+        } else { // mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
             useHeight = (rw >= target_width);
         }
         if (useHeight) {
@@ -338,7 +338,7 @@ struct lite_source_private
 
         async_textures.resize(MAX_AV_PLANES);
 
-        if (type & source_type::Source_Audio){
+        if (type & source_type::SOURCE_AUDIO){
             size_t size = sizeof(float) * AUDIO_OUTPUT_FRAMES * MAX_AUDIO_CHANNELS * MAX_AUDIO_MIXES;
             float *ptr = (float *)malloc(size);
             memset(ptr, 0, size);
@@ -379,7 +379,7 @@ struct lite_source_private
     }
 };
 std::recursive_mutex lite_source::sources_mutex{};
-std::map<uintptr_t, std::map<uintptr_t, std::pair<source_type,std::shared_ptr<lite_source>>>> lite_source::sources{};
+std::map<uintptr_t, std::list<std::shared_ptr<lite_source>>> lite_source::sources{};
 
 lite_source::lite_source(source_type type, std::shared_ptr<lite_obs_core_video> c_v, std::shared_ptr<lite_obs_core_audio> c_a)
 {
@@ -1063,7 +1063,7 @@ void lite_source::lite_source_output_video(int texture_id, uint32_t texture_widt
     }
     std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
 
-    if (d_ptr->type & source_type::Source_Async) {
+    if (d_ptr->type & source_type::SOURCE_ASYNC) {
         blog(LOG_ERROR, "async video not support texture input");
         return;
     }
@@ -1073,7 +1073,7 @@ void lite_source::lite_source_output_video(int texture_id, uint32_t texture_widt
 
 void lite_source::lite_source_clear_video()
 {
-    if (d_ptr->type & source_type::Source_Async)
+    if (d_ptr->type & source_type::SOURCE_ASYNC)
         output_video_internal(NULL);
     else {
         std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
@@ -1502,7 +1502,7 @@ bool lite_source::update_async_textures(const std::shared_ptr<lite_obs_source_vi
 
 void lite_source::update_async_video(uint64_t sys_time)
 {
-    bool async_video = d_ptr->type & source_type::Source_Async;
+    bool async_video = d_ptr->type & source_type::SOURCE_ASYNC;
     if (!async_video)
         return;
 
@@ -1615,7 +1615,7 @@ void lite_source::async_render()
 
 void lite_source::render()
 {
-    if (d_ptr->type & source_type::Source_Async)
+    if (d_ptr->type & source_type::SOURCE_ASYNC)
         async_render();
     else {
         std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
@@ -1628,7 +1628,7 @@ void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
     if (d_ptr->source_render_box.enabled) {
         auto tex_width = tex->gs_texture_get_width();
         auto tex_height = tex->gs_texture_get_height();
-        bool crop_enabled = d_ptr->source_render_box.mode == source_aspect_ratio_mode::Keep_Aspect_Ratio_By_Expanding
+        bool crop_enabled = d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
                             && ((int)tex_width != d_ptr->source_render_box.width || (int)tex_height != d_ptr->source_render_box.height);
         if (d_ptr->item_render && !crop_enabled)
             d_ptr->item_render.reset();
@@ -1637,14 +1637,14 @@ void lite_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
 
         auto mat = glm::mat4x4{1};
         if (!crop_enabled) {
-            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::Keep_Aspect_Ratio) {
+            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
                 uint32_t cx, cy;
                 scaled_to(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, d_ptr->source_render_box.mode, cx, cy);
                 mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x + (d_ptr->source_render_box.width - cx) / 2, d_ptr->source_render_box.y + (d_ptr->source_render_box.height -cy) / 2, 0.0f));
                 mat = glm::scale(mat, glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f));
             } else {
                 mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
-                if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::Ignore_Aspect_Ratio) {
+                if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO) {
                     mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)tex_width, (float)d_ptr->source_render_box.height / (float)tex_height, 1.0f));
                 }
             }

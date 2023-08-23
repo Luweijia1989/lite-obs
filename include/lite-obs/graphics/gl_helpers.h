@@ -175,11 +175,6 @@ static inline bool gl_get_integer_v(GLenum pname, GLint *params)
     return gl_success("glGetIntegerv");
 }
 
-bool gl_init_face(GLenum target, GLenum type,
-                  GLenum format, GLint internal_format,
-                  uint32_t width, uint32_t height, uint32_t size,
-                  const uint8_t **p_data);
-
 //extern bool gl_copy_texture(struct gs_device *device, struct gs_texture *dst,
 //			    uint32_t dst_x, uint32_t dst_y,
 //			    struct gs_texture *src, uint32_t src_x,

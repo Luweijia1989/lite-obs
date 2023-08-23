@@ -160,15 +160,15 @@ void lite_obs_core_video::render_all_sources()
     lite_source::sources_mutex.lock();
     auto &s = lite_source::sources[d_ptr->core_ptr];
     for (auto iter = s.begin(); iter != s.end(); iter++) {
-        auto &pair = iter->second;
-        if (pair.first & source_type::Source_Video)
-            sources.push_back(pair.second);
+        auto &source = *iter;
+        if (source->lite_source_type() & source_type::SOURCE_VIDEO)
+            sources.push_back(source);
     }
     lite_source::sources_mutex.unlock();
 
     for (auto iter = sources.begin(); iter != sources.end(); iter++) {
         auto &source = *iter;
-        if(source->lite_source_type() & source_type::Source_Async)
+        if(source->lite_source_type() & source_type::SOURCE_ASYNC)
             source->update_async_video(d_ptr->video_time);
 
         source->render();
