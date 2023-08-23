@@ -47,7 +47,7 @@ void *gs_device::gl_platform_create(void *)
     EGLConfig config;
     EGLint numConfigs;
     EGLSurface surface;
-    EGLContext context;
+    EGLContext context = nullptr;
 
     blog(LOG_DEBUG, "Initializing context");
 
@@ -78,9 +78,21 @@ void *gs_device::gl_platform_create(void *)
         EGL_CONTEXT_CLIENT_VERSION, 3,  //Request opengl ES3.0
         EGL_NONE
     };
-    if (!(context = eglCreateContext(display, config, eglGetCurrentContext(), contextAttribs))) {
-        blog(LOG_DEBUG, "eglCreateContext() returned error %d", eglGetError());
-        return nullptr;
+    auto ctx = eglGetCurrentContext();
+    if (ctx) {
+        EGLint contextVersion = 0;
+        eglQueryContext(display, ctx, EGL_CONTEXT_CLIENT_VERSION, &contextVersion);
+        if (contextVersion >= 3)
+            if((context = eglCreateContext(display, config, ctx, contextAttribs)))
+                set_texture_share_enabled(true);
+    }
+
+    if (!context) {
+        if(!(context = eglCreateContext(display, config, nullptr, contextAttribs))){
+            blog(LOG_DEBUG, "eglCreateContext() returned error %d", eglGetError());
+            return nullptr;
+        }
+
     }
 
     if (!eglMakeCurrent(display, surface, surface, context)) {

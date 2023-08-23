@@ -100,12 +100,6 @@ enum class gs_color_format {
     GS_BGRA, //use for source video frame
     GS_BGRX,
 
-    GS_RGBA16F,
-    GS_RGBA32F,
-    GS_RG16F,
-    GS_RG32F,
-    GS_R16F,
-    GS_R32F,
     GS_R8G8,
 };
 
@@ -121,18 +115,6 @@ static inline uint32_t gs_get_format_bpp(gs_color_format format)
     case gs_color_format::GS_BGRX:
         return 32;
     case gs_color_format::GS_BGRA:
-        return 32;
-    case gs_color_format::GS_RGBA16F:
-        return 64;
-    case gs_color_format::GS_RGBA32F:
-        return 128;
-    case gs_color_format::GS_RG16F:
-        return 32;
-    case gs_color_format::GS_RG32F:
-        return 64;
-    case gs_color_format::GS_R16F:
-        return 16;
-    case gs_color_format::GS_R32F:
         return 32;
     case gs_color_format::GS_R8G8:
         return 16;
@@ -156,20 +138,8 @@ static inline GLenum convert_gs_format(gs_color_format format)
         return GL_BGRA;
     case gs_color_format::GS_BGRA:
         return GL_BGRA;
-    case gs_color_format::GS_RGBA16F:
-        return GL_RGBA;
-    case gs_color_format::GS_RGBA32F:
-        return GL_RGBA;
-    case gs_color_format::GS_RG16F:
-        return GL_RG;
-    case gs_color_format::GS_RG32F:
-        return GL_RG;
     case gs_color_format::GS_R8G8:
         return GL_RG;
-    case gs_color_format::GS_R16F:
-        return GL_RED;
-    case gs_color_format::GS_R32F:
-        return GL_RED;
     case gs_color_format::GS_UNKNOWN:
         return 0;
     }
@@ -190,20 +160,8 @@ static inline GLenum convert_gs_internal_format(gs_color_format format)
         return GL_RGB;
     case gs_color_format::GS_BGRA:
         return GL_RGBA;
-    case gs_color_format::GS_RGBA16F:
-        return GL_RGBA16F;
-    case gs_color_format::GS_RGBA32F:
-        return GL_RGBA32F;
-    case gs_color_format::GS_RG16F:
-        return GL_RG16F;
-    case gs_color_format::GS_RG32F:
-        return GL_RG32F;
     case gs_color_format::GS_R8G8:
         return GL_RG8;
-    case gs_color_format::GS_R16F:
-        return GL_R16F;
-    case gs_color_format::GS_R32F:
-        return GL_R32F;
     case gs_color_format::GS_UNKNOWN:
         return 0;
     }
@@ -224,20 +182,8 @@ static inline GLenum get_gl_format_type(gs_color_format format)
         return GL_UNSIGNED_BYTE;
     case gs_color_format::GS_BGRA:
         return GL_UNSIGNED_BYTE;
-    case gs_color_format::GS_RGBA16F:
-        return GL_UNSIGNED_SHORT;
-    case gs_color_format::GS_RGBA32F:
-        return GL_FLOAT;
-    case gs_color_format::GS_RG16F:
-        return GL_UNSIGNED_SHORT;
-    case gs_color_format::GS_RG32F:
-        return GL_FLOAT;
     case gs_color_format::GS_R8G8:
         return GL_UNSIGNED_BYTE;
-    case gs_color_format::GS_R16F:
-        return GL_UNSIGNED_SHORT;
-    case gs_color_format::GS_R32F:
-        return GL_FLOAT;
     case gs_color_format::GS_UNKNOWN:
         return 0;
     }

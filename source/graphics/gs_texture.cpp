@@ -48,7 +48,6 @@ struct gs_texture_base {
     GLuint texture{};
     bool is_dynamic{};
     bool is_render_target{};
-    bool is_dummy{};
 
     std::weak_ptr<gs_sampler_state> cur_sampler;
     std::shared_ptr<fbo_info> fbo{};
@@ -75,7 +74,7 @@ gs_texture::gs_texture()
 gs_texture::~gs_texture()
 {
     if (!d_ptr->external_texture) {
-        if (!d_ptr->base.is_dummy && d_ptr->base.is_dynamic && d_ptr->unpack_buffer)
+        if (d_ptr->base.is_dynamic && d_ptr->unpack_buffer)
             gl_delete_buffers(1, &d_ptr->unpack_buffer);
 
         if (d_ptr->base.texture)
@@ -85,7 +84,7 @@ gs_texture::~gs_texture()
     blog(LOG_DEBUG, "gs_texture destroyed.");
 }
 
-bool gs_texture::create(uint32_t width, uint32_t height, gs_color_format color_format, const uint8_t **data, uint32_t flags)
+bool gs_texture::create(uint32_t width, uint32_t height, gs_color_format color_format, uint32_t flags)
 {
     d_ptr->base.format = color_format;
     d_ptr->base.gl_format = convert_gs_format(color_format);
@@ -94,34 +93,16 @@ bool gs_texture::create(uint32_t width, uint32_t height, gs_color_format color_f
     d_ptr->base.gl_target = GL_TEXTURE_2D;
     d_ptr->base.is_dynamic = (flags & GS_DYNAMIC) != 0;
     d_ptr->base.is_render_target = (flags & GS_RENDER_TARGET) != 0;
-    d_ptr->base.is_dummy = (flags & GS_GL_DUMMYTEX) != 0;
     d_ptr->width = width;
     d_ptr->height = height;
 
     if (!gl_gen_textures(1, &d_ptr->base.texture))
         return false;
 
-    if (!d_ptr->base.is_dummy) {
-        if (d_ptr->base.is_dynamic && !create_pixel_unpack_buffer())
-            return false;
-        if (!upload_texture_2d(data))
-            return false;
-    } else {
-        if (!gl_bind_texture(GL_TEXTURE_2D, d_ptr->base.texture))
-            return false;
-
-        uint32_t row_size = d_ptr->width * gs_get_format_bpp(d_ptr->base.format);
-        uint32_t tex_size = d_ptr->height * row_size / 8;
-        bool did_init = gl_init_face(GL_TEXTURE_2D, d_ptr->base.gl_type, d_ptr->base.gl_format,
-                                     d_ptr->base.gl_internal_format, d_ptr->width,
-                                     d_ptr->height, tex_size, NULL);
-        did_init =
-                gl_tex_param_i(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-        bool did_unbind = gl_bind_texture(GL_TEXTURE_2D, 0);
-        if (!did_init || !did_unbind)
-            return false;
-    }
+    if (d_ptr->base.is_dynamic && !create_pixel_unpack_buffer())
+        return false;
+    if (!allocate_texture_mem())
+        return false;
 
     return true;
 }
@@ -135,7 +116,6 @@ void gs_texture::create(int texture_id, uint32_t width, uint32_t height)
     d_ptr->base.gl_target = GL_TEXTURE_2D;
     d_ptr->base.is_dynamic = false;
     d_ptr->base.is_render_target = false;
-    d_ptr->base.is_dummy = false;
     d_ptr->width = width;
     d_ptr->height = height;
     d_ptr->base.texture = texture_id;
@@ -263,7 +243,7 @@ std::shared_ptr<fbo_info> gs_texture::get_fbo()
         return nullptr;
 
     if (d_ptr->base.fbo && d_ptr->base.fbo->width == width &&
-            d_ptr->base.fbo->height == height && d_ptr->base.fbo->format == d_ptr->base.format)
+        d_ptr->base.fbo->height == height && d_ptr->base.fbo->format == d_ptr->base.format)
         return d_ptr->base.fbo;
 
     GLuint fbo;
@@ -328,25 +308,25 @@ bool gs_texture::gs_texture_load_texture_sampler(std::shared_ptr<gs_sampler_stat
     return success;
 }
 
-bool gs_texture::upload_texture_2d(const uint8_t **data)
+bool gs_texture::allocate_texture_mem()
 {
-    uint32_t row_size = d_ptr->width * gs_get_format_bpp(d_ptr->base.format);
-    uint32_t tex_size = d_ptr->height * row_size / 8;
-
     if (!gl_bind_texture(GL_TEXTURE_2D, d_ptr->base.texture))
         return false;
 
-    auto success = gl_init_face(GL_TEXTURE_2D, d_ptr->base.gl_type,
-                                d_ptr->base.gl_format,
-                                d_ptr->base.gl_internal_format,
-                                d_ptr->width, d_ptr->height, tex_size, data);
+#ifdef PLATFORM_MOBILE
+    //since opengles glTexImage2D do not support inter_format GL_RGB format GL_BGRA, convert GL_BGRA to GL_RGB, it's ok because there is no data to upload here.
+    auto format = d_ptr->base.gl_format == GL_BGRA ? GL_RGB : d_ptr->base.gl_format;
+    glTexImage2D(GL_TEXTURE_2D, 0, d_ptr->base.gl_internal_format, d_ptr->width, d_ptr->height, 0, format, d_ptr->base.gl_type, NULL);
+#else
+    glTexImage2D(GL_TEXTURE_2D, 0, d_ptr->base.gl_internal_format, d_ptr->width, d_ptr->height, 0, d_ptr->base.gl_format, d_ptr->base.gl_type, NULL);
+#endif
+    if (!gl_success("glTexImage2D"))
+        return false;
 
-    if (!gl_tex_param_i(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0))
-        success = false;
-    if (!gl_bind_texture(GL_TEXTURE_2D, 0))
-        success = false;
+    if (!gl_tex_param_i(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0) || !gl_bind_texture(GL_TEXTURE_2D, 0))
+        return false;
 
-    return success;
+    return true;
 }
 
 bool gs_texture::get_tex_dimensions(uint32_t *width, uint32_t *height)
@@ -383,13 +363,13 @@ bool gs_texture::create_pixel_unpack_buffer()
     return success;
 }
 
-std::shared_ptr<gs_texture> gs_texture_create(uint32_t width, uint32_t height, gs_color_format color_format, const uint8_t **data, uint32_t flags)
+std::shared_ptr<gs_texture> gs_texture_create(uint32_t width, uint32_t height, gs_color_format color_format, uint32_t flags)
 {
     if (!gs_valid("gs_texture_create"))
         return NULL;
 
     auto tex = std::make_shared<gs_texture>();
-    if (!tex->create(width, height, color_format, data, flags)) {
+    if (!tex->create(width, height, color_format, flags)) {
         blog(LOG_DEBUG, "Cannot create texture, width: %d, height:%d, format: %d", width, height, (int)color_format);
         return nullptr;
     }

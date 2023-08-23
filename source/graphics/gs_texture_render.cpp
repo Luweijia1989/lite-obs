@@ -36,7 +36,7 @@ bool gs_texture_render::gs_texrender_resetbuffer(uint32_t cx, uint32_t cy)
     d_ptr->cx = cx;
     d_ptr->cy = cy;
 
-    d_ptr->target = gs_texture_create(cx, cy, d_ptr->format, NULL, GS_RENDER_TARGET);
+    d_ptr->target = gs_texture_create(cx, cy, d_ptr->format, GS_RENDER_TARGET);
     if (!d_ptr->target)
         return false;
 

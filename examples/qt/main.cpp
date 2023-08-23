@@ -22,15 +22,15 @@ int main(int argc, char *argv[])
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
+    QGuiApplication app(argc, argv);
+
     QQuickWindow::setGraphicsApi(QSGRendererInterface::OpenGL);
 
     QSurfaceFormat format;
     format.setMajorVersion(3);
-    format.setMinorVersion(3);
+    format.setMinorVersion(QOpenGLContext::openGLModuleType() == QOpenGLContext::LibGL ? 3 : 0);
     format.setProfile(QSurfaceFormat::CoreProfile);
     QSurfaceFormat::setDefaultFormat(format);
-
-    QGuiApplication app(argc, argv);
 
     LiteObsExample example;
 

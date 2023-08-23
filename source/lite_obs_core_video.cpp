@@ -728,21 +728,21 @@ bool lite_obs_core_video::init_gpu_conversion()
 {
     calc_gpu_conversion_sizes();
 
-    d_ptr->convert_textures[0] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, NULL, GS_RENDER_TARGET);
+    d_ptr->convert_textures[0] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, GS_RENDER_TARGET);
 
     switch (d_ptr->output_format) {
     case video_format::VIDEO_FORMAT_I420:
-        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8, NULL, GS_RENDER_TARGET);
-        d_ptr->convert_textures[2] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8, NULL, GS_RENDER_TARGET);
+        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8, GS_RENDER_TARGET);
+        d_ptr->convert_textures[2] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8, GS_RENDER_TARGET);
         if (!d_ptr->convert_textures[2])
             return false;
         break;
     case video_format::VIDEO_FORMAT_NV12:
-        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8G8, NULL, GS_RENDER_TARGET);
+        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width / 2, d_ptr->output_height / 2, gs_color_format::GS_R8G8, GS_RENDER_TARGET);
         break;
     case video_format::VIDEO_FORMAT_I444:
-        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, NULL, GS_RENDER_TARGET);
-        d_ptr->convert_textures[2] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, NULL, GS_RENDER_TARGET);
+        d_ptr->convert_textures[1] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, GS_RENDER_TARGET);
+        d_ptr->convert_textures[2] = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_R8, GS_RENDER_TARGET);
         if (!d_ptr->convert_textures[2])
             return false;
         break;
@@ -820,12 +820,12 @@ bool lite_obs_core_video::init_textures()
         }
     }
 
-    d_ptr->render_texture = gs_texture_create(d_ptr->base_width, d_ptr->base_height, gs_color_format::GS_RGBA, NULL, GS_RENDER_TARGET);
+    d_ptr->render_texture = gs_texture_create(d_ptr->base_width, d_ptr->base_height, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
 
     if (!d_ptr->render_texture)
         return false;
 
-    d_ptr->output_texture = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_RGBA, NULL, GS_RENDER_TARGET);
+    d_ptr->output_texture = gs_texture_create(d_ptr->output_width, d_ptr->output_height, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
 
     if (!d_ptr->output_texture)
         return false;

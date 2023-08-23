@@ -1356,9 +1356,9 @@ bool lite_source::set_async_texture_size(const std::shared_ptr<lite_obs_source_v
         d_ptr->async_texrender = std::make_shared<gs_texture_render>(format, gs_zstencil_format::GS_ZS_NONE);
 
         for (int c = 0; c < d_ptr->async_channel_count; ++c)
-            d_ptr->async_textures[c] = gs_texture_create(d_ptr->async_convert_width[c], d_ptr->async_convert_height[c], d_ptr->async_texture_formats[c], NULL, GS_DYNAMIC);
+            d_ptr->async_textures[c] = gs_texture_create(d_ptr->async_convert_width[c], d_ptr->async_convert_height[c], d_ptr->async_texture_formats[c], GS_DYNAMIC);
     } else {
-        d_ptr->async_textures[0] = gs_texture_create(frame->width, frame->height, format, NULL, GS_DYNAMIC);
+        d_ptr->async_textures[0] = gs_texture_create(frame->width, frame->height, format, GS_DYNAMIC);
     }
 
     gs_leave_context();
