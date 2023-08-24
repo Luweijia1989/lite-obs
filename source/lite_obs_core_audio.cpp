@@ -180,18 +180,9 @@ bool lite_obs_core_audio::audio_callback_internal(uint64_t start_ts_in, uint64_t
 
     /* ------------------------------------------------ */
     /* discard audio */
-    lite_obs_source::sources_mutex.lock();
-    {
-        auto &sources = lite_obs_source::sources[d_ptr->core_ptr];
-        for (auto iter = sources.begin(); iter != sources.end(); iter++) {
-            auto &source = *iter;
-            if(!(source->lite_source_type() & source_type::SOURCE_AUDIO))
-                continue;
-
-            source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
-        }
+    for (auto source : audio_sources) {
+        source->discard_audio(d_ptr->total_buffering_ticks, channels, sample_rate, &ts);
     }
-    lite_obs_source::sources_mutex.unlock();
 
     /* ------------------------------------------------ */
     /* release audio sources */
