@@ -56,24 +56,6 @@ else()
     if (AVCODEC AND AVFORMAT AND AVUTIL AND SWRESAMPLE AND SWSCALE)
         set(FFmpeg_LIBS ${AVCODEC} ${AVFORMAT} ${SWRESAMPLE} ${AVUTIL} ${SWSCALE})
     endif()
-
-    if (APPLE)
-        find_library(
-            X264
-            NAMES libx264.a
-            PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-            NO_DEFAULT_PATH)
-
-        find_library(
-            X265
-            NAMES libx265.a
-            PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-            NO_DEFAULT_PATH)
-
-        if (X264 AND X265)
-            set(FFmpeg_LIBS ${FFmpeg_LIBS} ${X264} ${X265})
-        endif()
-    endif()
 endif()
 
 if (NOT FFmpeg_INCLUDE_DIRS OR NOT FFmpeg_LIBS)

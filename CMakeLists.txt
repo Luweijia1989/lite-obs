@@ -124,7 +124,7 @@ else()
 endif()
 
 set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/ffmpeg-${TARGET_OS})
-set(SRT_PATH ${PROJECT_SOURCE_DIR}/external/srt-${TARGET_OS})
+set(THIRDPARTY_PATH ${PROJECT_SOURCE_DIR}/external/thirdparty-${TARGET_OS})
 
 include(import_library)
 
@@ -133,6 +133,9 @@ import_library(FFmpeg_INCLUDE_DIRS FFmpeg_LIBS)
 
 find_package(SRT REQUIRED)
 import_library(SRT_INCLUDE_DIRS SRT_LIBS)
+
+find_package(x264 REQUIRED)
+import_library(SRT_INCLUDE_DIRS X264_LIB)
 
 #define NO_CRYPTO to disable rtmps. openssl exists because srt depends on it, so define HAVE_OPENSSL
 target_compile_definitions(${PROJECT_NAME} PUBLIC NO_CRYPTO HAVE_OPENSSL)

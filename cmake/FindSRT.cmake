@@ -13,39 +13,39 @@ elseif(ANDROID)
 endif()
 
 find_path(SRT_INCLUDE_DIRS NAMES srt/srt.h
-    PATHS ${SRT_PATH}
+    PATHS ${THIRDPARTY_PATH}
     PATH_SUFFIXES ${ARCH}/include
     NO_DEFAULT_PATH)
 
 find_library(
     SRT_LIB
     NAMES srt
-    PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
+    PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
     NO_DEFAULT_PATH)
 
 if(MSVC)
     find_library(
         SSL_LIB
         NAMES libssl
-        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
+        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES libcrypto
-        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
+        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 else()
     find_library(
         SSL_LIB
         NAMES ssl
-        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
+        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 
     find_library(
         CRYPTO_LIB
         NAMES crypto
-        PATHS ${SRT_PATH}/${ARCH}/${SUFFIX}/lib
+        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
         NO_DEFAULT_PATH)
 endif()
 
