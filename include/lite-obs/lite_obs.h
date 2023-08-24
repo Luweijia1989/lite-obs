@@ -54,6 +54,9 @@ public:
     bool lite_obs_start_output(std::string output_info, int vb, int ab, std::shared_ptr<lite_obs_output_callbak> callback);
     void lite_obs_stop_output();
 
+    //for test
+    void lite_obs_reset_encoder(int type);
+
 private:
     lite_obs_private* d_ptr{};
 };

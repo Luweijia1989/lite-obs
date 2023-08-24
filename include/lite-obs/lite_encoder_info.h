@@ -18,6 +18,8 @@ class lite_obs_encoder;
 struct encoder_packet {
     std::shared_ptr<std::vector<uint8_t>> data;
 
+    bool encoder_first_packet{}; /** true encoder's first output packet */
+
     int64_t pts{}; /**< Presentation timestamp */
     int64_t dts{}; /**< Decode timestamp */
 

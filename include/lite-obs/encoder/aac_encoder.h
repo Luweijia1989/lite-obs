@@ -3,10 +3,10 @@
 #include "lite-obs/lite_encoder.h"
 
 struct lite_aac_encoder_private;
-class lite_aac_encoder : public lite_obs_encoder
+class lite_aac_encoder : public lite_obs_encoder_interface
 {
 public:
-    lite_aac_encoder(int bitrate, size_t mixer_idx);
+    lite_aac_encoder(lite_obs_encoder *encoder);
     virtual ~lite_aac_encoder();
 
     virtual const char *i_encoder_codec();

@@ -35,39 +35,41 @@ struct lite_ffmpeg_video_encoder_private
     int height{};
     bool first_packet{};
     bool initialized{};
+    bool new_create = true;
 
     lite_ffmpeg_video_encoder_private() {
         buffer = std::make_shared<std::vector<uint8_t>>();
     }
 };
 
-lite_h264_video_encoder::lite_h264_video_encoder(int bitrate, size_t mixer_idx)
-    : lite_obs_encoder(bitrate, mixer_idx)
+h264_hw_video_encoder::h264_hw_video_encoder(lite_obs_encoder *encoder)
+    : lite_obs_encoder_interface(encoder)
 {
     d_ptr = std::make_unique<lite_ffmpeg_video_encoder_private>();
 }
 
-lite_h264_video_encoder::~lite_h264_video_encoder()
+h264_hw_video_encoder::~h264_hw_video_encoder()
 {
-
+    if (h264_hw_video_encoder::i_encoder_valid())
+        h264_hw_video_encoder::i_destroy();
 }
 
-const char *lite_h264_video_encoder::i_encoder_codec()
+const char *h264_hw_video_encoder::i_encoder_codec()
 {
     return "h264";
 }
 
-obs_encoder_type lite_h264_video_encoder::i_encoder_type()
+obs_encoder_type h264_hw_video_encoder::i_encoder_type()
 {
     return obs_encoder_type::OBS_ENCODER_VIDEO;
 }
 
-bool lite_h264_video_encoder::i_encoder_valid()
+bool h264_hw_video_encoder::i_encoder_valid()
 {
     return d_ptr->initialized;
 }
 
-bool lite_h264_video_encoder::i_create()
+bool h264_hw_video_encoder::i_create()
 {
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     avcodec_register_all();
@@ -107,7 +109,7 @@ fail:
     return false;
 }
 
-void lite_h264_video_encoder::i_destroy()
+void h264_hw_video_encoder::i_destroy()
 {
     if (d_ptr->initialized) {
         AVPacket pkt = {};
@@ -162,7 +164,7 @@ static inline void copy_data(AVFrame *pic, const struct encoder_frame *frame, in
     }
 }
 
-bool lite_h264_video_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off)
+bool h264_hw_video_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off)
 {
     AVPacket av_pkt{};
     av_init_packet(&av_pkt);
@@ -190,6 +192,7 @@ again:
 
     if (got_packet && av_pkt.size) {
         if (d_ptr->first_packet) {
+            packet->encoder_first_packet = true;
             d_ptr->first_packet = false;
             obs_extract_avc_headers(av_pkt.data, av_pkt.size, d_ptr->buffer, d_ptr->header, d_ptr->sei);
         } else {
@@ -199,7 +202,7 @@ again:
 
         uint8_t sei_buf[102400] = {0};
         int sei_len = 0;
-        bool got_sei = lite_obs_encoder_get_sei(sei_buf, &sei_len);
+        bool got_sei = encoder->lite_obs_encoder_get_sei(sei_buf, &sei_len);
         if (got_sei) {
             auto old_num = d_ptr->buffer->size();
             d_ptr->buffer->resize(old_num + sei_len);
@@ -220,27 +223,27 @@ again:
     return true;
 }
 
-bool lite_h264_video_encoder::i_get_extra_data(uint8_t **extra_data, size_t *size)
+bool h264_hw_video_encoder::i_get_extra_data(uint8_t **extra_data, size_t *size)
 {
     *extra_data = d_ptr->header.data();
     *size = d_ptr->header.size();
     return true;
 }
 
-bool lite_h264_video_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
+bool h264_hw_video_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
 {
     *sei_data = d_ptr->sei.data();
     *size = d_ptr->sei.size();
     return true;
 }
 
-void lite_h264_video_encoder::i_get_audio_info(audio_convert_info *info)
+void h264_hw_video_encoder::i_get_audio_info(audio_convert_info *info)
 {
 }
 
-void lite_h264_video_encoder::i_get_video_info(video_scale_info *info)
+void h264_hw_video_encoder::i_get_video_info(video_scale_info *info)
 {
-    video_format pref_format = lite_obs_encoder_get_preferred_video_format();
+    video_format pref_format = encoder->lite_obs_encoder_get_preferred_video_format();
     if (!valid_format(pref_format)) {
         pref_format = valid_format(info->format) ? info->format
                                                  : video_format::VIDEO_FORMAT_NV12;
@@ -249,20 +252,23 @@ void lite_h264_video_encoder::i_get_video_info(video_scale_info *info)
     info->format = pref_format;
 }
 
-bool lite_h264_video_encoder::i_gpu_encode_available()
+bool h264_hw_video_encoder::i_gpu_encode_available()
 {
     return false;
 }
 
-void lite_h264_video_encoder::i_update_encode_bitrate(int bitrate)
+void h264_hw_video_encoder::i_update_encode_bitrate(int bitrate)
 {
+    if (!d_ptr->context)
+        return;
+
     d_ptr->context->bit_rate = bitrate * 1000;
     d_ptr->context->rc_max_rate = bitrate * 1000;
 }
 
-bool lite_h264_video_encoder::update_settings()
+bool h264_hw_video_encoder::update_settings()
 {
-    int bitrate = lite_obs_encoder_bitrate();
+    int bitrate = encoder->lite_obs_encoder_bitrate();
     const char *rc = "CBR";
     int keyint_sec = 2;
 #ifdef WIN32
@@ -275,7 +281,7 @@ bool lite_h264_video_encoder::update_settings()
     int gpu = 0;
     int bf = 0; //todo
 
-    auto video = lite_obs_encoder_video();
+    auto video = encoder->lite_obs_encoder_video();
     const struct video_output_info *voi = video->video_output_get_info();
 
     video_scale_info info{};
@@ -303,8 +309,8 @@ bool lite_h264_video_encoder::update_settings()
 
     d_ptr->context->bit_rate = bitrate * 1000;
     d_ptr->context->rc_buffer_size = bitrate * 1000;
-    d_ptr->context->width = lite_obs_encoder_get_width();
-    d_ptr->context->height = lite_obs_encoder_get_height();
+    d_ptr->context->width = encoder->lite_obs_encoder_get_width();
+    d_ptr->context->height = encoder->lite_obs_encoder_get_height();
     d_ptr->context->time_base = {(int)voi->fps_den, (int)voi->fps_num};
     d_ptr->context->framerate = {(int)voi->fps_num, (int)voi->fps_den};
     d_ptr->context->pix_fmt = lite_obs_to_ffmpeg_video_format(info.format);
@@ -334,14 +340,14 @@ bool lite_h264_video_encoder::update_settings()
                    "\theight:       %d\n"
                    "\tb-frames:     %d\n"
                    "\tGPU:          %d\n",
-         rc, lite_obs_encoder_bitrate(), d_ptr->context->gop_size, preset, profile,
+         rc, encoder->lite_obs_encoder_bitrate(), d_ptr->context->gop_size, preset, profile,
          d_ptr->context->width, d_ptr->context->height,
          d_ptr->context->max_b_frames, gpu);
 
     return init_codec();
 }
 
-bool lite_h264_video_encoder::init_codec()
+bool h264_hw_video_encoder::init_codec()
 {
     auto ret = avcodec_open2(d_ptr->context, d_ptr->codec, NULL);
     if (ret < 0) {

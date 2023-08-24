@@ -13,12 +13,12 @@ class lite_obs_core_audio;
 class video_output;
 class audio_output;
 class lite_obs_output;
-class lite_obs_encoder : public std::enable_shared_from_this<lite_obs_encoder>
+class lite_obs_encoder;
+
+class lite_obs_encoder_interface
 {
 public:
-    lite_obs_encoder(int bitrate, size_t mixer_idx);
-    ~lite_obs_encoder();
-
+    lite_obs_encoder_interface(lite_obs_encoder *ec) : encoder(ec) {}
     virtual const char *i_encoder_codec() = 0;
     virtual obs_encoder_type i_encoder_type() = 0;
     virtual bool i_create() = 0;
@@ -33,8 +33,30 @@ public:
     virtual bool i_gpu_encode_available() { return false; }
     virtual void i_update_encode_bitrate(int bitrate) { }
 
+public:
+    lite_obs_encoder *encoder = nullptr;
+};
+
+class lite_obs_encoder : public std::enable_shared_from_this<lite_obs_encoder>
+{
+public:
+    enum class encoder_id {
+        None,
+        AAC,
+        FFMPEG_H264_HW,
+        X264,
+    };
+
+    lite_obs_encoder(encoder_id id, int bitrate, size_t mixer_idx);
+    ~lite_obs_encoder();
+
+    obs_encoder_type lite_obs_encoder_type();
+    bool lite_obs_encoder_reset_encoder_impl(encoder_id id);
+
     void lite_obs_encoder_update_bitrate(int bitrate);
     int lite_obs_encoder_bitrate();
+
+    const char *lite_obs_encoder_codec();
 
     void lite_obs_encoder_set_scaled_size(uint32_t width, uint32_t height);
     bool lite_obs_encoder_scaling_enabled();
@@ -91,6 +113,8 @@ private:
     static void receive_video(void *param, struct video_data *frame);
 
 private:
+    std::shared_ptr<lite_obs_encoder_interface> create_encoder(encoder_id id);
+
     auto get_callback_idx(new_packet cb, void *param);
 
     void get_audio_info_internal(audio_convert_info *info);

@@ -1,13 +1,14 @@
 #pragma once
 
 #include "lite-obs/lite_encoder.h"
+#include <x264.h>
 
-struct lite_ffmpeg_video_encoder_private;
-class h264_hw_video_encoder : public lite_obs_encoder_interface
+struct x264_encoder_private;
+class x264_encoder : public lite_obs_encoder_interface
 {
 public:
-    h264_hw_video_encoder(lite_obs_encoder *encoder);
-    virtual ~h264_hw_video_encoder();
+    x264_encoder(lite_obs_encoder *encoder);
+    virtual ~x264_encoder();
     virtual const char *i_encoder_codec();
     virtual obs_encoder_type i_encoder_type();
     virtual bool i_create();
@@ -22,9 +23,13 @@ public:
     virtual void i_update_encode_bitrate(int bitrate);
 
 private:
-    bool update_settings();
-    bool init_codec();
+    bool update_settings(bool update);
+    void update_params(bool update);
+    void load_headers();
+
+    void init_pic_data(x264_picture_t *pic, encoder_frame *frame);
+    void parse_packet(const std::shared_ptr<encoder_packet> &packet, x264_nal_t *nals, int nal_count, x264_picture_t *pic_out);
 
 private:
-    std::unique_ptr<lite_ffmpeg_video_encoder_private> d_ptr{};
+    std::unique_ptr<x264_encoder_private> d_ptr{};
 };

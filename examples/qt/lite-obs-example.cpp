@@ -160,3 +160,8 @@ void LiteObsExample::setSourceOrder(int order)
     if (source)
         source->set_order((lite_obs_media_source::order_movement)order);
 }
+
+void LiteObsExample::resetEncoderType(int type)
+{
+    m_liteObs->lite_obs_reset_encoder(type);
+}

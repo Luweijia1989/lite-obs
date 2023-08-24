@@ -7,6 +7,9 @@
 #include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/log.h"
+#include "lite-obs/encoder/h264_encoder.h"
+#include "lite-obs/encoder/aac_encoder.h"
+#include "lite-obs/encoder/x264_encoder.h"
 #include <mutex>
 #include <atomic>
 #include <list>
@@ -23,6 +26,10 @@ struct encoder_callback {
 struct lite_obs_encoder_private
 {
     std::recursive_mutex init_mutex;
+
+    lite_obs_encoder::encoder_id id{};
+    std::shared_ptr<lite_obs_encoder_interface> encoder_impl{};
+    std::mutex encoder_impl_mutex;
 
     int bitrate{};
 
@@ -83,18 +90,76 @@ struct lite_obs_encoder_private
     lite_obs_encoder_private() {
         custom_sei.resize(sizeof(uint8_t) * 1024 * 100);
     }
+
+    std::shared_ptr<lite_obs_encoder_interface> get_encoder_impl() {
+        std::shared_ptr<lite_obs_encoder_interface> encoder = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(encoder_impl_mutex);
+            encoder = encoder_impl;
+        }
+
+        return encoder;
+    }
 };
 
-lite_obs_encoder::lite_obs_encoder(int bitrate, size_t mixer_idx)
+lite_obs_encoder::lite_obs_encoder(encoder_id id, int bitrate, size_t mixer_idx)
 {
     d_ptr = std::make_unique<lite_obs_encoder_private>();
     d_ptr->bitrate = bitrate;
     d_ptr->mixer_idx = mixer_idx;
+
+    d_ptr->encoder_impl = create_encoder(id);
 }
 
 lite_obs_encoder::~lite_obs_encoder()
 {
     blog(LOG_DEBUG, "lite_obs_encoder destroyed.");
+}
+
+obs_encoder_type lite_obs_encoder::lite_obs_encoder_type()
+{
+    auto ec = d_ptr->get_encoder_impl();
+    return ec->i_encoder_type();
+}
+
+std::shared_ptr<lite_obs_encoder_interface> lite_obs_encoder::create_encoder(encoder_id id)
+{
+    d_ptr->id = id;
+    std::shared_ptr<lite_obs_encoder_interface> ec = nullptr;
+    switch (id) {
+    case encoder_id::AAC:
+        ec = std::make_shared<lite_aac_encoder>(this);
+        break;
+    case encoder_id::FFMPEG_H264_HW:
+        ec = std::make_shared<h264_hw_video_encoder>(this);
+        break;
+    case encoder_id::X264:
+        ec = std::make_shared<x264_encoder>(this);
+        break;
+    default:
+        break;
+    }
+
+    return ec;
+}
+
+bool lite_obs_encoder::lite_obs_encoder_reset_encoder_impl(encoder_id id)
+{
+    if (d_ptr->id == id)
+        return true;
+
+    auto ec = create_encoder(id);
+    if (!ec)
+        return false;
+
+    ec->i_create();
+
+    {
+        std::lock_guard<std::mutex> lock(d_ptr->encoder_impl_mutex);
+        d_ptr->encoder_impl = ec;
+    }
+
+    return true;
 }
 
 void lite_obs_encoder::get_audio_info_internal(audio_convert_info *info)
@@ -113,7 +178,8 @@ void lite_obs_encoder::get_audio_info_internal(audio_convert_info *info)
     if (info->speakers == speaker_layout::SPEAKERS_UNKNOWN)
         info->speakers = aoi->speakers;
 
-    i_get_audio_info(info);
+    auto ec = d_ptr->get_encoder_impl();
+    ec->i_get_audio_info(info);
 }
 
 void lite_obs_encoder::reset_audio_buffers()
@@ -135,13 +201,15 @@ void lite_obs_encoder::free_audio_buffers()
 
 void lite_obs_encoder::intitialize_audio_encoder()
 {
+    auto ec = d_ptr->get_encoder_impl();
+
     audio_convert_info info{};
-    i_get_audio_info(&info);
+    ec->i_get_audio_info(&info);
 
     d_ptr->samplerate = info.samples_per_sec;
     d_ptr->planes = get_audio_planes(info.format, info.speakers);
     d_ptr->blocksize = get_audio_size(info.format, info.speakers, 1);
-    d_ptr->framesize = i_get_frame_size();
+    d_ptr->framesize = ec->i_get_frame_size();
 
     d_ptr->framesize_bytes = d_ptr->blocksize * d_ptr->framesize;
     reset_audio_buffers();
@@ -156,10 +224,11 @@ bool lite_obs_encoder::obs_encoder_initialize_internal()
 
     obs_encoder_shutdown();
 
-    if (!i_create())
+    auto ec = d_ptr->get_encoder_impl();
+    if (!ec->i_create())
         return false;
 
-    if (i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO)
+    if (ec->i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO)
         intitialize_audio_encoder();
 
     d_ptr->initialized = true;
@@ -179,8 +248,9 @@ void lite_obs_encoder::obs_encoder_shutdown()
 {
     d_ptr->init_mutex.lock();
 
-    if (i_encoder_valid()) {
-        i_destroy();
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_valid()) {
+        ec->i_destroy();
         d_ptr->paired_encoder.reset();
         d_ptr->first_received = false;
         d_ptr->offset_usec = 0;
@@ -352,7 +422,7 @@ void lite_obs_encoder::receive_video_internal(struct video_data *frame)
 
     if (!d_ptr->first_received && pair) {
         if (!pair->d_ptr->first_received ||
-                pair->d_ptr->first_raw_ts > frame->timestamp) {
+            pair->d_ptr->first_raw_ts > frame->timestamp) {
             return;
         }
     }
@@ -382,7 +452,8 @@ void lite_obs_encoder::receive_video(void *param, struct video_data *frame)
 
 void lite_obs_encoder::add_connection()
 {
-    if (i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO) {
         struct audio_convert_info audio_info = {0};
         get_audio_info_internal(&audio_info);
         auto ao = d_ptr->a_media.lock();
@@ -390,9 +461,9 @@ void lite_obs_encoder::add_connection()
             ao->audio_output_connect(d_ptr->mixer_idx, &audio_info, lite_obs_encoder::receive_audio, this);
     } else {
         video_scale_info info{};
-        i_get_video_info(&info);
+        ec->i_get_video_info(&info);
 
-        if (i_gpu_encode_available()) {
+        if (ec->i_gpu_encode_available()) {
             start_gpu_encode();
         } else {
             d_ptr->core_video.lock()->lite_obs_core_video_change_raw_active(true);
@@ -407,11 +478,12 @@ void lite_obs_encoder::add_connection()
 
 void lite_obs_encoder::remove_connection(bool shutdown)
 {
-    if (i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() == obs_encoder_type::OBS_ENCODER_AUDIO) {
         auto ao = d_ptr->a_media.lock();
         ao->audio_output_disconnect(d_ptr->mixer_idx, lite_obs_encoder::receive_audio, this);
     } else {
-        if (i_gpu_encode_available()) {
+        if (ec->i_gpu_encode_available()) {
             stop_gpu_encode();
         } else {
             d_ptr->core_video.lock()->lite_obs_core_video_change_raw_active(false);
@@ -436,7 +508,8 @@ void lite_obs_encoder::obs_encoder_start_internal(new_packet cb, void *param)
 {
     encoder_callback callback = {false, cb, param};
 
-    if (!i_encoder_valid())
+    auto ec = d_ptr->get_encoder_impl();
+    if (!ec->i_encoder_valid())
         return;
 
     d_ptr->callbacks_mutex.lock();
@@ -481,8 +554,9 @@ void lite_obs_encoder::obs_encoder_actually_destroy()
 
     free_audio_buffers();
 
-    if (i_encoder_valid())
-        i_destroy();
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_valid())
+        ec->i_destroy();
     d_ptr->callbacks.clear();
     d_ptr.reset();
 }
@@ -574,7 +648,7 @@ bool lite_obs_encoder::do_encode(encoder_frame *frame)
         /* we use system time here to ensure sync with other encoders,
              * you do not want to use relative timestamps here */
         pkt->dts_usec = d_ptr->start_ts / 1000 +
-                packet_dts_usec(pkt) - d_ptr->offset_usec;
+                        packet_dts_usec(pkt) - d_ptr->offset_usec;
         pkt->sys_dts_usec = pkt->dts_usec;
 
         d_ptr->callbacks_mutex.lock();
@@ -585,7 +659,8 @@ bool lite_obs_encoder::do_encode(encoder_frame *frame)
         d_ptr->callbacks_mutex.unlock();
     };
 
-    auto success = i_encode(frame, pkt, send);
+    auto ec = d_ptr->get_encoder_impl();
+    auto success = ec->i_encode(frame, pkt, send);
     if (!success) {
         blog(LOG_ERROR, "Error encoding with encoder");
         full_stop();
@@ -624,7 +699,8 @@ void lite_obs_encoder::send_first_video_packet(encoder_callback *cb, std::shared
     if (!packet->keyframe)
         return;
 
-    if (!i_get_sei_data(&sei, &size) || !sei || !size) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (!ec->i_get_sei_data(&sei, &size) || !sei || !size) {
         cb->cb(cb->param, packet);
         cb->sent_first_packet = true;
         return;
@@ -644,7 +720,8 @@ void lite_obs_encoder::send_first_video_packet(encoder_callback *cb, std::shared
 
 void lite_obs_encoder::send_packet(encoder_callback *cb, std::shared_ptr<encoder_packet> packet)
 {
-    if (i_encoder_type() == obs_encoder_type::OBS_ENCODER_VIDEO && !cb->sent_first_packet)
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() == obs_encoder_type::OBS_ENCODER_VIDEO && !cb->sent_first_packet)
         send_first_video_packet(cb, packet);
     else
         cb->cb(cb->param, packet);
@@ -667,6 +744,8 @@ void lite_obs_encoder::obs_encoder_destroy()
 void lite_obs_encoder::lite_obs_encoder_update_bitrate(int bitrate)
 {
     d_ptr->bitrate = bitrate;
+    auto ec = d_ptr->get_encoder_impl();
+    ec->i_update_encode_bitrate(bitrate);
 }
 
 int lite_obs_encoder::lite_obs_encoder_bitrate()
@@ -674,9 +753,16 @@ int lite_obs_encoder::lite_obs_encoder_bitrate()
     return d_ptr->bitrate;
 }
 
+const char *lite_obs_encoder::lite_obs_encoder_codec()
+{
+    auto ec = d_ptr->get_encoder_impl();
+    return ec->i_encoder_codec();
+}
+
 void lite_obs_encoder::lite_obs_encoder_set_scaled_size(uint32_t width, uint32_t height)
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
         return;
 
     if (d_ptr->active) {
@@ -695,7 +781,8 @@ bool lite_obs_encoder::lite_obs_encoder_scaling_enabled()
 
 uint32_t lite_obs_encoder::lite_obs_encoder_get_width()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
         blog(LOG_WARNING, "obs_encoder_get_width:  encoder is not a video encoder");
         return 0;
     }
@@ -709,7 +796,8 @@ uint32_t lite_obs_encoder::lite_obs_encoder_get_width()
 
 uint32_t lite_obs_encoder::lite_obs_encoder_get_height()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
         blog(LOG_WARNING, "obs_encoder_get_height:  encoder is not a video encoder");
         return 0;
     }
@@ -723,7 +811,8 @@ uint32_t lite_obs_encoder::lite_obs_encoder_get_height()
 
 uint32_t lite_obs_encoder::lite_obs_encoder_get_sample_rate()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
         blog(LOG_WARNING, "lite_obs_encoder_get_sample_rate: encoder is not a audio encoder");
         return 0;
     }
@@ -737,7 +826,8 @@ uint32_t lite_obs_encoder::lite_obs_encoder_get_sample_rate()
 
 size_t lite_obs_encoder::lite_obs_encoder_get_frame_size()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
         blog(LOG_WARNING, "lite_obs_encoder_get_frame_size: encoder is not a audio encoder");
         return 0;
     }
@@ -747,7 +837,8 @@ size_t lite_obs_encoder::lite_obs_encoder_get_frame_size()
 
 void lite_obs_encoder::lite_obs_encoder_set_preferred_video_format(video_format format)
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
         return;
 
     d_ptr->preferred_format = format;
@@ -755,7 +846,8 @@ void lite_obs_encoder::lite_obs_encoder_set_preferred_video_format(video_format 
 
 video_format lite_obs_encoder::lite_obs_encoder_get_preferred_video_format()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO)
         return video_format::VIDEO_FORMAT_NONE;
 
     return d_ptr->preferred_format;
@@ -763,12 +855,14 @@ video_format lite_obs_encoder::lite_obs_encoder_get_preferred_video_format()
 
 bool lite_obs_encoder::lite_obs_encoder_get_extra_data(uint8_t **extra_data, size_t *size)
 {
-    return i_get_extra_data(extra_data, size);
+    auto ec = d_ptr->get_encoder_impl();
+    return ec->i_get_extra_data(extra_data, size);
 }
 
 void lite_obs_encoder::lite_obs_encoder_set_core_video(std::shared_ptr<lite_obs_core_video> c_v)
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
         blog(LOG_WARNING, "obs_encoder_set_video: encoder is not a video encoder");
         return;
     }
@@ -786,7 +880,8 @@ void lite_obs_encoder::lite_obs_encoder_set_core_video(std::shared_ptr<lite_obs_
 
 void lite_obs_encoder::lite_obs_encoder_set_core_audio(std::shared_ptr<lite_obs_core_audio> c_a)
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
         blog(LOG_WARNING, "lite_obs_encoder_set_audio: encoder is not a audio encoder");
         return;
     }
@@ -802,7 +897,8 @@ void lite_obs_encoder::lite_obs_encoder_set_core_audio(std::shared_ptr<lite_obs_
 
 std::shared_ptr<video_output> lite_obs_encoder::lite_obs_encoder_video()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
         blog(LOG_WARNING, "lite_obs_encoder_video: encoder is not a video encoder");
         return nullptr;
     }
@@ -812,7 +908,8 @@ std::shared_ptr<video_output> lite_obs_encoder::lite_obs_encoder_video()
 
 std::shared_ptr<audio_output> lite_obs_encoder::lite_obs_encoder_audio()
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO  ) {
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
         blog(LOG_WARNING, "lite_obs_encoder_audio: encoder is not a audio encoder");
         return nullptr;
     }
@@ -845,7 +942,8 @@ void lite_obs_encoder::lite_obs_encoder_set_lock(bool lock)
 
 void lite_obs_encoder::lite_obs_encoder_set_wait_for_video(bool wait)
 {
-    if (i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO)
+    auto ec = d_ptr->get_encoder_impl();
+    if (ec->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO)
         return;
 
     d_ptr->wait_for_video = wait;

@@ -521,6 +521,8 @@ bool rtmp_stream_output::send_video_header()
 
 bool rtmp_stream_output::send_headers()
 {
+    blog(LOG_INFO, "rtmp_stream_output send headers");
+
     d_ptr->sent_headers = true;
 
     if (!send_audio_header())
@@ -629,7 +631,7 @@ void rtmp_stream_output::dbr_set_bitrate()
     if (!vencoder)
         return;
 
-    vencoder->i_update_encode_bitrate((int)d_ptr->dbr_cur_bitrate);
+    vencoder->lite_obs_encoder_update_bitrate((int)d_ptr->dbr_cur_bitrate);
 }
 
 void rtmp_stream_output::send_thread_internal()
@@ -650,7 +652,7 @@ void rtmp_stream_output::send_thread_internal()
             }
         }
 
-        if (!d_ptr->sent_headers) {
+        if (!d_ptr->sent_headers || (packet->type == obs_encoder_type::OBS_ENCODER_VIDEO && packet->encoder_first_packet)) {
             if (!send_headers()) {
                 d_ptr->disconnected = true;
                 break;

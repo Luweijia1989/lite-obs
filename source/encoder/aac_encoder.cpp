@@ -94,15 +94,16 @@ struct lite_aac_encoder_private
     int frame_size_bytes{};
 };
 
-lite_aac_encoder::lite_aac_encoder(int bitrate, size_t mixer_idx)
-    : lite_obs_encoder(bitrate, mixer_idx)
+lite_aac_encoder::lite_aac_encoder(lite_obs_encoder *encoder)
+    : lite_obs_encoder_interface(encoder)
 {
     d_ptr = std::make_unique<lite_aac_encoder_private>();
 }
 
 lite_aac_encoder::~lite_aac_encoder()
 {
-
+    if (lite_aac_encoder::i_encoder_valid())
+        lite_aac_encoder::i_destroy();
 }
 
 const char *lite_aac_encoder::i_encoder_codec()
@@ -161,8 +162,8 @@ bool lite_aac_encoder::initialize_codec()
 
 bool lite_aac_encoder::i_create()
 {
-    int bitrate = lite_obs_encoder_bitrate();
-    auto audio = lite_obs_encoder_audio();
+    int bitrate = encoder->lite_obs_encoder_bitrate();
+    auto audio = encoder->lite_obs_encoder_audio();
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     avcodec_register_all();

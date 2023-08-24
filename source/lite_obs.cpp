@@ -229,9 +229,9 @@ bool lite_obs::lite_obs_start_output(std::string output_info, int vb, int ab, st
         d_ptr->output = output;
         d_ptr->output->set_output_signal_callback(callback);
 
-        d_ptr->video_encoder = std::make_shared<lite_h264_video_encoder>(vb, 0);
+        d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::X264, vb, 0);
         d_ptr->video_encoder->lite_obs_encoder_set_core_video(d_ptr->video);
-        d_ptr->audio_encoder = std::make_shared<lite_aac_encoder>(ab, 0);
+        d_ptr->audio_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::AAC, ab, 0);
         d_ptr->audio_encoder->lite_obs_encoder_set_core_audio(d_ptr->audio);
     }
 
@@ -275,4 +275,11 @@ void lite_obs::lite_obs_destroy_source(lite_obs_media_source *source)
 
     d_ptr->sources.erase(source);
     delete source;
+}
+
+
+void lite_obs::lite_obs_reset_encoder(int type)
+{
+    if (d_ptr->video_encoder)
+        d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl((lite_obs_encoder::encoder_id)type);
 }

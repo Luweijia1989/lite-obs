@@ -104,5 +104,19 @@ Item {
                 example.setSourceOrder(3)
             }
         }
+
+        Button {
+            text: "x264"
+            onClicked: {
+                example.resetEncoderType(3)
+            }
+        }
+
+        Button {
+            text: "ffmpeg"
+            onClicked: {
+                example.resetEncoderType(2)
+            }
+        }
     }
 }

@@ -268,7 +268,7 @@ void lite_obs_output::lite_obs_output_set_video_encoder(std::shared_ptr<lite_obs
     if (!encoder)
         return;
 
-    if (encoder->i_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
+    if (encoder->lite_obs_encoder_type() != obs_encoder_type::OBS_ENCODER_VIDEO) {
         blog(LOG_WARNING, "obs_output_set_video_encoder: encoder passed is not a video encoder");
         return;
     }
@@ -293,7 +293,7 @@ void lite_obs_output::lite_obs_output_set_audio_encoder(std::shared_ptr<lite_obs
     if (!encoder)
         return;
 
-    if (encoder->i_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
+    if (encoder->lite_obs_encoder_type() != obs_encoder_type::OBS_ENCODER_AUDIO) {
         blog(LOG_WARNING, "obs_output_set_audio_encoder: encoder passed is not a audio encoder");
         return;
     }

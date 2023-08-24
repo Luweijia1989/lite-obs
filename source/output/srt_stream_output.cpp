@@ -702,7 +702,7 @@ bool mpeg_ts_output::set_config()
 
     // 2.d) set video codec & id from video encoder
     auto vencoder = lite_obs_output_get_video_encoder();
-    config.video_encoder = vencoder->i_encoder_codec();
+    config.video_encoder = vencoder->lite_obs_encoder_codec();
     if (strcmp(config.video_encoder, "h264") == 0)
         config.video_encoder_id = AV_CODEC_ID_H264;
     else
@@ -901,7 +901,7 @@ bool mpeg_ts_output::get_video_headers(ffmpeg_data *data)
 
     uint8_t *data_p = nullptr;
     size_t size = 0;
-    if (vencoder->i_get_extra_data(&data_p, &size)) {
+    if (vencoder->lite_obs_encoder_get_extra_data(&data_p, &size)) {
         par->extradata = (uint8_t *)av_memdup(data_p, size);
         par->extradata_size = (int)size;
         avcodec_parameters_to_context(data->video_ctx, data->video->codecpar);
@@ -917,7 +917,7 @@ bool mpeg_ts_output::get_audio_headers(ffmpeg_data *data, int idx)
 
     uint8_t *data_p = nullptr;
     size_t size = 0;
-    if (aencoder->i_get_extra_data(&data_p, &size)) {
+    if (aencoder->lite_obs_encoder_get_extra_data(&data_p, &size)) {
         par->extradata = (uint8_t *)av_memdup(data_p, size);
         par->extradata_size = (int)size;
         avcodec_parameters_to_context(data->audio_infos[idx].ctx, par);
@@ -1021,7 +1021,7 @@ void mpeg_ts_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
 {
     auto ff_data = d_ptr->ff_data;
     int code;
-    if (!d_ptr->got_headers) {
+    if (!d_ptr->got_headers || (packet->encoder_first_packet && packet->type == obs_encoder_type::OBS_ENCODER_VIDEO)) {
         if (get_extradata()) {
             d_ptr->got_headers = true;
         } else {
