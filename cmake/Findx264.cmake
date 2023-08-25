@@ -19,7 +19,7 @@ find_path(X264_INCLUDE_DIRS NAMES x264.h
 
 find_library(
     X264_LIB
-    NAMES x264
+    NAMES libx264 x264
     PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
     NO_DEFAULT_PATH)
 

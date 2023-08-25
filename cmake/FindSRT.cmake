@@ -23,31 +23,17 @@ find_library(
     PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
     NO_DEFAULT_PATH)
 
-if(MSVC)
-    find_library(
-        SSL_LIB
-        NAMES libssl
-        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
-        NO_DEFAULT_PATH)
+find_library(
+    SSL_LIB
+    NAMES libssl ssl
+    PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
+    NO_DEFAULT_PATH)
 
-    find_library(
-        CRYPTO_LIB
-        NAMES libcrypto
-        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
-        NO_DEFAULT_PATH)
-else()
-    find_library(
-        SSL_LIB
-        NAMES ssl
-        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
-        NO_DEFAULT_PATH)
-
-    find_library(
-        CRYPTO_LIB
-        NAMES crypto
-        PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
-        NO_DEFAULT_PATH)
-endif()
+find_library(
+    CRYPTO_LIB
+    NAMES libcrypto crypto
+    PATHS ${THIRDPARTY_PATH}/${ARCH}/${SUFFIX}/lib
+    NO_DEFAULT_PATH)
 
 set(SRT_LIBS ${SRT_LIB} ${SSL_LIB} ${CRYPTO_LIB})
 
