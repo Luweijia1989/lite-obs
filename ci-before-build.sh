@@ -5,6 +5,8 @@ FFPKG_EXT=tar.xz
 echo "EXTERNAL_DEP_CACHE_HIT: ${EXTERNAL_DEP_CACHE_HIT}"
 echo "DEVTOOLS_CACHE_HIT: ${DEVTOOLS_CACHE_HIT}"
 
+mkdir -p external/${TARGET_OS}/{ffmpeg,thirdparty}
+
 du -hc external
 
 if [[ "$TARGET_OS" == mac* || "$TARGET_OS" == iOS* || "$TARGET_OS" == android ]]; then
@@ -36,13 +38,11 @@ elif [ `which brew` ]; then
     NDK_HOST=darwin
 fi
 
-mkdir -p external/${TARGET_OS}/{ffmpeg,thirdparty}
-
 if [[ "$EXTERNAL_DEP_CACHE_HIT" != "true" ]]; then
   FFPKG=ffmpeg-${FF_VER}-${TARGET_OS}${FF_EXTRA}-lite
   curl -kL -o ffmpeg-${TARGET_OS}.${FFPKG_EXT} https://sourceforge.net/projects/avbuild/files/${TARGET_OS}/${FFPKG}.${FFPKG_EXT}/download
   if [[ "${FFPKG_EXT}" == 7z ]]; then
-    rm external/${TARGET_OS}/ffmpeg
+    rm -rf external/${TARGET_OS}/ffmpeg
     7z x ffmpeg-${TARGET_OS}.${FFPKG_EXT} -o./external/${TARGET_OS}
     mv external/${TARGET_OS}/${FFPKG} external/${TARGET_OS}/ffmpeg
   else
@@ -51,7 +51,7 @@ if [[ "$EXTERNAL_DEP_CACHE_HIT" != "true" ]]; then
 
   curl -kL -o thirdparty-${TARGET_OS}.${FFPKG_EXT} https://sourceforge.net/projects/lite-obs-dep/files/${TARGET_OS}/thirdparty-${TARGET_OS}.${FFPKG_EXT}/download
   if [[ "${FFPKG_EXT}" == 7z ]]; then
-    rm external/${TARGET_OS}/thirdparty
+    rm -rf external/${TARGET_OS}/thirdparty
     7z x thirdparty-${TARGET_OS}.${FFPKG_EXT} -o./external/${TARGET_OS}
     mv external/${TARGET_OS}/thirdparty-${TARGET_OS} external/${TARGET_OS}/thirdparty
   else
