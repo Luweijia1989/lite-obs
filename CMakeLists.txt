@@ -123,8 +123,8 @@ else()
     endif()
 endif()
 
-set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/ffmpeg-${TARGET_OS})
-set(THIRDPARTY_PATH ${PROJECT_SOURCE_DIR}/external/thirdparty-${TARGET_OS})
+set(FFMPEG_PATH ${PROJECT_SOURCE_DIR}/external/${TARGET_OS}/ffmpeg)
+set(THIRDPARTY_PATH ${PROJECT_SOURCE_DIR}/external/${TARGET_OS}/thirdparty)
 
 include(import_library)
 
