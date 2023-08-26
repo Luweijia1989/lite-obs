@@ -6,7 +6,6 @@ on:
 env:
   FF_VER: master
   LLVM_VER: ${{ vars.LLVM_VER }}
-  VC_LTL_VER: ${{ vars.VC_LTL_VER }}
   NINJA_STATUS: '[%f/%t %e %r]'
   SF_PW: ${{ secrets.SF_PW }}
   SF_USER: ${{ secrets.SF_USER }}
@@ -36,7 +35,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: ./lite-obs/external
-        key: external-dep-${{ env.TARGET_OS }}-ffmpeg-${{ env.FF_VER }}-${{ vars.FF_SDK_ID }}}
+        key: external-dep-${{ env.TARGET_OS }}-ffmpeg-${{ env.FF_VER }}
     - name: Create Build Environment
       shell: bash
       env:
