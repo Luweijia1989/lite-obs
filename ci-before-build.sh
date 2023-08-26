@@ -11,7 +11,7 @@ if [[ "$TARGET_OS" == mac* || "$TARGET_OS" == iOS* || "$TARGET_OS" == android ]]
     FF_EXTRA=
 fi
 if [[ "$TARGET_OS" == "win"* || "$TARGET_OS" == "uwp"* ]]; then
-  FF_EXTRA=-vs2022${crt_extra}
+  FF_EXTRA=-vs2022
   FFPKG_EXT=7z
 fi
 
@@ -36,22 +36,26 @@ elif [ `which brew` ]; then
     NDK_HOST=darwin
 fi
 
-mkdir -p external/$TARGET_OS/{ffmpeg,thirdparty}
+mkdir -p external/${TARGET_OS}/{ffmpeg,thirdparty}
 
 if [[ "$EXTERNAL_DEP_CACHE_HIT" != "true" ]]; then
-  FFPKG=ffmpeg-${FF_VER}-${TARGET_OS}${FF_EXTRA}-lite${LTO_SUFFIX}
+  FFPKG=ffmpeg-${FF_VER}-${TARGET_OS}${FF_EXTRA}-lite
   curl -kL -o ffmpeg-${TARGET_OS}.${FFPKG_EXT} https://sourceforge.net/projects/avbuild/files/${TARGET_OS}/${FFPKG}.${FFPKG_EXT}/download
   if [[ "${FFPKG_EXT}" == 7z ]]; then
-    7z x ffmpeg-${TARGET_OS}.${FFPKG_EXT}
+    rm external/${TARGET_OS}/ffmpeg
+    7z x ffmpeg-${TARGET_OS}.${FFPKG_EXT} -o./external/${TARGET_OS}
+    mv external/${TARGET_OS}/${FFPKG} external/${TARGET_OS}/ffmpeg
   else
-    tar Jxf ffmpeg-${TARGET_OS}.${FFPKG_EXT} --strip-components=1 -C external/$TARGET_OS
+    tar Jxf ffmpeg-${TARGET_OS}.${FFPKG_EXT} --strip-components=1 -C external/$TARGET_OS/ffmpeg
   fi
 
   curl -kL -o thirdparty-${TARGET_OS}.${FFPKG_EXT} https://sourceforge.net/projects/lite-obs-dep/files/${TARGET_OS}/thirdparty-${TARGET_OS}.${FFPKG_EXT}/download
   if [[ "${FFPKG_EXT}" == 7z ]]; then
-    7z x thirdparty-${TARGET_OS}.${FFPKG_EXT}
+    rm external/${TARGET_OS}/thirdparty
+    7z x thirdparty-${TARGET_OS}.${FFPKG_EXT} -o./external/${TARGET_OS}
+    mv external/${TARGET_OS}/thirdparty-${TARGET_OS} external/${TARGET_OS}/thirdparty
   else
-    tar Jxf thirdparty-${TARGET_OS}.${FFPKG_EXT} --strip-components=1 -C external/$TARGET_OS
+    tar Jxf thirdparty-${TARGET_OS}.${FFPKG_EXT} --strip-components=1 -C external/$TARGET_OS/thirdparty
   fi
 fi
 
