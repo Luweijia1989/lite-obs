@@ -86,6 +86,9 @@ struct lite_obs_output_private
     ~lite_obs_output_private() {
         os_event_destroy(stopping_event);
         os_event_destroy(reconnect_stop_event);
+
+        if (reconnect_thread.joinable())
+            reconnect_thread.join();
     }
 };
 

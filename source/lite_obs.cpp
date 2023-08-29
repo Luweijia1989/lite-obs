@@ -11,6 +11,7 @@
 #include "lite-obs/output/rtmp_stream_output.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/log.h"
+#include "lite-obs/lite_obs_platform_config.h"
 
 #include <set>
 
