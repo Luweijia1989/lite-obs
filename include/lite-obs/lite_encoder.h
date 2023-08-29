@@ -21,10 +21,12 @@ public:
     lite_obs_encoder_interface(lite_obs_encoder *ec) : encoder(ec) {}
     virtual const char *i_encoder_codec() = 0;
     virtual obs_encoder_type i_encoder_type() = 0;
+    virtual void i_set_gs_render_ctx(void *ctx) { (void)ctx; }
     virtual bool i_create() = 0;
     virtual void i_destroy() = 0;
     virtual bool i_encoder_valid() = 0;
     virtual bool i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off) = 0;
+    virtual bool i_encode(int tex_id, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off) { return true; }
     virtual size_t i_get_frame_size() { return 0; }
     virtual bool i_get_extra_data(uint8_t **extra_data, size_t *size) { return false; }
     virtual bool i_get_sei_data(uint8_t **sei_data, size_t *size) { return false; }
@@ -39,12 +41,14 @@ public:
 
 class lite_obs_encoder : public std::enable_shared_from_this<lite_obs_encoder>
 {
+    friend class lite_obs_core_video;
 public:
     enum class encoder_id {
         None,
         AAC,
         FFMPEG_H264_HW,
         X264,
+        MEDIACODEC,
     };
 
     lite_obs_encoder(encoder_id id, int bitrate, size_t mixer_idx);
@@ -97,7 +101,6 @@ public:
     void obs_encoder_remove_output(std::shared_ptr<lite_obs_output> output);
     bool start_gpu_encode();
     void stop_gpu_encode();
-    bool do_encode(encoder_frame *frame);
     void obs_encoder_destroy();
 
 private:
@@ -111,6 +114,10 @@ private:
     static void receive_audio(void *param, size_t mix_idx, struct audio_data *data);
     void receive_video_internal(struct video_data *frame);
     static void receive_video(void *param, struct video_data *frame);
+    void receive_video_texture(uint64_t timestamp, int tex_id);
+
+    bool encode_send(void *data, bool raw_mem_data, std::shared_ptr<encoder_packet> pkt);
+    bool do_encode(encoder_frame *frame);
 
 private:
     std::shared_ptr<lite_obs_encoder_interface> create_encoder(encoder_id id);

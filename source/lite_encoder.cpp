@@ -10,6 +10,9 @@
 #include "lite-obs/encoder/h264_encoder.h"
 #include "lite-obs/encoder/aac_encoder.h"
 #include "lite-obs/encoder/x264_encoder.h"
+#include "lite-obs/encoder/mediacodec_encoder.h"
+#include "lite-obs/graphics/gs_subsystem.h"
+#include "lite-obs/lite_obs_platform_config.h"
 #include <mutex>
 #include <atomic>
 #include <list>
@@ -78,6 +81,8 @@ struct lite_obs_encoder_private
     std::weak_ptr<lite_obs_core_video> core_video{};
     std::weak_ptr<lite_obs_core_audio> core_audio{};
 
+    void *gs_render_ctx{};
+
     std::recursive_mutex callbacks_mutex;
     std::list<encoder_callback> callbacks{};
 
@@ -136,6 +141,10 @@ std::shared_ptr<lite_obs_encoder_interface> lite_obs_encoder::create_encoder(enc
     case encoder_id::X264:
         ec = std::make_shared<x264_encoder>(this);
         break;
+#if TARGET_PLATFORM == PLATFORM_ANDROID
+    case encoder_id::MEDIACODEC:
+        ec = std::make_shared<mediacodec_encoder>(this);
+#endif
     default:
         break;
     }
@@ -152,6 +161,7 @@ bool lite_obs_encoder::lite_obs_encoder_reset_encoder_impl(encoder_id id)
     if (!ec)
         return false;
 
+    ec->i_set_gs_render_ctx(d_ptr->gs_render_ctx);
     ec->i_create();
 
     {
@@ -225,6 +235,7 @@ bool lite_obs_encoder::obs_encoder_initialize_internal()
     obs_encoder_shutdown();
 
     auto ec = d_ptr->get_encoder_impl();
+    ec->i_set_gs_render_ctx(d_ptr->gs_render_ctx);
     if (!ec->i_create())
         return false;
 
@@ -450,6 +461,29 @@ void lite_obs_encoder::receive_video(void *param, struct video_data *frame)
     encoder->receive_video_internal(frame);
 }
 
+void lite_obs_encoder::receive_video_texture(uint64_t timestamp, int tex_id)
+{
+    std::shared_ptr<encoder_packet> pkt = std::make_shared<encoder_packet>();
+    pkt->timebase_num = d_ptr->timebase_num;
+    pkt->timebase_den = d_ptr->timebase_den;
+    pkt->encoder = shared_from_this();
+
+    auto pair = d_ptr->paired_encoder.lock();
+    if (!d_ptr->first_received && pair) {
+        if (!pair->d_ptr->first_received ||
+            pair->d_ptr->first_raw_ts > timestamp) {
+            return;
+        }
+    }
+
+    if (!d_ptr->start_ts)
+        d_ptr->start_ts = timestamp;
+
+    encode_send(&tex_id, false, pkt);
+
+    d_ptr->cur_pts += d_ptr->timebase_num;
+}
+
 void lite_obs_encoder::add_connection()
 {
     auto ec = d_ptr->get_encoder_impl();
@@ -460,16 +494,17 @@ void lite_obs_encoder::add_connection()
         if (ao)
             ao->audio_output_connect(d_ptr->mixer_idx, &audio_info, lite_obs_encoder::receive_audio, this);
     } else {
-        video_scale_info info{};
-        ec->i_get_video_info(&info);
 
         if (ec->i_gpu_encode_available()) {
             start_gpu_encode();
         } else {
             d_ptr->core_video.lock()->lite_obs_core_video_change_raw_active(true);
             auto vo = d_ptr->v_media.lock();
-            if (vo)
+            if (vo) {
+                video_scale_info info{};
+                ec->i_get_video_info(&info);
                 vo->video_output_connect(&info, lite_obs_encoder::receive_video, this);
+            }
         }
     }
 
@@ -624,21 +659,24 @@ void lite_obs_encoder::obs_encoder_remove_output(std::shared_ptr<lite_obs_output
 
 bool lite_obs_encoder::start_gpu_encode()
 {
-    return true;
+    auto cv = d_ptr->core_video.lock();
+    if (!cv)
+        return false;
+
+    return cv->start_gpu_encode(shared_from_this());
 }
 
 void lite_obs_encoder::stop_gpu_encode()
 {
+    auto cv = d_ptr->core_video.lock();
+    if (!cv)
+        return;
 
+    cv->stop_gpu_encode(shared_from_this());
 }
 
-bool lite_obs_encoder::do_encode(encoder_frame *frame)
+bool lite_obs_encoder::encode_send(void *data, bool raw_mem_data, std::shared_ptr<encoder_packet> pkt)
 {
-    auto pkt = std::make_shared<encoder_packet>();
-    pkt->timebase_num = d_ptr->timebase_num;
-    pkt->timebase_den = d_ptr->timebase_den;
-    pkt->encoder = shared_from_this();
-
     auto send = [this](std::shared_ptr<encoder_packet> pkt){
         if (!d_ptr->first_received) {
             d_ptr->offset_usec = packet_dts_usec(pkt);
@@ -660,13 +698,30 @@ bool lite_obs_encoder::do_encode(encoder_frame *frame)
     };
 
     auto ec = d_ptr->get_encoder_impl();
-    auto success = ec->i_encode(frame, pkt, send);
+    bool success = false;
+    if (raw_mem_data) {
+        auto frame = (encoder_frame *)data;
+        success = ec->i_encode(frame, pkt, send);
+    }
+    else
+        success = ec->i_encode(*(int *)data, pkt, send);
+
     if (!success) {
         blog(LOG_ERROR, "Error encoding with encoder");
         full_stop();
     }
 
     return success;
+}
+
+bool lite_obs_encoder::do_encode(encoder_frame *frame)
+{
+    auto pkt = std::make_shared<encoder_packet>();
+    pkt->timebase_num = d_ptr->timebase_num;
+    pkt->timebase_den = d_ptr->timebase_den;
+    pkt->encoder = shared_from_this();
+
+    return encode_send(frame, true, pkt);
 }
 
 void lite_obs_encoder::full_stop()
@@ -872,6 +927,7 @@ void lite_obs_encoder::lite_obs_encoder_set_core_video(std::shared_ptr<lite_obs_
 
     auto voi = c_v->core_video()->video_output_get_info();
 
+    d_ptr->gs_render_ctx = c_v->graphics()->render_context();
     d_ptr->core_video = c_v;
     d_ptr->v_media = c_v->core_video();
     d_ptr->timebase_num = voi->fps_den;

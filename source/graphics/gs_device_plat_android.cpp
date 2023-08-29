@@ -88,7 +88,7 @@ void *gs_device::gl_platform_create(void *)
     }
 
     if (!context) {
-        if(!(context = eglCreateContext(display, config, nullptr, contextAttribs))){
+        if(!(context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs))){
             blog(LOG_DEBUG, "eglCreateContext() returned error %d", eglGetError());
             return nullptr;
         }
@@ -146,6 +146,12 @@ void gs_device::gl_platform_destroy(void *plat)
 {
     gl_platform *p = (gl_platform *)plat;
     delete p;
+}
+
+void *gs_device::get_device_context_internal(void *param)
+{
+    gl_platform *plat = (gl_platform *)param;
+    return plat->context;
 }
 
 #endif

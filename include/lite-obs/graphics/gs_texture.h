@@ -110,6 +110,8 @@ public:
 
     bool gs_texture_load_texture_sampler(std::shared_ptr<gs_sampler_state> ss);
 
+    bool gs_texture_copy(const std::shared_ptr<gs_texture> &src);
+
 private:
     bool create_pixel_unpack_buffer();
     bool allocate_texture_mem();

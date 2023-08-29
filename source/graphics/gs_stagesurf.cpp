@@ -98,7 +98,7 @@ bool gs_stagesurface::can_stage(std::shared_ptr<gs_texture> src)
 
 /* Apparently for mac, PBOs won't do an asynchronous transfer unless you use
  * FBOs along with glReadPixels, which is really dumb. */
-void gs_stagesurface::gs_stagesurface_stage_texture(std::shared_ptr<gs_texture> src)
+void gs_stagesurface::gs_stagesurface_stage_texture(const std::shared_ptr<gs_texture> &src)
 {
     std::shared_ptr<fbo_info> fbo{};
     GLint last_fbo;
@@ -139,7 +139,7 @@ failed:
 }
 
 #else
-void gs_stagesurface::gs_stagesurface_stage_texture(std::shared_ptr<gs_texture> src)
+void gs_stagesurface::gs_stagesurface_stage_texture(const std::shared_ptr<gs_texture> &src)
 {
     if (!can_stage(src))
         goto failed;

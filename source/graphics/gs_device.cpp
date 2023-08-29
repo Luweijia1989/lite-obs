@@ -107,6 +107,11 @@ bool gs_device::gs_device_texture_share_enabled()
     return d_ptr->texture_share_enabled;
 }
 
+void *gs_device::device_context()
+{
+    return get_device_context_internal(d_ptr->plat);
+}
+
 void gs_device::device_enter_context()
 {
     if (!d_ptr->plat)

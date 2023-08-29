@@ -308,6 +308,46 @@ bool gs_texture::gs_texture_load_texture_sampler(std::shared_ptr<gs_sampler_stat
     return success;
 }
 
+bool gs_texture::gs_texture_copy(const std::shared_ptr<gs_texture> &src)
+{
+    auto fbo = src->get_fbo();
+    GLint last_fbo;
+    bool success = false;
+
+    if (!fbo)
+        return false;
+
+    if (!gl_get_integer_v(GL_READ_FRAMEBUFFER_BINDING, &last_fbo))
+        return false;
+    if (!gl_bind_framebuffer(GL_READ_FRAMEBUFFER, fbo->fbo))
+        return false;
+    if (!gl_bind_texture(d_ptr->base.gl_target, d_ptr->base.texture))
+        goto fail;
+
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + 0,
+                           src->d_ptr->base.gl_target, src->d_ptr->base.texture, 0);
+    if (!gl_success("glFrameBufferTexture2D"))
+        goto fail;
+
+    glReadBuffer(GL_COLOR_ATTACHMENT0 + 0);
+    if (!gl_success("glReadBuffer"))
+        goto fail;
+
+    glCopyTexSubImage2D(d_ptr->base.gl_target, 0, 0, 0, 0, 0, src->d_ptr->width, src->d_ptr->height);
+    if (!gl_success("glCopyTexSubImage2D"))
+        goto fail;
+
+    success = true;
+
+fail:
+    if (!gl_bind_texture(d_ptr->base.gl_target, 0))
+        success = false;
+    if (!gl_bind_framebuffer(GL_READ_FRAMEBUFFER, last_fbo))
+        success = false;
+
+    return success;
+}
+
 bool gs_texture::allocate_texture_mem()
 {
     if (!gl_bind_texture(GL_TEXTURE_2D, d_ptr->base.texture))

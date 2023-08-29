@@ -22,6 +22,7 @@ public:
     ~graphics_subsystem();
 
     bool gs_texture_share_enabled();
+    void *render_context();
 
     static std::unique_ptr<graphics_subsystem> gs_create_graphics_system(void *plat);
 public:

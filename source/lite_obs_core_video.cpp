@@ -1,6 +1,7 @@
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/lite_obs_source.h"
+#include "lite-obs/lite_encoder.h"
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/graphics/gs_texture.h"
 #include "lite-obs/graphics/gs_stagesurf.h"
@@ -35,6 +36,12 @@ struct obs_graphics_context {
     bool was_active{};
 };
 
+struct lite_obs_tex_frame {
+    std::shared_ptr<gs_texture> tex{};
+    uint64_t timestamp{};
+    int count{};
+};
+
 struct lite_obs_core_video_private
 {
     uintptr_t core_ptr;
@@ -43,6 +50,7 @@ struct lite_obs_core_video_private
     std::unique_ptr<graphics_subsystem> graphics{};
 
     std::shared_ptr<gs_stagesurface> copy_surfaces[NUM_TEXTURES][NUM_CHANNELS]{};
+    bool output_scaled{};
     std::shared_ptr<gs_texture> render_texture{};
     std::shared_ptr<gs_texture> output_texture{};
     std::shared_ptr<gs_texture> convert_textures[NUM_CHANNELS]{};
@@ -57,8 +65,6 @@ struct lite_obs_core_video_private
     int cur_texture{};
 
     std::weak_ptr<gs_stagesurface> mapped_surfaces[NUM_CHANNELS];
-
-    std::mutex gpu_encoder_mutex;
 
     uint64_t video_time{};
     uint64_t video_frame_interval_ns{};
@@ -83,6 +89,16 @@ struct lite_obs_core_video_private
 
     std::atomic_long raw_active{};
     std::atomic_long gpu_encoder_active{};
+
+    std::mutex gpu_encoder_mutex;
+    std::list<std::shared_ptr<lite_obs_tex_frame>> gpu_encoder_queue{};
+    std::list<std::shared_ptr<lite_obs_tex_frame>> gpu_encoder_avail_queue{};
+    std::list<std::shared_ptr<lite_obs_encoder>> gpu_encoders;
+    os_sem_t *gpu_encode_semaphore{};
+    os_event_t *gpu_encode_inactive{};
+    std::thread gpu_encode_thread;
+    bool gpu_encode_thread_initialized{};
+    std::atomic_bool gpu_encode_stop{};
 
     lite_obs_core_video::output_video_info ovi{};
 };
@@ -325,7 +341,7 @@ void lite_obs_core_video::render_convert_texture(std::shared_ptr<gs_texture> tex
     d_ptr->texture_converted = true;
 }
 
-void lite_obs_core_video::stage_output_texture(int cur_texture)
+void lite_obs_core_video::stage_output_texture(const std::shared_ptr<gs_texture> &tex, int cur_texture)
 {
     for (int c = 0; c < NUM_CHANNELS; ++c) {
         auto surface = d_ptr->mapped_surfaces[c].lock();
@@ -338,7 +354,7 @@ void lite_obs_core_video::stage_output_texture(int cur_texture)
     if (!d_ptr->gpu_conversion) {
         auto copy = d_ptr->copy_surfaces[cur_texture][0];
         if (copy)
-            copy->gs_stagesurface_stage_texture(d_ptr->output_texture);
+            copy->gs_stagesurface_stage_texture(tex);
 
         d_ptr->textures_copied[cur_texture] = true;
     } else if (d_ptr->texture_converted) {
@@ -364,23 +380,15 @@ void lite_obs_core_video::render_video(bool raw_active, const bool gpu_active, i
     if (raw_active || gpu_active) {
         auto texture = render_output_texture();
 
-#ifdef _WIN32
-        if (gpu_active)
-            gs_flush();
-#endif
-
-        if (d_ptr->gpu_conversion)
+        if (raw_active && d_ptr->gpu_conversion)
             render_convert_texture(texture);
 
-#ifdef _WIN32
         if (gpu_active) {
-            gs_flush();
-            //output_gpu_encoders(video, raw_active); todo
+            output_gpu_encoders();
         }
-#endif
 
         if (raw_active)
-            stage_output_texture(cur_texture);
+            stage_output_texture(texture, cur_texture);
     }
 
     gs_set_render_target(NULL, NULL);
@@ -430,73 +438,73 @@ void lite_obs_core_video::set_gpu_converted_data_internal(bool using_nv12_tex, v
 {
     if (using_nv12_tex) {
         const uint8_t *const in_uv = set_gpu_converted_plane(
-                    width, height, input->frame.linesize[0], output->linesize[0],
-                input->frame.data[0], output->data[0]);
+            width, height, input->frame.linesize[0], output->linesize[0],
+            input->frame.data[0], output->data[0]);
 
         const uint32_t height_d2 = height / 2;
         set_gpu_converted_plane(width, height_d2, input->frame.linesize[0],
-                output->linesize[1], in_uv,
-                output->data[1]);
+                                output->linesize[1], in_uv,
+                                output->data[1]);
     } else {
         switch (format) {
         case video_format::VIDEO_FORMAT_I420: {
             set_gpu_converted_plane(width, height,
                                     input->frame.linesize[0],
-                    output->linesize[0],
-                    input->frame.data[0],
-                    output->data[0]);
+                                    output->linesize[0],
+                                    input->frame.data[0],
+                                    output->data[0]);
 
             const uint32_t width_d2 = width / 2;
             const uint32_t height_d2 = height / 2;
 
             set_gpu_converted_plane(width_d2, height_d2,
                                     input->frame.linesize[1],
-                    output->linesize[1],
-                    input->frame.data[1],
-                    output->data[1]);
+                                    output->linesize[1],
+                                    input->frame.data[1],
+                                    output->data[1]);
 
             set_gpu_converted_plane(width_d2, height_d2,
                                     input->frame.linesize[2],
-                    output->linesize[2],
-                    input->frame.data[2],
-                    output->data[2]);
+                                    output->linesize[2],
+                                    input->frame.data[2],
+                                    output->data[2]);
 
             break;
         }
         case video_format::VIDEO_FORMAT_NV12: {
             set_gpu_converted_plane(width, height,
                                     input->frame.linesize[0],
-                    output->linesize[0],
-                    input->frame.data[0],
-                    output->data[0]);
+                                    output->linesize[0],
+                                    input->frame.data[0],
+                                    output->data[0]);
 
             const uint32_t height_d2 = height / 2;
             set_gpu_converted_plane(width, height_d2,
                                     input->frame.linesize[1],
-                    output->linesize[1],
-                    input->frame.data[1],
-                    output->data[1]);
+                                    output->linesize[1],
+                                    input->frame.data[1],
+                                    output->data[1]);
 
             break;
         }
         case video_format::VIDEO_FORMAT_I444: {
             set_gpu_converted_plane(width, height,
                                     input->frame.linesize[0],
-                    output->linesize[0],
-                    input->frame.data[0],
-                    output->data[0]);
+                                    output->linesize[0],
+                                    input->frame.data[0],
+                                    output->data[0]);
 
             set_gpu_converted_plane(width, height,
                                     input->frame.linesize[1],
-                    output->linesize[1],
-                    input->frame.data[1],
-                    output->data[1]);
+                                    output->linesize[1],
+                                    input->frame.data[1],
+                                    output->data[1]);
 
             set_gpu_converted_plane(width, height,
                                     input->frame.linesize[2],
-                    output->linesize[2],
-                    input->frame.data[2],
-                    output->data[2]);
+                                    output->linesize[2],
+                                    input->frame.data[2],
+                                    output->data[2]);
 
             break;
         }
@@ -830,6 +838,8 @@ bool lite_obs_core_video::init_textures()
     if (!d_ptr->output_texture)
         return false;
 
+    d_ptr->output_scaled = !resolution_close(d_ptr->output_width, d_ptr->output_height);
+
     return true;
 }
 
@@ -970,4 +980,234 @@ void lite_obs_core_video::lite_obs_stop_video()
 std::shared_ptr<video_output> lite_obs_core_video::core_video()
 {
     return d_ptr->video;
+}
+
+#define NUM_ENCODE_TEXTURES 5
+bool lite_obs_core_video::init_gpu_encoding()
+{
+    d_ptr->gpu_encode_stop = false;
+
+    auto ovi = d_ptr->video->video_output_get_info();
+    for (size_t i = 0; i < NUM_ENCODE_TEXTURES; i++) {
+        auto tex = gs_texture_create(ovi->width, ovi->height, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
+        if (!tex) {
+            return false;
+        }
+
+        auto frame = std::make_shared<lite_obs_tex_frame>();
+        frame->tex = tex;
+        d_ptr->gpu_encoder_avail_queue.push_back(frame);
+    }
+
+    if (os_sem_init(&d_ptr->gpu_encode_semaphore, 0) != 0)
+        return false;
+    if (os_event_init(&d_ptr->gpu_encode_inactive, OS_EVENT_TYPE_MANUAL) != 0)
+        return false;
+
+    d_ptr->gpu_encode_thread = std::thread(lite_obs_core_video::gpu_encode_thread, this);
+
+    os_event_signal(d_ptr->gpu_encode_inactive);
+
+    d_ptr->gpu_encode_thread_initialized = true;
+    return true;
+}
+
+#define NUM_ENCODE_TEXTURE_FRAMES_TO_WAIT 1
+void lite_obs_core_video::gpu_encode_thread_internal()
+{
+    int wait_frames = NUM_ENCODE_TEXTURE_FRAMES_TO_WAIT;
+    while (os_sem_wait(d_ptr->gpu_encode_semaphore) == 0) {
+        if (d_ptr->gpu_encode_stop)
+            break;
+
+        if (wait_frames) {
+            wait_frames--;
+            continue;
+        }
+
+        os_event_reset(d_ptr->gpu_encode_inactive);
+
+        /* -------------- */
+
+        std::list<std::shared_ptr<lite_obs_encoder>> encoders;
+
+        d_ptr->gpu_encoder_mutex.lock();
+
+        auto tf = d_ptr->gpu_encoder_queue.front();
+        d_ptr->gpu_encoder_queue.pop_front();
+        auto timestamp = tf->timestamp;
+        auto tex_id = tf->tex->gs_texture_obj();
+
+        d_ptr->video->video_output_inc_texture_frames();
+        encoders = d_ptr->gpu_encoders;
+
+        d_ptr->gpu_encoder_mutex.unlock();
+        /* -------------- */
+
+        for (auto iter = encoders.begin(); iter != encoders.end(); iter++) {
+            auto &encoder = *iter;
+            encoder->receive_video_texture(timestamp, tex_id);
+        }
+
+        /* -------------- */
+
+        d_ptr->gpu_encoder_mutex.lock();
+
+        if (--tf->count) {
+            tf->timestamp += d_ptr->video->video_output_get_frame_time();
+            d_ptr->gpu_encoder_queue.push_front(tf);
+
+            d_ptr->video->video_output_inc_texture_skipped_frames();
+        } else {
+            d_ptr->gpu_encoder_avail_queue.push_back(tf);
+        }
+
+        d_ptr->gpu_encoder_mutex.unlock();
+
+        /* -------------- */
+
+        os_event_signal(d_ptr->gpu_encode_inactive);
+
+        encoders.clear();
+    }
+}
+
+void lite_obs_core_video::gpu_encode_thread(void *param)
+{
+    lite_obs_core_video *cv = (lite_obs_core_video *)param;
+    cv->gpu_encode_thread_internal();
+}
+
+void lite_obs_core_video::free_gpu_encoding()
+{
+    if (d_ptr->gpu_encode_semaphore) {
+        os_sem_destroy(d_ptr->gpu_encode_semaphore);
+        d_ptr->gpu_encode_semaphore = NULL;
+    }
+    if (d_ptr->gpu_encode_inactive) {
+        os_event_destroy(d_ptr->gpu_encode_inactive);
+        d_ptr->gpu_encode_inactive = NULL;
+    }
+
+    d_ptr->gpu_encoder_queue.clear();
+    d_ptr->gpu_encoder_avail_queue.clear();
+}
+
+void lite_obs_core_video::stop_gpu_encoding_thread()
+{
+    if (d_ptr->gpu_encode_thread_initialized) {
+        d_ptr->gpu_encode_stop = true;
+        os_sem_post(d_ptr->gpu_encode_semaphore);
+        if (d_ptr->gpu_encode_thread.joinable())
+            d_ptr->gpu_encode_thread.join();
+        d_ptr->gpu_encode_thread_initialized = false;
+    }
+}
+
+bool lite_obs_core_video::start_gpu_encode(const std::shared_ptr<lite_obs_encoder> &encoder)
+{
+    gs_enter_contex(d_ptr->graphics);
+    d_ptr->gpu_encoder_mutex.lock();
+
+    bool success = false;
+    if (d_ptr->gpu_encoders.empty())
+        success = init_gpu_encoding();
+    if (success)
+        d_ptr->gpu_encoders.push_back(encoder);
+    else
+        free_gpu_encoding();
+
+    d_ptr->gpu_encoder_mutex.unlock();
+    gs_leave_context();
+
+    if (success) {
+        d_ptr->gpu_encoder_active++;
+        d_ptr->video->video_output_inc_texture_encoders();
+    }
+
+    return success;
+}
+
+void lite_obs_core_video::stop_gpu_encode(const std::shared_ptr<lite_obs_encoder> &encoder)
+{
+    d_ptr->gpu_encoder_active--;
+    d_ptr->video->video_output_dec_texture_encoders();
+
+    d_ptr->gpu_encoder_mutex.lock();
+    d_ptr->gpu_encoders.remove(encoder);
+
+    bool call_free = false;
+    if (d_ptr->gpu_encoders.empty())
+        call_free = true;
+    d_ptr->gpu_encoder_mutex.unlock();
+
+    os_event_wait(d_ptr->gpu_encode_inactive);
+
+    if (call_free) {
+        stop_gpu_encoding_thread();
+
+        gs_enter_contex(d_ptr->graphics);
+        d_ptr->gpu_encoder_mutex.lock();
+        free_gpu_encoding();
+        d_ptr->gpu_encoder_mutex.unlock();
+        gs_leave_context();
+    }
+}
+
+void lite_obs_core_video::output_gpu_encoders()
+{
+    if (!d_ptr->vframe_info_buffer_gpu.size)
+        return;
+
+    obs_vframe_info vframe_info;
+    circlebuf_pop_front(&d_ptr->vframe_info_buffer_gpu, &vframe_info, sizeof(vframe_info));
+
+    auto queue_frame = [this](obs_vframe_info *info) -> bool {
+        bool duplicate = d_ptr->gpu_encoder_avail_queue.empty() || (!d_ptr->gpu_encoder_queue.empty() && info->count > 1);
+        if (duplicate) {
+            if (d_ptr->gpu_encoder_queue.empty())
+                return false;
+
+            auto tf = d_ptr->gpu_encoder_queue.front();
+            tf->count++;
+            os_sem_post(d_ptr->gpu_encode_semaphore);
+            return --info->count;
+        }
+
+        auto tf = d_ptr->gpu_encoder_avail_queue.front();
+        d_ptr->gpu_encoder_avail_queue.pop_front();
+
+        /* the vframe_info->count > 1 case causing a copy can only happen if by
+         * some chance the very first frame has to be duplicated for whatever
+         * reason.  otherwise, it goes to the 'duplicate' case above, which
+         * will ensure better performance. */
+        if (info->count > 1) {
+            tf->tex->gs_texture_copy(d_ptr->output_scaled ? d_ptr->output_texture : d_ptr->render_texture);
+        } else {
+            std::shared_ptr<gs_texture> tex{};
+            if (d_ptr->output_scaled) {
+                tex = d_ptr->output_texture;
+                d_ptr->output_texture = tf->tex;
+            } else {
+                tex = d_ptr->render_texture;
+                d_ptr->render_texture = tf->tex;
+            }
+
+            tf->tex = tex;
+        }
+
+        tf->count = 1;
+        tf->timestamp = info->timestamp;
+        d_ptr->gpu_encoder_queue.push_back(tf);
+
+        os_sem_post(d_ptr->gpu_encode_semaphore);
+
+        return --info->count;
+
+    };
+
+    d_ptr->gpu_encoder_mutex.lock();
+    while (queue_frame(&vframe_info))
+        ;
+    d_ptr->gpu_encoder_mutex.unlock();
 }

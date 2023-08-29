@@ -268,6 +268,14 @@ bool graphics_subsystem::gs_texture_share_enabled()
     return d_ptr->device->gs_device_texture_share_enabled();
 }
 
+void *graphics_subsystem::render_context()
+{
+    if (!d_ptr->device)
+        return nullptr;
+
+    return d_ptr->device->device_context();
+}
+
 std::unique_ptr<graphics_subsystem> graphics_subsystem::gs_create_graphics_system(void *plat)
 {
     gl_context_helper helper;

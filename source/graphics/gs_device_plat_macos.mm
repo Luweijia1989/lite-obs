@@ -94,4 +94,9 @@ void gs_device::gl_platform_destroy(void *plat)
     delete p;
 }
 
+void *gs_device::get_device_context_internal(void *param)
+{
+    gl_platform *plat = (gl_platform *)param;
+    return plat->ctx;
+}
 #endif

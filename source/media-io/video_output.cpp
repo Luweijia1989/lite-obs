@@ -427,3 +427,29 @@ bool video_output::scale_video_output(std::shared_ptr<video_input> input, video_
 
     return success;
 }
+
+void video_output::video_output_inc_texture_encoders()
+{
+    d_ptr->gpu_refs++;
+    if (d_ptr->gpu_refs == 1 && !d_ptr->raw_active) {
+        reset_frames();
+    }
+}
+
+void video_output::video_output_dec_texture_encoders()
+{
+    d_ptr->gpu_refs--;
+    if (d_ptr->gpu_refs == 0 && !d_ptr->raw_active) {
+        log_skipped();
+    }
+}
+
+void video_output::video_output_inc_texture_frames()
+{
+    d_ptr->total_frames++;
+}
+
+void video_output::video_output_inc_texture_skipped_frames()
+{
+    d_ptr->skipped_frames++;
+}

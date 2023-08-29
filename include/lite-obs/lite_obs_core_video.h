@@ -9,8 +9,10 @@ class gs_texture;
 class gs_program;
 class graphics_subsystem;
 class video_output;
+class lite_obs_encoder;
 class lite_obs_core_video
 {
+    friend class lite_obs_encoder;
 public:  
     struct output_video_info {
         uint32_t fps_num{};
@@ -63,7 +65,7 @@ private:
     bool resolution_close(uint32_t width, uint32_t height);
     std::shared_ptr<gs_program> get_scale_effect_internal();
     std::shared_ptr<gs_program> get_scale_effect(uint32_t width, uint32_t height);
-    void stage_output_texture(int cur_texture);
+    void stage_output_texture(const std::shared_ptr<gs_texture> &tex, int cur_texture);
     void render_convert_plane(std::shared_ptr<gs_texture> target);
     void render_convert_texture(std::shared_ptr<gs_texture> texture);
     void render_all_sources();
@@ -77,6 +79,15 @@ private:
     void output_frame(bool raw_active, const bool gpu_active);
     bool graphics_loop(obs_graphics_context *context);
     void graphics_thread_internal();
+
+    bool init_gpu_encoding();
+    void free_gpu_encoding();
+    void stop_gpu_encoding_thread();
+    static void gpu_encode_thread(void *param);
+    void gpu_encode_thread_internal();
+    bool start_gpu_encode(const std::shared_ptr<lite_obs_encoder> &encoder);
+    void stop_gpu_encode(const std::shared_ptr<lite_obs_encoder> &encoder);
+    void output_gpu_encoders();
 
 private:
     std::unique_ptr<lite_obs_core_video_private> d_ptr{};

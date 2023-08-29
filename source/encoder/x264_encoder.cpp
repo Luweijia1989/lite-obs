@@ -149,14 +149,16 @@ void x264_encoder::parse_packet(const std::shared_ptr<encoder_packet> &packet, x
     d_ptr->buffer->resize(bytes);
 
     int copy_index = 0;
+    if (got_sei) {
+        memcpy(d_ptr->buffer->data(), sei_buf, sei_len);
+        copy_index += sei_len;
+    }
+
     for (int i = 0; i < nal_count; i++) {
         x264_nal_t *nal = nals + i;
         memcpy(d_ptr->buffer->data() + copy_index, nal->p_payload, nal->i_payload);
         copy_index += nal->i_payload;
     }
-
-    if (got_sei)
-        memcpy(d_ptr->buffer->data() + copy_index, sei_buf, sei_len);
 
     packet->data = d_ptr->buffer;
     packet->type = obs_encoder_type::OBS_ENCODER_VIDEO;

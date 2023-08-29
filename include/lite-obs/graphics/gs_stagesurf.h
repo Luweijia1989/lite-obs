@@ -13,7 +13,7 @@ public:
 
     bool gs_stagesurface_create(uint32_t width, uint32_t height, gs_color_format color_format);
 
-    void gs_stagesurface_stage_texture(std::shared_ptr<gs_texture> src);
+    void gs_stagesurface_stage_texture(const std::shared_ptr<gs_texture> &src);
 
     uint32_t gs_stagesurface_get_width();
     uint32_t gs_stagesurface_get_height();

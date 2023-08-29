@@ -60,6 +60,11 @@ public:
     uint64_t video_output_get_frame_time();
     uint32_t video_output_get_total_frames();
 
+    void video_output_inc_texture_encoders();
+    void video_output_dec_texture_encoders();
+    void video_output_inc_texture_frames();
+    void video_output_inc_texture_skipped_frames();
+
 private:
     void video_thread_internal();
     bool video_output_cur_frame();

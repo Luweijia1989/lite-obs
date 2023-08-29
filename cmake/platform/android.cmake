@@ -28,4 +28,5 @@ target_link_libraries(
     GLESv3
     android
     z
+    mediandk
 )

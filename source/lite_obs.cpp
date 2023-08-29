@@ -4,12 +4,11 @@
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_obs_source.h"
+#include "lite-obs/lite_encoder.h"
 #include "lite-obs/output/null_output.h"
 #include "lite-obs/output/file_output.h"
 #include "lite-obs/output/srt_stream_output.h"
 #include "lite-obs/output/rtmp_stream_output.h"
-#include "lite-obs/encoder/h264_encoder.h"
-#include "lite-obs/encoder/aac_encoder.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/log.h"
 
@@ -229,7 +228,11 @@ bool lite_obs::lite_obs_start_output(std::string output_info, int vb, int ab, st
         d_ptr->output = output;
         d_ptr->output->set_output_signal_callback(callback);
 
-        d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::X264, vb, 0);
+#if TARGET_PLATFORM == PLATFORM_ANDROID
+        d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::MEDIACODEC, vb, 0);
+#else
+        d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::FFMPEG_H264_HW, vb, 0);
+#endif
         d_ptr->video_encoder->lite_obs_encoder_set_core_video(d_ptr->video);
         d_ptr->audio_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::AAC, ab, 0);
         d_ptr->audio_encoder->lite_obs_encoder_set_core_audio(d_ptr->audio);

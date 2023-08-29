@@ -245,7 +245,7 @@ bool lite_aac_encoder::i_create()
 }
 
 void lite_aac_encoder::i_destroy()
-{
+{  
     if (d_ptr->samples[0])
         av_freep(&d_ptr->samples[0]);
     if (d_ptr->context)

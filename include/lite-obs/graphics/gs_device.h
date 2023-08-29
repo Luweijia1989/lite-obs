@@ -34,6 +34,8 @@ public:
     int device_create(void *plat);
     void device_destroy();
 
+    void *device_context();
+
     void device_enter_context();
     void device_leave_context();
 
@@ -69,6 +71,8 @@ public:
 private:
     void *gl_platform_create(void *plat_info);
     void gl_platform_destroy(void *plat);
+
+    void *get_device_context_internal(void *param);
 
     void set_texture_share_enabled(bool enabled);
 
