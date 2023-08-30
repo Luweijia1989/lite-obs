@@ -150,7 +150,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_INCLUDE_DIRS})
 target_link_libraries     (${PROJECT_NAME} PUBLIC ${PROJECT_LIBRARIES} liteobs-compiler-options glm)
 
 ##################################################    install     ##################################################
-if (APPLE)
+if (${TARGET_OS} STREQUAL iOS)
     install(TARGETS ${PROJECT_NAME}
         FRAMEWORK DESTINATION .)
 else()
