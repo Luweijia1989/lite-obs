@@ -30,7 +30,6 @@ public:
     virtual void i_destroy();
     virtual bool i_encoder_valid();
     virtual bool i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off);
-    virtual bool i_encode(int tex_id, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off);
     virtual bool i_get_extra_data(uint8_t **extra_data, size_t *size);
     virtual bool i_get_sei_data(uint8_t **sei_data, size_t *size);
     virtual void i_get_audio_info(struct audio_convert_info *info);

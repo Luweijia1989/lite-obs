@@ -377,7 +377,7 @@ fail:
 
 bool lite_obs_encoder::send_audio_data()
 {
-    struct encoder_frame enc_frame;
+    encoder_frame enc_frame;
 
     memset(&enc_frame, 0, sizeof(struct encoder_frame));
 
@@ -426,27 +426,33 @@ void lite_obs_encoder::receive_audio(void *param, size_t mix_idx, struct audio_d
     encoder->receive_audio_internal(mix_idx, data);
 }
 
-void lite_obs_encoder::receive_video_internal(struct video_data *frame)
+bool lite_obs_encoder::video_frame_valid(uint64_t timestamp)
 {
     auto pair = d_ptr->paired_encoder.lock();
-    struct encoder_frame enc_frame;
-
     if (!d_ptr->first_received && pair) {
         if (!pair->d_ptr->first_received ||
-            pair->d_ptr->first_raw_ts > frame->timestamp) {
-            return;
+            pair->d_ptr->first_raw_ts > timestamp) {
+            return false;
         }
     }
 
-    memset(&enc_frame, 0, sizeof(struct encoder_frame));
+    if (!d_ptr->start_ts)
+        d_ptr->start_ts = timestamp;
 
+    return true;
+}
+
+void lite_obs_encoder::receive_video_internal(struct video_data *frame)
+{
+    if (!video_frame_valid(frame->timestamp))
+        return;
+
+    encoder_frame enc_frame;
+    memset(&enc_frame, 0, sizeof(struct encoder_frame));
     for (size_t i = 0; i < MAX_AV_PLANES; i++) {
         enc_frame.data[i] = frame->frame.data[i];
         enc_frame.linesize[i] = frame->frame.linesize[i];
     }
-
-    if (!d_ptr->start_ts)
-        d_ptr->start_ts = frame->timestamp;
 
     enc_frame.frames = 1;
     enc_frame.pts = d_ptr->cur_pts;
@@ -463,25 +469,21 @@ void lite_obs_encoder::receive_video(void *param, struct video_data *frame)
 
 void lite_obs_encoder::receive_video_texture(uint64_t timestamp, int tex_id)
 {
+    if (!video_frame_valid(timestamp))
+        return;
+
+    encoder_frame frame;
+    frame.pts = d_ptr->cur_pts;
+    frame.data[0] = (uint8_t *)&tex_id;
+    frame.frames = 1;
+
     std::shared_ptr<encoder_packet> pkt = std::make_shared<encoder_packet>();
     pkt->timebase_num = d_ptr->timebase_num;
     pkt->timebase_den = d_ptr->timebase_den;
     pkt->encoder = shared_from_this();
 
-    auto pair = d_ptr->paired_encoder.lock();
-    if (!d_ptr->first_received && pair) {
-        if (!pair->d_ptr->first_received ||
-            pair->d_ptr->first_raw_ts > timestamp) {
-            return;
-        }
-    }
-
-    if (!d_ptr->start_ts)
-        d_ptr->start_ts = timestamp;
-
-    encode_send(&tex_id, false, pkt);
-
-    d_ptr->cur_pts += d_ptr->timebase_num;
+    if (encode_send(&frame, pkt))
+        d_ptr->cur_pts += d_ptr->timebase_num;
 }
 
 void lite_obs_encoder::add_connection()
@@ -675,7 +677,7 @@ void lite_obs_encoder::stop_gpu_encode()
     cv->stop_gpu_encode(shared_from_this());
 }
 
-bool lite_obs_encoder::encode_send(void *data, bool raw_mem_data, std::shared_ptr<encoder_packet> pkt)
+bool lite_obs_encoder::encode_send(encoder_frame *frame, std::shared_ptr<encoder_packet> pkt)
 {
     auto send = [this](std::shared_ptr<encoder_packet> pkt){
         if (!d_ptr->first_received) {
@@ -698,14 +700,7 @@ bool lite_obs_encoder::encode_send(void *data, bool raw_mem_data, std::shared_pt
     };
 
     auto ec = d_ptr->get_encoder_impl();
-    bool success = false;
-    if (raw_mem_data) {
-        auto frame = (encoder_frame *)data;
-        success = ec->i_encode(frame, pkt, send);
-    }
-    else
-        success = ec->i_encode(*(int *)data, pkt, send);
-
+    bool success = ec->i_encode(frame, pkt, send);
     if (!success) {
         blog(LOG_ERROR, "Error encoding with encoder");
         full_stop();
@@ -721,7 +716,7 @@ bool lite_obs_encoder::do_encode(encoder_frame *frame)
     pkt->timebase_den = d_ptr->timebase_den;
     pkt->encoder = shared_from_this();
 
-    return encode_send(frame, true, pkt);
+    return encode_send(frame, pkt);
 }
 
 void lite_obs_encoder::full_stop()

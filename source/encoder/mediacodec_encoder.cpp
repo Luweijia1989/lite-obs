@@ -120,7 +120,8 @@ struct mediacodec_encoder_private
 {
     int width{};
     int height{};
-    int64_t pts{};
+    int fps_num{};
+    int fps_den{};
     bool initialized = false;
     std::vector<uint8_t> sei;
     std::vector<uint8_t> header;
@@ -176,11 +177,10 @@ bool mediacodec_encoder::init_mediacodec()
         return false;
 
     auto voi = video->video_output_get_info();
-
+    d_ptr->fps_num = voi->fps_num;
+    d_ptr->fps_den = voi->fps_den;
     d_ptr->mediacodec = AMediaCodec_createEncoderByType("video/avc");
 
-    int keyint_sec = 2;
-    int fps = voi->fps_num / voi->fps_den;
     AMediaFormat* format = AMediaFormat_new();
     AMediaFormat_setString(format, "mime", "video/avc");
     d_ptr->width = encoder->lite_obs_encoder_get_width();
@@ -192,8 +192,8 @@ bool mediacodec_encoder::init_mediacodec()
     AMediaFormat_setInt32(format, "height", d_ptr->height);
     AMediaFormat_setInt32(format, "color-format", 0x7F000789);
     AMediaFormat_setInt32(format, "bitrate", encoder->lite_obs_encoder_bitrate() * 1000);
-    AMediaFormat_setInt32(format, "frame-rate", fps);
-    AMediaFormat_setInt32(format, "i-frame-interval", keyint_sec);
+    AMediaFormat_setInt32(format, "frame-rate", voi->fps_num / voi->fps_den);
+    AMediaFormat_setInt32(format, "i-frame-interval", 2);
     //    AMediaFormat_setInt32(format, "profile", 0x1);
     AMediaFormat_setInt32(format, "max-bframes", 0);
 #if __ANDROID_API__ >= 28
@@ -280,7 +280,6 @@ bool mediacodec_encoder::init_egl_related()
 bool mediacodec_encoder::i_create()
 {
     bool success = true;
-    d_ptr->pts = 0;
     do {
         if (!init_mediacodec() || !init_egl_related()) {
             success = false;
@@ -332,14 +331,6 @@ bool mediacodec_encoder::i_encoder_valid()
     return d_ptr->initialized;
 }
 
-bool mediacodec_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void (std::shared_ptr<encoder_packet>)> send_off)
-{
-    (void)frame;
-    (void)packet;
-    (void)send_off;
-    return true;
-}
-
 void mediacodec_encoder::draw_texture(int tex_id)
 {
     glViewport(0, 0, d_ptr->width, d_ptr->height);
@@ -348,16 +339,21 @@ void mediacodec_encoder::draw_texture(int tex_id)
 
     d_ptr->texture_drawer->draw_texture(tex_id);
 }
+
 #define AMEDIACODEC_BUFFER_FLAG_KEY_FRAME 1
 #define TIMEOUT_USEC 8000
-bool mediacodec_encoder::i_encode(int tex_id, std::shared_ptr<encoder_packet> packet, std::function<void (std::shared_ptr<encoder_packet>)> send_off)
+bool mediacodec_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void (std::shared_ptr<encoder_packet>)> send_off)
 {
     if (!eglMakeCurrent(d_ptr->display, d_ptr->egl_surface, d_ptr->egl_surface, d_ptr->egl_ctx)) {
         blog(LOG_ERROR, "NOTE: eglMakeCurrent failed");
         return false;
     }
 
+    int tex_id = *((int *)frame->data[0]);
     draw_texture(tex_id);
+
+    auto pts = frame->pts * d_ptr->fps_den * 1000000 / d_ptr->fps_num;
+    eglPresentationTimeANDROID(d_ptr->display, d_ptr->egl_surface, pts * 1000);
 
     if (!eglSwapBuffers(d_ptr->display, d_ptr->egl_surface)) {
         blog(LOG_ERROR, "NOTE: eglSwapBuffers failed");
@@ -417,12 +413,11 @@ bool mediacodec_encoder::i_encode(int tex_id, std::shared_ptr<encoder_packet> pa
                     }
 
                     memcpy(d_ptr->buffer->data() + copy_index, output_buf, info.size);
-
                     packet->data = d_ptr->buffer;
                     packet->type = obs_encoder_type::OBS_ENCODER_VIDEO;
-                    auto pts = d_ptr->pts++;
-                    packet->pts = pts;
-                    packet->dts = pts;
+
+                    packet->pts = info.presentationTimeUs / (d_ptr->fps_den * 1000000 / d_ptr->fps_num);
+                    packet->dts = packet->pts;
                     packet->keyframe = !(info.flags & AMEDIACODEC_BUFFER_FLAG_KEY_FRAME);
                     send_off(packet);
                 }

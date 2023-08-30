@@ -175,7 +175,7 @@ bool h264_hw_video_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encod
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
     auto ret = avcodec_send_frame(d_ptr->context, d_ptr->vframe);
     if (ret == 0)
-again:
+    again:
         ret = avcodec_receive_packet(d_ptr->context, &av_pkt);
 
     auto got_packet = (ret == 0);
@@ -315,16 +315,16 @@ bool h264_hw_video_encoder::update_settings()
     d_ptr->context->framerate = {(int)voi->fps_num, (int)voi->fps_den};
     d_ptr->context->pix_fmt = lite_obs_to_ffmpeg_video_format(info.format);
     d_ptr->context->colorspace = info.colorspace == video_colorspace::VIDEO_CS_709
-            ? AVCOL_SPC_BT709
-            : AVCOL_SPC_BT470BG;
+                                     ? AVCOL_SPC_BT709
+                                     : AVCOL_SPC_BT470BG;
     d_ptr->context->color_range = info.range == video_range_type::VIDEO_RANGE_FULL
-            ? AVCOL_RANGE_JPEG
-            : AVCOL_RANGE_MPEG;
+                                      ? AVCOL_RANGE_JPEG
+                                      : AVCOL_RANGE_MPEG;
     d_ptr->context->max_b_frames = bf;
 
     if (keyint_sec)
         d_ptr->context->gop_size =
-                keyint_sec * voi->fps_num / voi->fps_den;
+            keyint_sec * voi->fps_num / voi->fps_den;
     else
         d_ptr->context->gop_size = 250;
 

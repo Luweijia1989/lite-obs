@@ -26,7 +26,6 @@ public:
     virtual void i_destroy() = 0;
     virtual bool i_encoder_valid() = 0;
     virtual bool i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off) = 0;
-    virtual bool i_encode(int tex_id, std::shared_ptr<encoder_packet> packet, std::function<void(std::shared_ptr<encoder_packet>)> send_off) { return true; }
     virtual size_t i_get_frame_size() { return 0; }
     virtual bool i_get_extra_data(uint8_t **extra_data, size_t *size) { return false; }
     virtual bool i_get_sei_data(uint8_t **sei_data, size_t *size) { return false; }
@@ -112,11 +111,12 @@ private:
     bool send_audio_data();
     void receive_audio_internal(size_t mix_idx, struct audio_data *data);
     static void receive_audio(void *param, size_t mix_idx, struct audio_data *data);
+    bool video_frame_valid(uint64_t timestamp);
     void receive_video_internal(struct video_data *frame);
     static void receive_video(void *param, struct video_data *frame);
     void receive_video_texture(uint64_t timestamp, int tex_id);
 
-    bool encode_send(void *data, bool raw_mem_data, std::shared_ptr<encoder_packet> pkt);
+    bool encode_send(encoder_frame *frame, std::shared_ptr<encoder_packet> pkt);
     bool do_encode(encoder_frame *frame);
 
 private:
