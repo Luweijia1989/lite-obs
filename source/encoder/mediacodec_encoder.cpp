@@ -38,35 +38,34 @@ TextureDrawer::TextureDrawer()
     }
     )";
 
-    // 2. compile shaders
     unsigned int vertex, fragment;
-    // vertex shader
+
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, NULL);
     glCompileShader(vertex);
-    // fragment Shader
+
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &fShaderCode, NULL);
     glCompileShader(fragment);
-    // shader Program
+
     shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex);
     glAttachShader(shader_program, fragment);
     glLinkProgram(shader_program);
-    // delete the shaders as they're linked into our program now and no longer necessary
+
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
     float vertices[] = {
         // positions                 // texture coords
-        1.0f,  -1.0f, 0.0f,     1.0f, 1.0f, // top right
-        1.0f,  1.0f, 0.0f,     1.0f, 0.0f, // bottom right
-        -1.0f, 1.0f, 0.0f,    0.0f, 0.0f, // bottom left
-        -1.0f, -1.0f, 0.0f,    0.0f, 1.0f  // top left
+        1.0f,  -1.0f, 0.0f,    1.0f, 1.0f,
+        1.0f,  1.0f,  0.0f,    1.0f, 0.0f,
+        -1.0f, 1.0f,  0.0f,    0.0f, 0.0f,
+        -1.0f, -1.0f, 0.0f,    0.0f, 1.0f
     };
     unsigned int indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+        0, 1, 3,
+        1, 2, 3
     };
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -208,11 +207,23 @@ bool mediacodec_encoder::init_mediacodec()
     AMediaFormat_delete(format);
     blog(LOG_INFO, "CodecEncoder AMediaCodec_configure %d ", rc);
 
-    // after {@link #configure} and before {@link #start}.
     rc = AMediaCodec_createInputSurface(d_ptr->mediacodec, &d_ptr->mediacodec_input_window);
     if(AMEDIA_OK == rc) {
         rc = AMediaCodec_start(d_ptr->mediacodec);
         blog(LOG_INFO, "CodecEncoder AMediaCodec_start %d ",rc);
+
+        blog(LOG_INFO, "settings:\n"
+                       "\trate_control:     CBR\n"
+                       "\tbitrate:          %d\n"
+                       "\tfps_num:          %d\n"
+                       "\tfps_den:          %d\n"
+                       "\twidth:            %d\n"
+                       "\theight:           %d\n"
+                       "\ti-frame-interval: 2\n",
+             encoder->lite_obs_encoder_bitrate(),
+             voi->fps_num, voi->fps_den,
+             d_ptr->width, d_ptr->height);
+
         return (rc==AMEDIA_OK);
     } else {
         blog(LOG_WARNING, "CodecEncoder AMediaCodec_createInputSurface != OK.");
@@ -245,7 +256,7 @@ bool mediacodec_encoder::init_egl_related()
         EGL_DEPTH_SIZE, 16,
         EGL_STENCIL_SIZE, 8,
         EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
-        EGL_RECORDABLE_ANDROID, 1,      // placeholder for recordable [@-3]
+        EGL_RECORDABLE_ANDROID, 1,
         EGL_NONE
     };
 
