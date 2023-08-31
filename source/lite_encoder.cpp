@@ -11,6 +11,7 @@
 #include "lite-obs/encoder/aac_encoder.h"
 #include "lite-obs/encoder/x264_encoder.h"
 #include "lite-obs/encoder/mediacodec_encoder.h"
+#include "lite-obs/encoder/videotoolbox_encoder.h"
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/lite_obs_platform_config.h"
 #include <mutex>
@@ -144,7 +145,13 @@ std::shared_ptr<lite_obs_encoder_interface> lite_obs_encoder::create_encoder(enc
 #if TARGET_PLATFORM == PLATFORM_ANDROID
     case encoder_id::MEDIACODEC:
         ec = std::make_shared<mediacodec_encoder>(this);
+        break;
+#elif TARGET_PLATFORM == PLATFORM_IOS || TARGET_PLATFORM == PLATFORM_MAC
+    case encoder_id::VIDEOTOOLBOX:
+        ec = std::make_shared<videotoolbox_encoder>(this);
+        break;
 #endif
+
     default:
         break;
     }

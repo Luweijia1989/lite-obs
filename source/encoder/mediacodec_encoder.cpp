@@ -445,16 +445,6 @@ bool mediacodec_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
     return true;
 }
 
-void mediacodec_encoder::i_get_audio_info(audio_convert_info *info)
-{
-    (void)info;
-}
-
-void mediacodec_encoder::i_get_video_info(video_scale_info *info)
-{
-    (void)info;
-}
-
 bool mediacodec_encoder::i_gpu_encode_available()
 {
     return true;

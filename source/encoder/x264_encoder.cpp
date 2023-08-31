@@ -210,10 +210,6 @@ bool x264_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
     return true;
 }
 
-void x264_encoder::i_get_audio_info(audio_convert_info *info)
-{
-}
-
 static inline bool valid_format(video_format format)
 {
     return format == video_format::VIDEO_FORMAT_I420

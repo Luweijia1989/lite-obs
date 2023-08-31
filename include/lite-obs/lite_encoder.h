@@ -48,6 +48,7 @@ public:
         FFMPEG_H264_HW,
         X264,
         MEDIACODEC,
+        VIDEOTOOLBOX,
     };
 
     lite_obs_encoder(encoder_id id, int bitrate, size_t mixer_idx);

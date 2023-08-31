@@ -231,6 +231,8 @@ bool lite_obs::lite_obs_start_output(std::string output_info, int vb, int ab, st
 
 #if TARGET_PLATFORM == PLATFORM_ANDROID
         d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::MEDIACODEC, vb, 0);
+#elif TARGET_PLATFORM == PLATFORM_MAC || TARGET_PLATFORM == PLATFORM_IOS
+        d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::VIDEOTOOLBOX, vb, 0);
 #else
         d_ptr->video_encoder = std::make_shared<lite_obs_encoder>(lite_obs_encoder::encoder_id::FFMPEG_H264_HW, vb, 0);
 #endif

@@ -237,10 +237,6 @@ bool h264_hw_video_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
     return true;
 }
 
-void h264_hw_video_encoder::i_get_audio_info(audio_convert_info *info)
-{
-}
-
 void h264_hw_video_encoder::i_get_video_info(video_scale_info *info)
 {
     video_format pref_format = encoder->lite_obs_encoder_get_preferred_video_format();
