@@ -164,6 +164,8 @@ bool lite_obs_encoder::lite_obs_encoder_reset_encoder_impl(encoder_id id)
     if (d_ptr->id == id)
         return true;
 
+    remove_connection(false);
+
     auto ec = create_encoder(id);
     if (!ec)
         return false;
@@ -175,6 +177,8 @@ bool lite_obs_encoder::lite_obs_encoder_reset_encoder_impl(encoder_id id)
         std::lock_guard<std::mutex> lock(d_ptr->encoder_impl_mutex);
         d_ptr->encoder_impl = ec;
     }
+
+    add_connection();
 
     return true;
 }
