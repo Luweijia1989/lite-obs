@@ -28,7 +28,7 @@ void gs_device::gs_destroy_platform_rc(void *plat)
 
 void *gs_device::gl_platform_create(void *)
 {
-    auto pair = gl_create_context();
+    auto pair = gl_create_context(gl_current_context());
     if (pair.second)
       set_texture_share_enabled(true);
 

@@ -1,16 +1,16 @@
 #include "lite-obs/graphics/gl_context_helpers_apple.h"
 #include "lite-obs/lite_obs_platform_config.h"
 
-#if TARGET_PLATFORM == PLATFORM_IOS || TARGET_PLATFORM == PLATFORM_MAC
+#ifdef PLATFORM_APPLE
 #include "lite-obs/graphics/gs_subsystem_info.h"
 
 #if TARGET_PLATFORM == PLATFORM_MAC
 #include <AppKit/AppKit.h>
-std::pair<void *, bool> gl_create_context()
+std::pair<void *, bool> gl_create_context(void *share_ctx)
 {
     bool shared = false;
     NSOpenGLContext *ctx = nil;
-    NSOpenGLContext *current_ctx = [NSOpenGLContext currentContext];
+    NSOpenGLContext *current_ctx = (NSOpenGLContext *)share_ctx;
     if (current_ctx) {
         GLint major, minor;
         glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -65,11 +65,11 @@ void gl_done_current()
 
 #include <GLKit/GLKit.h>
 
-std::pair<void *, bool> gl_create_context()
+std::pair<void *, bool> gl_create_context(void *share_ctx)
 {
     bool shared = false;
     EAGLContext *ctx = nil;
-    EAGLContext *current_ctx = [EAGLContext currentContext];
+    EAGLContext *current_ctx = (EAGLContext *)share_ctx;
     if (current_ctx) {
         ctx = [[EAGLContext alloc] initWithAPI:[current_ctx API] sharegroup: [current_ctx sharegroup]];
         if (ctx)

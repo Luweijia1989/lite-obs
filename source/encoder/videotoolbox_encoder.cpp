@@ -1,15 +1,17 @@
 #include "lite-obs/encoder/videotoolbox_encoder.h"
 
-#if TARGET_PLATFORM == PLATFORM_IOS || TARGET_PLATFORM == PLATFORM_MAC
+#ifdef PLATFORM_APPLE
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/util/log.h"
-#include "lite-obs/media-io/video_output.h"
 #include "lite-obs/lite_obs_avc.h"
+#include "lite-obs/graphics/gl_context_helpers_apple.h"
+#include "lite-obs/graphics/gs_simple_texture_drawer.h"
 
 #include <CoreFoundation/CoreFoundation.h>
 #include <VideoToolbox/VideoToolbox.h>
 #include <VideoToolbox/VTVideoEncoderList.h>
 #include <CoreMedia/CoreMedia.h>
+#include <CoreVideo/CoreVideo.h>
 #include <string>
 
 
@@ -42,6 +44,17 @@ struct videotoolbox_encoder_private
 {
     bool initialized{};
     void *shared_ctx{};
+
+#if TARGET_PLATFORM == PLATFORM_IOS
+    bool texture_encode_initialized{};
+    void *gl_ctx{};
+    CVOpenGLESTextureCacheRef texture_cache{};
+    CVOpenGLESTextureRef texture{};
+    CVPixelBufferRef target{};
+    GLuint fbo{};
+    GLuint depth_buffer{};
+    std::unique_ptr<gs_simple_texture_drawer> texture_drawer{};
+#endif
 
     std::string vt_encoder_id;
     uint32_t width{};
@@ -131,10 +144,8 @@ bool videotoolbox_encoder::update_params()
 
 static inline CFDictionaryRef create_encoder_spec(const char *vt_encoder_id)
 {
-    CFStringRef id =
-        CFStringCreateWithFileSystemRepresentation(nullptr, vt_encoder_id);
-
     CFTypeRef keys[1] = {kVTVideoEncoderSpecification_EncoderID};
+    CFStringRef id = CFStringCreateWithFileSystemRepresentation(nullptr, vt_encoder_id);
     CFTypeRef values[1] = {id};
 
     CFDictionaryRef encoder_spec =
@@ -147,6 +158,7 @@ static inline CFDictionaryRef create_encoder_spec(const char *vt_encoder_id)
     return encoder_spec;
 }
 
+#if TARGET_PLATFORM == PLATFORM_MAC
 static inline CFDictionaryRef create_pixbuf_spec(int vt_pix_fmt, int width, int height)
 {
     CFNumberRef PixelFormat = CFNumberCreate(
@@ -171,6 +183,7 @@ static inline CFDictionaryRef create_pixbuf_spec(int vt_pix_fmt, int width, int 
 
     return pixbuf_spec;
 }
+#endif
 
 void sample_encoded_callback(void *data, void *source, OSStatus status,
                              VTEncodeInfoFlags info_flags,
@@ -187,12 +200,14 @@ void sample_encoded_callback(void *data, void *source, OSStatus status,
     }
 
     CMSimpleQueueRef queue = (CMSimpleQueueRef)data;
-    CVPixelBufferRef pixbuf = (CVPixelBufferRef)source;
     if (buffer != nullptr) {
         CFRetain(buffer);
         CMSimpleQueueEnqueue(queue, buffer);
     }
+#if TARGET_PLATFORM == PLATFORM_MAC
+    CVPixelBufferRef pixbuf = (CVPixelBufferRef)source;
     CFRelease(pixbuf);
+#endif
 }
 
 static OSStatus session_set_prop_int(VTCompressionSessionRef session, CFStringRef key, int32_t val)
@@ -243,21 +258,30 @@ static OSStatus session_set_colorspace(VTCompressionSessionRef session, video_co
 bool videotoolbox_encoder::create_encoder()
 {
     CFDictionaryRef encoder_spec = create_encoder_spec(d_ptr->vt_encoder_id.c_str());
-    CFDictionaryRef pixbuf_spec = create_pixbuf_spec(d_ptr->vt_pix_fmt, d_ptr->width, d_ptr->height);
-
     VTCompressionSessionRef s;
+#if TARGET_PLATFORM == PLATFORM_MAC
+    CFDictionaryRef pixbuf_spec = create_pixbuf_spec(d_ptr->vt_pix_fmt, d_ptr->width, d_ptr->height);
     auto code = VTCompressionSessionCreate(kCFAllocatorDefault, d_ptr->width,
                                            d_ptr->height, d_ptr->codec_type,
                                            encoder_spec, pixbuf_spec, nullptr,
                                            &sample_encoded_callback, d_ptr->queue,
                                            &s);
 
+    CFRelease(pixbuf_spec);
+#else
+    // iOS does not need a pixel buffer pool
+    auto code = VTCompressionSessionCreate(kCFAllocatorDefault, d_ptr->width,
+                                           d_ptr->height, d_ptr->codec_type,
+                                           encoder_spec, nullptr, nullptr,
+                                           &sample_encoded_callback, d_ptr->queue,
+                                           &s);
+#endif
+
     if (code != noErr) {
         blog(LOG_ERROR, "videotoolbox: VTCompressionSessionCreate: %d", code);
     }
 
     CFRelease(encoder_spec);
-    CFRelease(pixbuf_spec);
 
 #if TARGET_PLATFORM == PLATFORM_MAC
     CFBooleanRef b = nullptr;
@@ -370,7 +394,7 @@ void videotoolbox_encoder::dump_encoder_info()
          d_ptr->rc_max_bitrate, d_ptr->rc_max_bitrate_window,
          d_ptr->hw_enc ? "on" : "off",
          d_ptr->profile.empty() ? "default" : d_ptr->profile.c_str(),
-          "h264");
+         "h264");
 }
 
 int videotoolbox_encoder::session_set_bitrate(void *session)
@@ -413,6 +437,19 @@ int videotoolbox_encoder::session_set_bitrate(void *session)
 
 bool videotoolbox_encoder::i_create()
 {
+#if TARGET_PLATFORM == PLATFORM_IOS
+    if (!d_ptr->shared_ctx)
+        return false;
+
+    auto pair = gl_create_context(d_ptr->shared_ctx);
+    if (!pair.second) {
+        gl_destroy_context(pair.first);
+        return false;
+    }
+
+    d_ptr->gl_ctx = pair.first;
+#endif
+
     CFArrayRef encoderList;
     OSStatus status = VTCopyVideoEncoderList(nullptr, &encoderList);
 
@@ -484,6 +521,42 @@ void videotoolbox_encoder::i_destroy()
         CFRelease(d_ptr->session);
     }
 
+#if TARGET_PLATFORM == PLATFORM_IOS
+    if (d_ptr->gl_ctx) {
+        gl_make_current(d_ptr->gl_ctx);
+
+        if (d_ptr->target) {
+            CFRelease(d_ptr->target);
+        }
+
+        if (d_ptr->texture_cache) {
+            CFRelease(d_ptr->texture_cache);
+        }
+
+        if (d_ptr->texture) {
+            CFRelease(d_ptr->texture);
+        }
+
+        if (d_ptr->fbo > 0) {
+            glDeleteFramebuffers(1, &d_ptr->fbo);
+            d_ptr->fbo = 0;
+        }
+
+        if (d_ptr->depth_buffer > 0) {
+            glDeleteRenderbuffers(1, &d_ptr->depth_buffer);
+            d_ptr->depth_buffer = 0;
+        }
+
+        d_ptr->texture_drawer.reset();
+
+        gl_done_current();
+
+        gl_destroy_context(d_ptr->gl_ctx);
+        d_ptr->gl_ctx = nullptr;
+        d_ptr->texture_encode_initialized = false;
+    }
+#endif
+
     d_ptr->initialized = false;
 }
 
@@ -492,6 +565,7 @@ bool videotoolbox_encoder::i_encoder_valid()
     return d_ptr->initialized;
 }
 
+#if TARGET_PLATFORM == PLATFORM_MAC
 static bool get_cached_pixel_buffer(VTCompressionSessionRef session, video_colorspace cs, CVPixelBufferRef *buf)
 {
     CVPixelBufferPoolRef pool = VTCompressionSessionGetPixelBufferPool(session);
@@ -520,6 +594,7 @@ static bool get_cached_pixel_buffer(VTCompressionSessionRef session, video_color
 fail:
     return false;
 }
+#endif
 
 static bool is_sample_keyframe(CMSampleBufferRef buffer)
 {
@@ -574,7 +649,7 @@ static void convert_block_nals_to_annexb(const std::shared_ptr<std::vector<uint8
 {
     size_t block_size = 0;
     uint8_t *block_buf = nullptr;
-    CMBlockBufferGetDataPointer(block, 0, NULL, &block_size, (char **)&block_buf);
+    CMBlockBufferGetDataPointer(block, 0, nullptr, &block_size, (char **)&block_buf);
 
     size_t bytes_remaining = block_size;
     while (bytes_remaining > 0) {
@@ -704,14 +779,137 @@ bool videotoolbox_encoder::parse_sample(void *buf, const std::shared_ptr<encoder
     return true;
 }
 
+#if TARGET_PLATFORM == PLATFORM_IOS
+
+bool videotoolbox_encoder::create_gl_cvpixelbuffer()
+{
+    CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, d_ptr->gl_ctx, NULL, &d_ptr->texture_cache);
+
+    if (err)
+        return false;
+
+    auto empty = CFDictionaryCreate(kCFAllocatorDefault, // our empty IOSurface properties dictionary
+                                    NULL,
+                                    NULL,
+                                    0,
+                                    &kCFTypeDictionaryKeyCallBacks,
+                                    &kCFTypeDictionaryValueCallBacks);
+    auto attrs = CFDictionaryCreateMutable(kCFAllocatorDefault, 1,
+                                           &kCFTypeDictionaryKeyCallBacks,
+                                           &kCFTypeDictionaryValueCallBacks);
+
+    CFDictionarySetValue(attrs, kCVPixelBufferIOSurfacePropertiesKey, empty);
+    err = CVPixelBufferCreate(kCFAllocatorDefault, d_ptr->width, d_ptr->height,
+                              kCVPixelFormatType_32BGRA, attrs, &d_ptr->target);
+    CFRelease(empty);
+    CFRelease(attrs);
+
+    if (err)
+        return false;
+
+    err = CVOpenGLESTextureCacheCreateTextureFromImage(kCFAllocatorDefault,
+                                                       d_ptr->texture_cache,
+                                                       d_ptr->target,
+                                                       nullptr, // texture attributes
+                                                       GL_TEXTURE_2D,
+                                                       GL_RGBA, // opengl format
+                                                       d_ptr->width,
+                                                       d_ptr->height,
+                                                       GL_BGRA, // native iOS format
+                                                       GL_UNSIGNED_BYTE,
+                                                       0,
+                                                       &d_ptr->texture);
+
+
+    return err == kCVReturnSuccess;
+}
+
+bool videotoolbox_encoder::create_gl_fbo()
+{
+    glBindTexture(CVOpenGLESTextureGetTarget(d_ptr->texture), CVOpenGLESTextureGetName(d_ptr->texture));
+
+    // Set up filter and wrap modes for this texture object
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    // Allocate a texture image with which we can render to
+    // Pass NULL for the data parameter since we don't need to load image data.
+    //     We will be generating the image by rendering to this texture
+    glTexImage2D(GL_TEXTURE_2D,
+                 0, GL_RGBA,
+                 d_ptr->width, d_ptr->height,
+                 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, NULL);
+
+    glGenRenderbuffers(1, &d_ptr->depth_buffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, d_ptr->depth_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, d_ptr->width, d_ptr->height);
+
+    glGenFramebuffers(1, &d_ptr->fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, d_ptr->fbo);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, CVOpenGLESTextureGetName(d_ptr->texture), 0);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, d_ptr->depth_buffer);
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        blog(LOG_WARNING, "failed to make complete framebuffer object %d", glCheckFramebufferStatus(GL_FRAMEBUFFER));
+        return false;
+    }
+
+    return true;
+}
+
+bool videotoolbox_encoder::create_texture_encode_resource()
+{
+    gl_make_current(d_ptr->gl_ctx);
+    d_ptr->texture_drawer = std::make_unique<gs_simple_texture_drawer>();
+    bool success =  create_gl_cvpixelbuffer() && create_gl_fbo() && d_ptr->texture_drawer;
+    gl_done_current();
+
+    return success;
+}
+
+void videotoolbox_encoder::draw_video_frame_texture(unsigned int tex_id)
+{
+    gl_make_current(d_ptr->gl_ctx);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, d_ptr->fbo);
+    glViewport(0, 0, d_ptr->width, d_ptr->height);
+
+    d_ptr->texture_drawer->draw_texture(tex_id);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glFlush();
+
+    gl_done_current();
+}
+
+#endif
+
 bool videotoolbox_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void (std::shared_ptr<encoder_packet>)> send_off)
 {
+#if TARGET_PLATFORM == PLATFORM_IOS
+    if (!d_ptr->texture_encode_initialized) {
+        if (!create_texture_encode_resource())
+            blog(LOG_WARNING, "videotoolbox: create_texture_encode_resource error");
+
+        d_ptr->texture_encode_initialized = true;
+    }
+
+    if (!d_ptr->fbo)
+        return false;
+
+    draw_video_frame_texture(*((int *)frame->data[0]));
+#endif
+
     d_ptr->packet_data->clear();
 
     CMTime dur = CMTimeMake(d_ptr->fps_den, d_ptr->fps_num);
     CMTime off = CMTimeMultiply(dur, 2);
     CMTime pts = CMTimeMake(frame->pts, d_ptr->fps_num);
 
+#if TARGET_PLATFORM == PLATFORM_MAC
     CVPixelBufferRef pixbuf = nullptr;
     if (!get_cached_pixel_buffer(d_ptr->session, d_ptr->colorspace, &pixbuf)) {
         blog(LOG_ERROR, "videotoolbox: Unable to create pixel buffer");
@@ -749,6 +947,12 @@ bool videotoolbox_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encode
     if (code != noErr) {
         return false;
     }
+#else
+    auto code = VTCompressionSessionEncodeFrame(d_ptr->session, d_ptr->target, pts, dur, nullptr, nullptr, nullptr);
+    if (code != noErr) {
+        return false;
+    }
+#endif
 
     CMSampleBufferRef buffer = (CMSampleBufferRef)CMSimpleQueueDequeue(d_ptr->queue);
 
@@ -779,7 +983,11 @@ void videotoolbox_encoder::i_get_video_info(video_scale_info *info)
 
 bool videotoolbox_encoder::i_gpu_encode_available()
 {
+#if TARGET_PLATFORM == PLATFORM_MAC
     return false;
+#else
+    return true;
+#endif
 }
 
 void videotoolbox_encoder::i_update_encode_bitrate(int bitrate)

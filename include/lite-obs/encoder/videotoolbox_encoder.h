@@ -2,7 +2,7 @@
 
 #include "lite-obs/lite_obs_platform_config.h"
 
-#if TARGET_PLATFORM == PLATFORM_IOS || TARGET_PLATFORM == PLATFORM_MAC
+#ifdef PLATFORM_APPLE
 
 #include "lite-obs/lite_encoder.h"
 #include <CoreMedia/CMTime.h>
@@ -34,6 +34,13 @@ private:
 
     bool convert_sample_to_annexb(void *buf, bool keyframe);
     bool parse_sample(void *buf, const std::shared_ptr<encoder_packet> &packet, CMTime off, std::function<void(std::shared_ptr<encoder_packet>)> send_off);
+
+#if TARGET_PLATFORM == PLATFORM_IOS
+    bool create_gl_cvpixelbuffer();
+    bool create_gl_fbo();
+    bool create_texture_encode_resource();
+    void draw_video_frame_texture(unsigned int tex_id);
+#endif
 
 private:
     std::unique_ptr<videotoolbox_encoder_private> d_ptr{};

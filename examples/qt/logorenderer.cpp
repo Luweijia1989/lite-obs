@@ -135,6 +135,8 @@ void LogoRenderer::render()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
+    glFlush();
+
     m_fAngle += 1.0f;
 }
 

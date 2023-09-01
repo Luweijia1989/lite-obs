@@ -55,5 +55,8 @@
 #define PLATFORM_PC
 #endif
 
+#if ((TARGET_PLATFORM == PLATFORM_ANDROID) || (TARGET_PLATFORM == PLATFORM_IOS))
+#define PLATFORM_APPLE
+#endif
 
 #endif  // __PLATFORM_CONFIG_H__

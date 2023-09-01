@@ -6,17 +6,6 @@
 
 #include "lite-obs/lite_encoder.h"
 
-class TextureDrawer
-{
-public:
-    TextureDrawer();
-    ~TextureDrawer();
-    void draw_texture(int tex_id);
-private:
-    unsigned int VBO, VAO, EBO;
-    unsigned int shader_program{};
-};
-
 struct mediacodec_encoder_private;
 class mediacodec_encoder : public lite_obs_encoder_interface
 {
