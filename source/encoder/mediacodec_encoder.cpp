@@ -2,6 +2,7 @@
 
 #if TARGET_PLATFORM == PLATFORM_ANDROID
 #include "lite-obs/media-io/video_output.h"
+#include "lite-obs/graphics/gs_simple_texture_drawer.h"
 #include "lite-obs/util/log.h"
 
 #include <android/native_window.h>
@@ -23,7 +24,7 @@ struct mediacodec_encoder_private
     std::vector<uint8_t> header;
     std::shared_ptr<std::vector<uint8_t>> buffer;
 
-    std::shared_ptr<TextureDrawer> texture_drawer{};
+    std::shared_ptr<gs_simple_texture_drawer> texture_drawer{};
 
     EGLContext shared_ctx = EGL_NO_CONTEXT;
 
@@ -243,7 +244,7 @@ void mediacodec_encoder::draw_texture(int tex_id)
 {
     glViewport(0, 0, d_ptr->width, d_ptr->height);
     if (!d_ptr->texture_drawer)
-        d_ptr->texture_drawer = std::make_shared<TextureDrawer>();
+        d_ptr->texture_drawer = std::make_shared<gs_simple_texture_drawer>();
 
     d_ptr->texture_drawer->draw_texture(tex_id);
 }
