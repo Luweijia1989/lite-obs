@@ -49,6 +49,7 @@ gs_simple_texture_drawer::gs_simple_texture_drawer()
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
+#if TARGET_PLATFORM == PLATFORM_ANDROID
     float vertices[] = {
         // positions                 // texture coords
         1.0f,  -1.0f, 0.0f,    1.0f, 1.0f,
@@ -56,6 +57,15 @@ gs_simple_texture_drawer::gs_simple_texture_drawer()
         -1.0f, 1.0f,  0.0f,    0.0f, 0.0f,
         -1.0f, -1.0f, 0.0f,    0.0f, 1.0f
     };
+#else
+    float vertices[] = {
+        // positions                 // texture coords
+        1.0f,  1.0f, 0.0f,    1.0f, 1.0f,
+        1.0f,  -1.0f,  0.0f,  1.0f, 0.0f,
+        -1.0f, -1.0f,  0.0f,  0.0f, 0.0f,
+        -1.0f, 1.0f, 0.0f,    0.0f, 1.0f
+    };
+#endif
     unsigned int indices[] = {
         0, 1, 3,
         1, 2, 3
