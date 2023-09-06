@@ -27,7 +27,6 @@ struct gs_device_private
     std::vector<std::weak_ptr<gs_sampler_state>> cur_samplers;
 
     std::weak_ptr<gs_vertexbuffer> cur_vertex_buffer{};
-    std::weak_ptr<gs_indexbuffer> cur_index_buffer{};
 
     std::weak_ptr<gs_program> cur_program{};
 
@@ -337,11 +336,6 @@ void gs_device::gs_device_load_vertexbuffer(std::shared_ptr<gs_vertexbuffer> vb)
     d_ptr->cur_vertex_buffer = vb;
 }
 
-void gs_device::gs_device_load_indexbuffer(std::shared_ptr<gs_indexbuffer> ib)
-{
-    d_ptr->cur_index_buffer = ib;
-}
-
 void gs_device::gs_device_set_program(std::shared_ptr<gs_program> program)
 {
     std::shared_ptr<gs_program> cur_program = d_ptr->cur_program.lock();
@@ -374,7 +368,6 @@ void gs_device::gs_device_draw(gs_draw_mode draw_mode, uint32_t start_vert, uint
     }
 
     auto vb = d_ptr->cur_vertex_buffer.lock();
-    auto ib = d_ptr->cur_index_buffer.lock();
 
     GLenum topology = convert_gs_topology(draw_mode);
 
@@ -389,9 +382,6 @@ void gs_device::gs_device_draw(gs_draw_mode draw_mode, uint32_t start_vert, uint
         for (size_t i = 0; i < attribs.size(); ++i) {
             vb->gs_load_vb_buffers(attribs[i].type, attribs[i].index, s_attribs[i]);
         }
-        // todo indexbuffer
-        //        if (ib && !gl_bind_buffer(GL_ELEMENT_ARRAY_BUFFER, ib->buffer))
-        //            goto fail;
     } else
         gl_bind_vertex_array(d_ptr->empty_vao);
 
@@ -400,21 +390,11 @@ void gs_device::gs_device_draw(gs_draw_mode draw_mode, uint32_t start_vert, uint
 
     program->gs_effect_upload_parameters(true);
 
-    if (ib) { // todo indexbuffer
-        //        if (num_verts == 0)
-        //            num_verts = (uint32_t)device->cur_index_buffer->num;
-        //        glDrawElements(topology, num_verts, ib->gl_type,
-        //                       (const GLvoid *)(start_vert * ib->width));
-        //        if (!gl_success("glDrawElements"))
-        //            goto fail;
-
-    } else {
-        if (num_verts == 0)
-            num_verts = (uint32_t)vb->gs_vertexbuffer_num();
-        glDrawArrays(topology, start_vert, num_verts);
-        if (!gl_success("glDrawArrays"))
-            goto fail;
-    }
+    if (num_verts == 0)
+        num_verts = (uint32_t)vb->gs_vertexbuffer_num();
+    glDrawArrays(topology, start_vert, num_verts);
+    if (!gl_success("glDrawArrays"))
+        goto fail;
 
     return;
 

@@ -719,7 +719,6 @@ void gs_draw_sprite(std::shared_ptr<gs_texture> tex, uint32_t flip, uint32_t wid
     thread_graphics->d_ptr->sprite_buffer->gs_vertexbuffer_flush();
 
     thread_graphics->d_ptr->device->gs_device_load_vertexbuffer(thread_graphics->d_ptr->sprite_buffer);
-    thread_graphics->d_ptr->device->gs_device_load_indexbuffer(nullptr);
 
     thread_graphics->d_ptr->device->gs_device_draw(gs_draw_mode::GS_TRISTRIP, 0, 0);
 }

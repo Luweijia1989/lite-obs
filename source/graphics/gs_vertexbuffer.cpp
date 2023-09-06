@@ -40,21 +40,6 @@ gs_vertexbuffer::gs_vertexbuffer()
 
 gs_vertexbuffer::~gs_vertexbuffer()
 {
-    if (d_ptr->vertex_buffer)
-        gl_delete_buffers(1, &d_ptr->vertex_buffer);
-    if (d_ptr->normal_buffer)
-        gl_delete_buffers(1, &d_ptr->normal_buffer);
-    if (d_ptr->tangent_buffer)
-        gl_delete_buffers(1, &d_ptr->tangent_buffer);
-    if (d_ptr->color_buffer)
-        gl_delete_buffers(1, &d_ptr->color_buffer);
-    if (d_ptr->uv_buffers.size())
-        gl_delete_buffers((GLsizei)d_ptr->uv_buffers.size(),
-                          d_ptr->uv_buffers.data());
-
-    if (d_ptr->vao)
-        gl_delete_vertex_arrays(1, &d_ptr->vao);
-
     blog(LOG_DEBUG, "gs_vertexbuffer destroyed.");
 }
 

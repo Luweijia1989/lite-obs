@@ -9,7 +9,6 @@ struct gl_platform;
 struct fbo_info;
 
 class gs_vertexbuffer;
-class gs_indexbuffer;
 class gs_program;
 
 class gl_context_helper
@@ -55,7 +54,6 @@ public:
     std::shared_ptr<gs_zstencil_buffer> gs_device_get_zstencil_target();
 
     void gs_device_load_vertexbuffer(std::shared_ptr<gs_vertexbuffer> vb);
-    void gs_device_load_indexbuffer(std::shared_ptr<gs_indexbuffer> ib);
 
     void gs_device_set_program(std::shared_ptr<gs_program> program);
     std::shared_ptr<gs_program> gs_device_program();
