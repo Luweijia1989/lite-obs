@@ -188,6 +188,11 @@ bool mediacodec_encoder::init_egl_related()
 
 bool mediacodec_encoder::i_create()
 {
+    if (!d_ptr->shared_ctx) {
+        blog(LOG_ERROR, "mediacodec_encoder: OpenGL share context required");
+        return false;
+    }
+
     bool success = true;
     do {
         if (!init_mediacodec() || !init_egl_related()) {
@@ -247,6 +252,7 @@ void mediacodec_encoder::draw_texture(int tex_id)
         d_ptr->texture_drawer = std::make_shared<gs_simple_texture_drawer>();
 
     d_ptr->texture_drawer->draw_texture(tex_id);
+    glFlush();
 }
 
 #define AMEDIACODEC_BUFFER_FLAG_KEY_FRAME 1
