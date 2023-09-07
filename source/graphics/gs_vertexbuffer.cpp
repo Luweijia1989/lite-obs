@@ -117,6 +117,29 @@ bool gs_vertexbuffer::gs_vertexbuffer_init_sprite()
     return create_buffers();
 }
 
+bool gs_vertexbuffer::gs_vertexbuffer_init_convert()
+{
+    d_ptr->data = std::make_shared<gs_vb_data>();
+    d_ptr->data->num = 3;
+    d_ptr->data->points.resize(3);
+
+    d_ptr->num = d_ptr->data->num;
+    d_ptr->dynamic = true;
+
+    bool success = create_buffers();
+    if (!success)
+        return false;
+
+    //x y idLow*2.0 idHigh*2.0
+    d_ptr->data->points[0] = glm::vec4(-1.0f, -1.0f, 0.0f, 0.0f);
+    d_ptr->data->points[1] = glm::vec4(-1.0f, 3.0f, 2.0f, 0.0f);
+    d_ptr->data->points[2] = glm::vec4(3.0f, -1.0, 0.0f, 2.0f);
+
+    gs_vertexbuffer_flush();
+
+    return true;
+}
+
 std::shared_ptr<gs_vb_data> gs_vertexbuffer::gs_vertexbuffer_get_data()
 {
     return d_ptr->data;

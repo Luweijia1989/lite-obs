@@ -3,50 +3,53 @@
 std::string conversion_shaders = R"(
 Convert_Planar_Y
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_Planar_Y
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -88,50 +91,53 @@ float4 color_vec0 null 3 0 18446744073709551615
 =======================================
 Convert_Planar_U
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_Planar_U
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -173,50 +179,53 @@ float4 color_vec1 null 3 0 18446744073709551615
 =======================================
 Convert_Planar_V
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_Planar_V
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -258,30 +267,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_Planar_U_Left
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_i;
 
+in vec4 _input_attrib0;
 
 out vec3 _vertex_shader_attrib0;
-
 struct VertTexPosWide {
     vec3 uuv;
     vec4 pos;
 };
 
-VertTexPosWide VSTexPos_Left(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPosWide VSTexPos_Left(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u_right = idHigh * 2.0;
+    float u_right = vert_in.pos.w;
     float u_left = u_right - width_i;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPosWide vert_out;
     vert_out.uuv = vec3(u_left, u_right, v);
@@ -289,19 +298,19 @@ VertTexPosWide VSTexPos_Left(uint id)
     return vert_out;
 }
 
-VertTexPosWide _main_wrap(uint id)
+VertTexPosWide _main_wrap(VertIn vert_in)
 {
-    return VSTexPos_Left(id);
+    return VSTexPos_Left(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPosWide outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uuv;
     gl_Position = outputval.pos;
@@ -310,12 +319,13 @@ void main(void)
 ---------------------------------------
 float width_i null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_Planar_U_Left
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -361,30 +371,30 @@ def_sampler
 =======================================
 Convert_Planar_V_Left
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_i;
 
+in vec4 _input_attrib0;
 
 out vec3 _vertex_shader_attrib0;
-
 struct VertTexPosWide {
     vec3 uuv;
     vec4 pos;
 };
 
-VertTexPosWide VSTexPos_Left(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPosWide VSTexPos_Left(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u_right = idHigh * 2.0;
+    float u_right = vert_in.pos.w;
     float u_left = u_right - width_i;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPosWide vert_out;
     vert_out.uuv = vec3(u_left, u_right, v);
@@ -392,19 +402,19 @@ VertTexPosWide VSTexPos_Left(uint id)
     return vert_out;
 }
 
-VertTexPosWide _main_wrap(uint id)
+VertTexPosWide _main_wrap(VertIn vert_in)
 {
-    return VSTexPos_Left(id);
+    return VSTexPos_Left(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPosWide outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uuv;
     gl_Position = outputval.pos;
@@ -413,12 +423,13 @@ void main(void)
 ---------------------------------------
 float width_i null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_Planar_V_Left
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -464,50 +475,53 @@ def_sampler
 =======================================
 Convert_NV12_Y
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_NV12_Y
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -549,30 +563,30 @@ float4 color_vec0 null 3 0 18446744073709551615
 =======================================
 Convert_NV12_UV
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_i;
 
+in vec4 _input_attrib0;
 
 out vec3 _vertex_shader_attrib0;
-
 struct VertTexPosWide {
     vec3 uuv;
     vec4 pos;
 };
 
-VertTexPosWide VSTexPos_Left(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPosWide VSTexPos_Left(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u_right = idHigh * 2.0;
+    float u_right = vert_in.pos.w;
     float u_left = u_right - width_i;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPosWide vert_out;
     vert_out.uuv = vec3(u_left, u_right, v);
@@ -580,19 +594,19 @@ VertTexPosWide VSTexPos_Left(uint id)
     return vert_out;
 }
 
-VertTexPosWide _main_wrap(uint id)
+VertTexPosWide _main_wrap(VertIn vert_in)
 {
-    return VSTexPos_Left(id);
+    return VSTexPos_Left(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPosWide outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uuv;
     gl_Position = outputval.pos;
@@ -601,12 +615,13 @@ void main(void)
 ---------------------------------------
 float width_i null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_NV12_UV
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -658,30 +673,30 @@ def_sampler
 std::string conversion_shaders2 = R"(
 Convert_UYVY_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height * v);
@@ -689,19 +704,19 @@ VertTexPos VSTexPosHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalf_Reverse(id);
+    return VSTexPosHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -712,12 +727,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_UYVY_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -786,30 +802,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_YUY2_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height * v);
@@ -817,19 +833,19 @@ VertTexPos VSTexPosHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalf_Reverse(id);
+    return VSTexPosHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -840,12 +856,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_YUY2_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -914,30 +931,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_YVYU_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height * v);
@@ -945,19 +962,19 @@ VertTexPos VSTexPosHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalf_Reverse(id);
+    return VSTexPosHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -968,12 +985,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_YVYU_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1042,30 +1060,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_I420_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height_d2;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalfHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalfHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height_d2 * v);
@@ -1073,19 +1091,19 @@ VertTexPos VSTexPosHalfHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalfHalf_Reverse(id);
+    return VSTexPosHalfHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -1096,12 +1114,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height_d2 null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_I420_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1179,30 +1198,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 std::string conversion_shaders3 = R"(
 Convert_I40A_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height_d2;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalfHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalfHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height_d2 * v);
@@ -1210,19 +1229,19 @@ VertTexPos VSTexPosHalfHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalfHalf_Reverse(id);
+    return VSTexPosHalfHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -1233,12 +1252,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height_d2 null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_I40A_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1319,31 +1339,31 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_I422_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width;
 uniform float width_d2;
 uniform float height;
 
+in vec4 _input_attrib0;
 
 out vec3 _vertex_shader_attrib0;
-
 struct VertPosWide {
     vec3 pos_wide;
     vec4 pos;
 };
 
-VertPosWide VSPosWide_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertPosWide VSPosWide_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertPosWide vert_out;
     vert_out.pos_wide = vec3(vec2(width, width_d2) * u, height * v);
@@ -1351,19 +1371,19 @@ VertPosWide VSPosWide_Reverse(uint id)
     return vert_out;
 }
 
-VertPosWide _main_wrap(uint id)
+VertPosWide _main_wrap(VertIn vert_in)
 {
-    return VSPosWide_Reverse(id);
+    return VSPosWide_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertPosWide outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.pos_wide;
     gl_Position = outputval.pos;
@@ -1376,12 +1396,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_I422_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1455,31 +1476,31 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_I42A_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width;
 uniform float width_d2;
 uniform float height;
 
+in vec4 _input_attrib0;
 
 out vec3 _vertex_shader_attrib0;
-
 struct VertPosWide {
     vec3 pos_wide;
     vec4 pos;
 };
 
-VertPosWide VSPosWide_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertPosWide VSPosWide_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertPosWide vert_out;
     vert_out.pos_wide = vec3(vec2(width, width_d2) * u, height * v);
@@ -1487,19 +1508,19 @@ VertPosWide VSPosWide_Reverse(uint id)
     return vert_out;
 }
 
-VertPosWide _main_wrap(uint id)
+VertPosWide _main_wrap(VertIn vert_in)
 {
-    return VSPosWide_Reverse(id);
+    return VSPosWide_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertPosWide outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.pos_wide;
     gl_Position = outputval.pos;
@@ -1512,12 +1533,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_I42A_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1596,50 +1618,53 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_I444_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_I444_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1714,50 +1739,53 @@ float4 color_vec2 null 3 0 18446744073709551615
 std::string conversion_shaders4 = R"(
 Convert_YUVA_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_YUVA_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1834,50 +1862,53 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_AYUV_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_AYUV_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -1940,30 +1971,30 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_NV12_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform float width_d2;
 uniform float height_d2;
 
+in vec4 _input_attrib0;
 
 out vec2 _vertex_shader_attrib0;
-
 struct VertTexPos {
     vec2 uv;
     vec4 pos;
 };
 
-VertTexPos VSTexPosHalfHalf_Reverse(uint id)
+struct VertIn {
+    vec4 pos;
+};
+
+VertTexPos VSTexPosHalfHalf_Reverse(VertIn vert_in)
 {
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
-
-    float u = idHigh * 2.0;
-    float v = obs_glsl_compile ? (idLow * 2.0) : (1.0 - idLow * 2.0);
+    float u = vert_in.pos.w;
+    float v = obs_glsl_compile ? (vert_in.pos.z) : (1.0 - vert_in.pos.z);
 
     VertTexPos vert_out;
     vert_out.uv = vec2(width_d2 * u, height_d2 * v);
@@ -1971,19 +2002,19 @@ VertTexPos VSTexPosHalfHalf_Reverse(uint id)
     return vert_out;
 }
 
-VertTexPos _main_wrap(uint id)
+VertTexPos _main_wrap(VertIn vert_in)
 {
-    return VSTexPosHalfHalf_Reverse(id);
+    return VSTexPosHalfHalf_Reverse(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     VertTexPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     _vertex_shader_attrib0 = outputval.uv;
     gl_Position = outputval.pos;
@@ -1994,12 +2025,13 @@ float width_d2 null 3 0 18446744073709551615
 +++++++++++++++++++++++++++++++++++++++
 float height_d2 null 3 0 18446744073709551615
 ---------------------------------------
+_input_attrib0 POSITION 1
++++++++++++++++++++++++++++++++++++++++
 _vertex_shader_attrib0 TEXCOORD0 0
 ---------------------------------------
 =======================================
 Convert_NV12_Reverse
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2070,50 +2102,53 @@ float4 color_vec2 null 3 0 18446744073709551615
 =======================================
 Convert_Y800_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_Y800_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2152,50 +2187,53 @@ texture2d image null 3 0 18446744073709551615
 =======================================
 Convert_Y800_Full
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_Y800_Full
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2235,50 +2273,53 @@ texture2d image null 3 0 18446744073709551615
 std::string conversion_shaders5 = R"(
 Convert_RGB_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_RGB_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2317,50 +2358,53 @@ texture2d image null 3 0 18446744073709551615
 =======================================
 Convert_BGR3_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_BGR3_Limited
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2404,50 +2448,53 @@ texture2d image null 3 0 18446744073709551615
 =======================================
 Convert_BGR3_Full
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
+
+
+in vec4 _input_attrib0;
 
 struct FragPos {
     vec4 pos;
 };
 
-FragPos VSPos(uint id)
-{
-    float idHigh = float(id >> 1);
-    float idLow = float(id & uint(1));
+struct VertIn {
+    vec4 pos;
+};
 
-    float x = idHigh * 4.0 - 1.0;
-    float y = idLow * 4.0 - 1.0;
+FragPos VSPos(VertIn vert_in)
+{
+    float x = vert_in.pos.x;
+    float y = vert_in.pos.y;
 
     FragPos vert_out;
     vert_out.pos = vec4(x, y, 0.0, 1.0);
     return vert_out;
 }
 
-FragPos _main_wrap(uint id)
+FragPos _main_wrap(VertIn vert_in)
 {
-    return VSPos(id);
+    return VSPos(vert_in);
 }
 
 void main(void)
 {
-    uint id;
+    VertIn vert_in;
     FragPos outputval;
 
-    id = uint(gl_VertexID);
+    vert_in.pos = _input_attrib0;
 
-    outputval = _main_wrap(id);
+    outputval = _main_wrap(vert_in);
 
     gl_Position = outputval.pos;
 }
 
 ---------------------------------------
 ---------------------------------------
+_input_attrib0 POSITION 1
 ---------------------------------------
 =======================================
 Convert_BGR3_Full
 ---------------------------------------
-
 const bool obs_glsl_compile = true;
 
 uniform sampler2D image;
@@ -2786,13 +2833,13 @@ textureSampler
 )";
 
 std::string conversion_shaders_total =
-        conversion_shaders + "=======================================" +
-        conversion_shaders2 + "=======================================" +
-        conversion_shaders3 + "=======================================" +
-        conversion_shaders4 + "=======================================" +
-        conversion_shaders5 + "=======================================" +
-        scale_shader + "=======================================" +
-        draw_shader;
+    conversion_shaders + "=======================================" +
+    conversion_shaders2 + "=======================================" +
+    conversion_shaders3 + "=======================================" +
+    conversion_shaders4 + "=======================================" +
+    conversion_shaders5 + "=======================================" +
+    scale_shader + "=======================================" +
+    draw_shader;
 
 
 static const char *astrblank = "";

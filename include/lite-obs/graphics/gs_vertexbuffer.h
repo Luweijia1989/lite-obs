@@ -71,6 +71,7 @@ public:
     ~gs_vertexbuffer();
 
     bool gs_vertexbuffer_init_sprite();
+    bool gs_vertexbuffer_init_convert();
 
     std::shared_ptr<gs_vb_data> gs_vertexbuffer_get_data();
 
