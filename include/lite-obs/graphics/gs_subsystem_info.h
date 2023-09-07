@@ -93,7 +93,6 @@ static inline GLenum convert_gs_blend_type(gs_blend_type type)
 
 enum class gs_color_format {
     GS_UNKNOWN,
-    GS_A8,
     GS_R8,
     GS_RGBA,
 
@@ -106,8 +105,6 @@ enum class gs_color_format {
 static inline uint32_t gs_get_format_bpp(gs_color_format format)
 {
     switch (format) {
-    case gs_color_format::GS_A8:
-        return 8;
     case gs_color_format::GS_R8:
         return 8;
     case gs_color_format::GS_RGBA:
@@ -128,8 +125,6 @@ static inline uint32_t gs_get_format_bpp(gs_color_format format)
 static inline GLenum convert_gs_format(gs_color_format format)
 {
     switch (format) {
-    case gs_color_format::GS_A8:
-        return GL_RED;
     case gs_color_format::GS_R8:
         return GL_RED;
     case gs_color_format::GS_RGBA:
@@ -150,8 +145,6 @@ static inline GLenum convert_gs_format(gs_color_format format)
 static inline GLenum convert_gs_internal_format(gs_color_format format)
 {
     switch (format) {
-    case gs_color_format::GS_A8:
-        return GL_R8; /* NOTE: use GL_TEXTURE_SWIZZLE_x */
     case gs_color_format::GS_R8:
         return GL_R8;
     case gs_color_format::GS_RGBA:
@@ -172,8 +165,6 @@ static inline GLenum convert_gs_internal_format(gs_color_format format)
 static inline GLenum get_gl_format_type(gs_color_format format)
 {
     switch (format) {
-    case gs_color_format::GS_A8:
-        return GL_UNSIGNED_BYTE;
     case gs_color_format::GS_R8:
         return GL_UNSIGNED_BYTE;
     case gs_color_format::GS_RGBA:
