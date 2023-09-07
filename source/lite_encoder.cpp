@@ -515,7 +515,20 @@ void lite_obs_encoder::add_connection()
             auto vo = d_ptr->v_media.lock();
             if (vo) {
                 video_scale_info info{};
+
+                auto voi = vo->video_output_get_info();
+
+                info.format = voi->format;
+                info.colorspace = voi->colorspace;
+                info.range = voi->range;
+                info.width = lite_obs_encoder_get_width();
+                info.height = lite_obs_encoder_get_height();
+
                 ec->i_get_video_info(&info);
+
+                if (info.width != voi->width || info.height != voi->height)
+                    lite_obs_encoder_set_scaled_size(info.width, info.height);
+
                 vo->video_output_connect(&info, lite_obs_encoder::receive_video, this);
             }
         }
