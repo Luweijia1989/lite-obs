@@ -49,7 +49,6 @@ struct graphics_subsystem_private
     glm::mat4x4 projection{0};
 
     std::shared_ptr<gs_vertexbuffer> sprite_buffer{};
-    std::shared_ptr<gs_vertexbuffer> format_convert_buffer{};
 
     std::mutex effect_mutex;
     std::map<std::string, std::shared_ptr<gs_program>> effects{};
@@ -66,15 +65,6 @@ struct graphics_subsystem_private
             return false;
 
         sprite_buffer = std::move(vb);
-        return true;
-    }
-
-    bool init_format_convert_vb() {
-        auto vb = std::make_shared<gs_vertexbuffer>();
-        if (!vb->gs_vertexbuffer_init_convert())
-            return false;
-
-        format_convert_buffer = std::move(vb);
         return true;
     }
 
@@ -204,9 +194,6 @@ struct graphics_subsystem_private
             if (!init_sprite_vb())
                 break;
 
-            if (!init_format_convert_vb())
-                break;
-
             if (!init_effect())
                 break;
 
@@ -233,7 +220,6 @@ struct graphics_subsystem_private
     ~graphics_subsystem_private() {
         device->device_enter_context();
         sprite_buffer.reset();
-        format_convert_buffer.reset();
         effects.clear();
         device->device_destroy();
         device->device_leave_context();
@@ -515,7 +501,6 @@ void gs_draw(gs_draw_mode draw_mode, uint32_t start_vert, uint32_t num_verts)
     if (!gs_valid("gs_draw"))
         return;
 
-    thread_graphics->d_ptr->device->gs_device_load_vertexbuffer(thread_graphics->d_ptr->format_convert_buffer);
     thread_graphics->d_ptr->device->gs_device_draw(draw_mode, start_vert, num_verts);
 }
 
@@ -732,7 +717,9 @@ void gs_draw_sprite(std::shared_ptr<gs_texture> tex, uint32_t flip, uint32_t wid
     auto data = thread_graphics->d_ptr->sprite_buffer->gs_vertexbuffer_get_data();
     data->build_sprite_norm(fcx, fcy, flip);
     thread_graphics->d_ptr->sprite_buffer->gs_vertexbuffer_flush();
+
     thread_graphics->d_ptr->device->gs_device_load_vertexbuffer(thread_graphics->d_ptr->sprite_buffer);
+
     thread_graphics->d_ptr->device->gs_device_draw(gs_draw_mode::GS_TRISTRIP, 0, 0);
 }
 

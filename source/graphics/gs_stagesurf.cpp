@@ -184,7 +184,12 @@ bool gs_stagesurface::gs_stagesurface_map(uint8_t **data, uint32_t *linesize)
     if (!gl_bind_buffer(GL_PIXEL_PACK_BUFFER, d_ptr->pack_buffer))
         goto fail;
 
+#ifdef PLATFORM_MOBILE
+    *data = (uint8_t *)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, d_ptr->size, GL_MAP_READ_BIT);
+#else
     *data = (uint8_t *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+#endif
+
     if (!gl_success("glMapBuffer"))
         goto fail;
 

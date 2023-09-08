@@ -289,8 +289,6 @@ void lite_obs_core_video::render_convert_texture(std::shared_ptr<gs_texture> tex
         gs_set_cur_effect(program);
         program->gs_effect_set_param("color_vec0", vec0);
         program->gs_effect_set_texture("image", texture);
-        glm::vec2 image_size = {texture->gs_texture_get_width(), texture->gs_texture_get_height()};
-        program->gs_effect_set_param("image_size", image_size);
         render_convert_plane(d_ptr->convert_textures[0]);
 
         if (d_ptr->convert_textures[1]) {
@@ -301,7 +299,6 @@ void lite_obs_core_video::render_convert_texture(std::shared_ptr<gs_texture> tex
             if (!d_ptr->convert_textures[2])
                 program1->gs_effect_set_param("color_vec2", vec2);
             program1->gs_effect_set_param("width_i", d_ptr->conversion_width_i);
-            program1->gs_effect_set_param("image_size", image_size);
             render_convert_plane(d_ptr->convert_textures[1]);
 
             if (d_ptr->convert_textures[2]) {
@@ -311,7 +308,6 @@ void lite_obs_core_video::render_convert_texture(std::shared_ptr<gs_texture> tex
                 program2->gs_effect_set_texture("image", texture);
                 program2->gs_effect_set_param("color_vec2", vec2);
                 program2->gs_effect_set_param("width_i", d_ptr->conversion_width_i);
-                program2->gs_effect_set_param("image_size", image_size);
                 render_convert_plane(d_ptr->convert_textures[2]);
             }
         }

@@ -1435,22 +1435,14 @@ bool lite_obs_source::update_async_texrender(const std::shared_ptr<lite_obs_sour
 
     const bool success = texrender->gs_texrender_begin(cx, cy);
     if (success) {
-        if (tex[0]) {
+        if (tex[0])
             program->gs_effect_set_texture("image", tex[0]);
-            program->gs_effect_set_param("image_size", glm::vec2(tex[0]->gs_texture_get_width(), tex[0]->gs_texture_get_height()));
-        }
-        if (tex[1]) {
+        if (tex[1])
             program->gs_effect_set_texture("image1", tex[1]);
-            program->gs_effect_set_param("image1_size", glm::vec2(tex[1]->gs_texture_get_width(), tex[1]->gs_texture_get_height()));
-        }
-        if (tex[2]) {
+        if (tex[2])
             program->gs_effect_set_texture("image2", tex[2]);
-            program->gs_effect_set_param("image2_size", glm::vec2(tex[2]->gs_texture_get_width(), tex[2]->gs_texture_get_height()));
-        }
-        if (tex[3]) {
+        if (tex[3])
             program->gs_effect_set_texture("image3", tex[3]);
-            program->gs_effect_set_param("image3_size", glm::vec2(tex[3]->gs_texture_get_width(), tex[3]->gs_texture_get_height()));
-        }
 
         program->gs_effect_set_param("width", (float)cx);
         program->gs_effect_set_param("height", (float)cy);

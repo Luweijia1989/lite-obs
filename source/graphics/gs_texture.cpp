@@ -180,7 +180,11 @@ bool gs_texture::gs_texture_map(uint8_t **ptr, uint32_t *linesize)
     if (!gl_bind_buffer(GL_PIXEL_UNPACK_BUFFER, d_ptr->unpack_buffer))
         goto fail;
 
+#ifdef PLATFORM_MOBILE
+    *ptr = (uint8_t *)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, d_ptr->size, GL_MAP_WRITE_BIT);
+#else
     *ptr = (uint8_t *)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+#endif
     if (!gl_success("glMapBuffer"))
         goto fail;
 
@@ -293,6 +297,13 @@ bool gs_texture::gs_texture_load_texture_sampler(std::shared_ptr<gs_sampler_stat
         success = false;
     if (!gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_WRAP_R, ss->address_w))
         success = false;
+
+    if (d_ptr->base.format == gs_color_format::GS_A8) {
+        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_A, GL_RED);
+    }
 
     return success;
 }
