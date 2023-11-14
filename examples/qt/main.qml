@@ -20,7 +20,7 @@ Item {
             Translate { id: txIn; x: renderer.width / 2; y: renderer.height / 2 }
         ]
 
-        onNewTexture: {
+        onNewTexture: function(texId, texWidth, texHeight) {
             example.doTextureMix(texId, texWidth, texHeight)
         }
     }
