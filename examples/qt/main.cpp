@@ -14,7 +14,7 @@ static void log_handler(int log_level, const char *msg)
 
 int main(int argc, char *argv[])
 {
-    lite_obs::set_log_callback(log_handler);
+    lite_obs_set_log_handle(log_handler);
 
     qmlRegisterType<FboInSGRenderer>("com.ypp", 1, 0, "Render");
 

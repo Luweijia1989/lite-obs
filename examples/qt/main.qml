@@ -106,16 +106,16 @@ Item {
         }
 
         Button {
-            text: "x264"
+            text: "soft"
             onClicked: {
-                example.resetEncoderType(3)
+                example.resetEncoderType(true)
             }
         }
 
         Button {
-            text: "ffmpeg"
+            text: "hw"
             onClicked: {
-                example.resetEncoderType(2)
+                example.resetEncoderType(false)
             }
         }
     }

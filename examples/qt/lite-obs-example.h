@@ -19,10 +19,10 @@ public slots:
     void doStopOutput();
     void doTextureMix(int id, uint32_t width, uint32_t height);
     void setSourceOrder(int order);
-    void resetEncoderType(int type);
+    void resetEncoderType(bool sw);
 
 private:
-    std::shared_ptr<lite_obs> m_liteObs{};
+    lite_obs_api *m_liteObs = nullptr;
     std::thread m_audioTestThread;
     bool audioTestRunning{};
 
