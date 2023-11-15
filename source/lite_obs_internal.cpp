@@ -277,10 +277,21 @@ void lite_obs_internal::lite_obs_destroy_source(lite_obs_media_source_internal *
 }
 
 
-void lite_obs_internal::lite_obs_reset_encoder(int type)
+void lite_obs_internal::lite_obs_reset_encoder(bool sw)
 {
-    if (d_ptr->video_encoder)
-        d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl((lite_obs_encoder::encoder_id)type);
+    if (d_ptr->video_encoder) {
+        if (sw)
+            d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl(lite_obs_encoder::encoder_id::X264);
+        else {
+#if TARGET_PLATFORM == PLATFORM_ANDROID
+            d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl(lite_obs_encoder::encoder_id::MEDIACODEC);
+#elif TARGET_PLATFORM == PLATFORM_MAC || TARGET_PLATFORM == PLATFORM_IOS
+            d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl(lite_obs_encoder::encoder_id::VIDEOTOOLBOX);
+#else
+            d_ptr->video_encoder->lite_obs_encoder_reset_encoder_impl(lite_obs_encoder::encoder_id::FFMPEG_H264_HW);
+#endif
+        }
+    }
 }
 
 

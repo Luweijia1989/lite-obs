@@ -883,7 +883,7 @@ int lite_obs_core_video::lite_obs_start_video(uint32_t width, uint32_t height, u
 {
 #if TARGET_PLATFORM == PLATFORM_WIN32
     if (!d_ptr->plat)
-        return OBS_VIDEO_FAIL;
+        return LITE_OBS_VIDEO_FAIL;
 #endif
     output_video_info ovi;
     ovi.base_width = width;
