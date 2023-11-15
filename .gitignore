@@ -33,5 +33,6 @@
 
 
 *build/*
+examples/*build-qt*/*
 *external/*
-*export.hpp
+*output/*
