@@ -2,7 +2,6 @@
 #define AUDIO_OUTPUT_H
 
 #include "audio_info.h"
-#include "lite-obs/lite_obs_defines.h"
 #include <memory>
 
 struct audio_data {

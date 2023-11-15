@@ -5,7 +5,7 @@
 #include <mutex>
 #include <map>
 #include <list>
-#include "lite_obs.h"
+#include "lite_obs_internal.h"
 #include "media-io/video_frame.h"
 #include "media-io/video_info.h"
 

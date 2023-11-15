@@ -23,39 +23,18 @@ if(MSVC)
         PATHS ${FFMPEG_PATH}/bin/${FFMPEG_LIB_SUFFIX}
         NO_DEFAULT_PATH)
 else()
-    find_library(
-        AVCODEC
-        NAMES libavcodec.a
-        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
+    set(FFMPEG_DEP_LIST "libavcodec.a" "libavformat.a" "libavutil.a" "libswresample.a" "libswscale.a")
+    foreach(library ${FFMPEG_DEP_LIST})
+        find_library(
+            FOUND_LIBRARY_${library}
+            NAMES ${library}
+            PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
+            NO_DEFAULT_PATH)
 
-    find_library(
-        AVFORMAT
-        NAMES libavformat.a
-        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
-
-    find_library(
-        AVUTIL
-        NAMES libavutil.a
-        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
-
-    find_library(
-        SWRESAMPLE
-        NAMES libswresample.a
-        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
-
-    find_library(
-        SWSCALE
-        NAMES libswscale.a
-        PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
-
-    if (AVCODEC AND AVFORMAT AND AVUTIL AND SWRESAMPLE AND SWSCALE)
-        set(FFmpeg_LIBS ${AVCODEC} ${AVFORMAT} ${SWRESAMPLE} ${AVUTIL} ${SWSCALE})
-    endif()
+        if(FOUND_LIBRARY_${library})
+            list(APPEND FFmpeg_LIBS ${FOUND_LIBRARY_${library}})
+        endif()
+    endforeach()
 endif()
 
 if (NOT FFmpeg_INCLUDE_DIRS OR NOT FFmpeg_LIBS)

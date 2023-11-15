@@ -18,7 +18,7 @@
 #pragma once
 #include "ffmpeg_url.h"
 #include "lite-obs/util/log.h"
-#include "lite-obs/lite_obs_defines.h"
+#include "lite-obs/lite_obs_output.h"
 #include <srt/srt.h>
 
 extern "C"
@@ -446,7 +446,7 @@ static int libsrt_setup(URLContext *h, const char *uri)
     if (port <= 0 || port >= 65536) {
         blog(LOG_ERROR,
              "[obs-ffmpeg mpegts muxer / libsrt] : Port missing in uri\n");
-        return OBS_OUTPUT_CONNECT_FAILED;
+        return LITE_OBS_OUTPUT_CONNECT_FAILED;
     }
     p = strchr(uri, '?');
     if (p) {
@@ -470,7 +470,7 @@ static int libsrt_setup(URLContext *h, const char *uri)
         blog(LOG_ERROR,
              "[obs-ffmpeg mpegts muxer / libsrt] : Failed to resolve hostname %s: %s\n",
              hostname, gai_strerror(ret));
-        return OBS_OUTPUT_CONNECT_FAILED;
+        return LITE_OBS_OUTPUT_CONNECT_FAILED;
     }
 
     cur_ai = ai;
@@ -621,7 +621,7 @@ static inline int libsrt_open(URLContext *h, const char *uri)
     if (srt_startup() < 0) {
         blog(LOG_ERROR,
              "[obs-ffmpeg mpegts muxer / libsrt] : libsrt failed to load.\n");
-        return OBS_OUTPUT_CONNECT_FAILED;
+        return LITE_OBS_OUTPUT_CONNECT_FAILED;
     } else {
         blog(LOG_INFO,
              "[obs-ffmpeg mpegts muxer / libsrt] : libsrt v.%s loaded.\n",

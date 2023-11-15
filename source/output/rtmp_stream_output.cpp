@@ -2,7 +2,7 @@
 #include "lite-obs/util/threading.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/lite_obs.h"
+#include "lite-obs/lite_obs_internal.h"
 #include "lite-obs/media-io/audio_output.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/lite_obs_avc.h"
@@ -592,8 +592,8 @@ int rtmp_stream_output::send_packet(const std::shared_ptr<encoder_packet> &packe
     if (!d_ptr->sent_first_media_packet) {
         d_ptr->sent_first_media_packet = true;
         auto callback = output_signal_callback();
-        if (callback)
-            callback->first_media_packet();
+        if (callback.first_media_packet)
+            callback.first_media_packet(callback.opaque);
     }
 
     d_ptr->total_bytes_sent += data.size();
@@ -693,9 +693,9 @@ void rtmp_stream_output::send_thread_internal()
 
     if (!d_ptr->stopping()) {
         d_ptr->send_thread.detach();
-        lite_obs_output_signal_stop(OBS_OUTPUT_DISCONNECTED);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_DISCONNECTED);
     } else if (encode_error) {
-        lite_obs_output_signal_stop(OBS_OUTPUT_ENCODE_ERROR);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_ENCODE_ERROR);
     } else {
         lite_obs_output_end_data_capture();
     }
@@ -740,19 +740,19 @@ int rtmp_stream_output::init_send()
     if (!send_meta_data()) {
         blog(LOG_WARNING, "Disconnected while attempting to send metadata");
         set_output_error();
-        return OBS_OUTPUT_DISCONNECTED;
+        return LITE_OBS_OUTPUT_DISCONNECTED;
     }
 
     lite_obs_output_begin_data_capture();
 
-    return OBS_OUTPUT_SUCCESS;
+    return LITE_OBS_OUTPUT_SUCCESS;
 }
 
 int rtmp_stream_output::try_connect()
 {
     if (d_ptr->path.empty()) {
         blog(LOG_WARNING, "URL is empty");
-        return OBS_OUTPUT_BAD_PATH;
+        return LITE_OBS_OUTPUT_BAD_PATH;
     }
 
     blog(LOG_DEBUG, "Connecting to RTMP URL %s...", d_ptr->path.c_str());
@@ -768,7 +768,7 @@ int rtmp_stream_output::try_connect()
     d_ptr->rtmp.last_error_code = 0;
 
     if (!RTMP_SetupURL(&d_ptr->rtmp, (char *)d_ptr->path.c_str()))
-        return OBS_OUTPUT_BAD_PATH;
+        return LITE_OBS_OUTPUT_BAD_PATH;
 
     RTMP_EnableWrite(&d_ptr->rtmp);
 
@@ -807,11 +807,11 @@ int rtmp_stream_output::try_connect()
 
     if (!RTMP_Connect(&d_ptr->rtmp, NULL)) {
         set_output_error();
-        return OBS_OUTPUT_CONNECT_FAILED;
+        return LITE_OBS_OUTPUT_CONNECT_FAILED;
     }
 
     if (!RTMP_ConnectStream(&d_ptr->rtmp, 0))
-        return OBS_OUTPUT_INVALID_STREAM;
+        return LITE_OBS_OUTPUT_INVALID_STREAM;
 
     blog(LOG_INFO, "Connection to %s successful", d_ptr->path.c_str());
 
@@ -821,19 +821,19 @@ int rtmp_stream_output::try_connect()
 void rtmp_stream_output::connect_thread_internal()
 {
     if (!init_connect()) {
-        lite_obs_output_signal_stop(OBS_OUTPUT_BAD_PATH);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_BAD_PATH);
         return;
     }
 
     auto ret = try_connect();
 
-    if (ret != OBS_OUTPUT_SUCCESS) {
+    if (ret != LITE_OBS_OUTPUT_SUCCESS) {
         lite_obs_output_signal_stop(ret);
         blog(LOG_DEBUG, "Connection to %s failed: %d", d_ptr->path.c_str(), ret);
     } else {
         auto callback = output_signal_callback();
-        if (callback)
-            callback->connected();
+        if (callback.connected)
+            callback.connected(callback.opaque);
     }
 
     d_ptr->cdn_ip = d_ptr->rtmp.cdn_addr;
@@ -877,7 +877,7 @@ void rtmp_stream_output::i_stop(uint64_t ts)
         if (d_ptr->stop_ts == 0)
             os_sem_post(d_ptr->send_sem);
     } else {
-        lite_obs_output_signal_stop(OBS_OUTPUT_SUCCESS);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_SUCCESS);
     }
 }
 

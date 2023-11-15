@@ -1,5 +1,4 @@
-#ifndef LOG_H
-#define LOG_H
+#pragma once
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -39,4 +38,3 @@ typedef void (*log_handler_t)(int lvl, const char *msg);
 void base_set_log_handler(log_handler_t handler);
 void blog(int log_level, const char *format, ...);
 
-#endif // LOG_H

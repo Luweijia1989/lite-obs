@@ -1,10 +1,15 @@
 #pragma once
 
 #include <memory>
-#include "lite_obs_defines.h"
+#include "lite_obs_media_defines.h"
+
+#define LITE_OBS_VIDEO_SUCCESS 0
+#define LITE_OBS_VIDEO_FAIL -1
+#define LITE_OBS_VIDEO_INVALID_PARAM -2
+#define LITE_OBS_VIDEO_CURRENTLY_ACTIVE -3
 
 struct lite_obs_core_video_private;
-struct obs_graphics_context;
+struct lite_obs_graphics_context;
 class gs_texture;
 class gs_program;
 class graphics_subsystem;
@@ -77,7 +82,7 @@ private:
     void set_gpu_converted_data(class video_frame *output, const struct video_data *input, const struct video_output_info *info);
     void output_video_data(video_data *input_frame, int count);
     void output_frame(bool raw_active, const bool gpu_active);
-    bool graphics_loop(obs_graphics_context *context);
+    bool graphics_loop(lite_obs_graphics_context *context);
     void graphics_thread_internal();
 
     bool init_gpu_encoding();

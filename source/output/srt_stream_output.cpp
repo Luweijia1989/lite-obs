@@ -2,7 +2,7 @@
 #include <thread>
 #include <mutex>
 #include <list>
-#include "lite-obs/lite_obs.h"
+#include "lite-obs/lite_obs_internal.h"
 #include "lite-obs/util/log.h"
 #include "lite-obs/util/circlebuf.h"
 #include "lite-obs/util/threading.h"
@@ -10,7 +10,6 @@
 #include "lite-obs/media-io/ffmpeg_formats.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
-#include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/output/ffmpeg_url.h"
 #include "lite-obs/output/ffmpeg_srt.h"
 #include "lite-obs/lite_encoder_info.h"
@@ -500,7 +499,7 @@ int mpeg_ts_output::open_output_file(ffmpeg_data *data)
                         data->config.protocol_settings);
 
             av_dict_free(&dict);
-            return OBS_OUTPUT_INVALID_STREAM;
+            return LITE_OBS_OUTPUT_INVALID_STREAM;
         }
     }
 
@@ -516,11 +515,11 @@ int mpeg_ts_output::open_output_file(ffmpeg_data *data)
         ret = avio_open2(&data->output->pb, data->config.url, AVIO_FLAG_WRITE, NULL, &dict);
     } else {
         blog(LOG_INFO, "[ffmpeg mpegts muxer:] Invalid protocol: %s", data->config.url);
-        return OBS_OUTPUT_BAD_PATH;
+        return LITE_OBS_OUTPUT_BAD_PATH;
     }
 
     if (ret < 0) {
-        if (srt && (ret == OBS_OUTPUT_CONNECT_FAILED || ret == OBS_OUTPUT_INVALID_STREAM)) {
+        if (srt && (ret == LITE_OBS_OUTPUT_CONNECT_FAILED || ret == LITE_OBS_OUTPUT_INVALID_STREAM)) {
             blog(LOG_ERROR, "failed to open the url or invalid stream");
         } else {
             ffmpeg_mpegts_log_error(LOG_WARNING, data,
@@ -542,13 +541,13 @@ int mpeg_ts_output::open_output_file(ffmpeg_data *data)
         ret = allocate_custom_aviocontext();
         if (ret < 0) {
             blog(LOG_INFO, "Couldn't allocate custom avio_context for rist or srt'%s', %d\n", data->config.url, ret);
-            return OBS_OUTPUT_INVALID_STREAM;
+            return LITE_OBS_OUTPUT_INVALID_STREAM;
         }
     }
 
     auto callback = output_signal_callback();
-    if (callback)
-        callback->connected();
+    if (callback.connected)
+        callback.connected(callback.opaque);
 
     return 0;
 }
@@ -626,13 +625,13 @@ void mpeg_ts_output::write_internal()
 
         int ret = mpegts_process_packet(); // todo
         if (ret != 0) {
-            int code = OBS_OUTPUT_DISCONNECTED;
+            int code = LITE_OBS_OUTPUT_DISCONNECTED;
 
             d_ptr->write_thread.detach();
             d_ptr->write_thread_active = false;
 
             if (ret == -ENOSPC)
-                code = OBS_OUTPUT_NO_SPACE;
+                code = LITE_OBS_OUTPUT_NO_SPACE;
 
             lite_obs_output_signal_stop(code);
             ffmpeg_mpegts_deactivate();
@@ -641,8 +640,8 @@ void mpeg_ts_output::write_internal()
             if (!d_ptr->sent_first_media_packet) {
                 d_ptr->sent_first_media_packet = true;
                 auto callback = output_signal_callback();
-                if (callback)
-                    callback->first_media_packet();
+                if (callback.first_media_packet)
+                    callback.first_media_packet(callback.opaque);
             }
         }
     }
@@ -750,14 +749,14 @@ bool mpeg_ts_output::set_config()
             lite_obs_output_set_last_error(d_ptr->ff_data->last_error);
         }
         ffmpeg_mpegts_data_free(&d_ptr->ff_data);
-        code = OBS_OUTPUT_INVALID_STREAM;
+        code = LITE_OBS_OUTPUT_INVALID_STREAM;
         goto fail;
     }
 
     if (!d_ptr->got_headers) {
         if (!init_streams(ff_data)) {
             blog(LOG_ERROR, "mpegts avstream failed to be created");
-            code = OBS_OUTPUT_INVALID_STREAM;
+            code = LITE_OBS_OUTPUT_INVALID_STREAM;
             goto fail;
         }
         code = open_output_file(ff_data);
@@ -880,7 +879,7 @@ void mpeg_ts_output::i_stop(uint64_t ts)
 
         full_stop();
     } else {
-        lite_obs_output_signal_stop(OBS_OUTPUT_SUCCESS);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_SUCCESS);
     }
 }
 
@@ -1026,12 +1025,12 @@ void mpeg_ts_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
             d_ptr->got_headers = true;
         } else {
             blog(LOG_WARNING, "failed to retrieve headers");
-            code = OBS_OUTPUT_INVALID_STREAM;
+            code = LITE_OBS_OUTPUT_INVALID_STREAM;
             goto fail;
         }
         if (!write_header(ff_data)) {
             blog(LOG_ERROR, "failed to write headers");
-            code = OBS_OUTPUT_INVALID_STREAM;
+            code = LITE_OBS_OUTPUT_INVALID_STREAM;
             goto fail;
         }
         av_dump_format(ff_data->output, 0, NULL, 1);
@@ -1043,7 +1042,7 @@ void mpeg_ts_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
 
     /* encoder failure */
     if (!packet) {
-        lite_obs_output_signal_stop(OBS_OUTPUT_ENCODE_ERROR);
+        lite_obs_output_signal_stop(LITE_OBS_OUTPUT_ENCODE_ERROR);
         ffmpeg_mpegts_deactivate();
         return;
     }

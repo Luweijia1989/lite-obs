@@ -4,7 +4,7 @@
 #include <memory>
 #include <atomic>
 #include <vector>
-#include "lite_obs_defines.h"
+#include "lite-obs/lite_obs_media_defines.h"
 
 #define OBS_ENCODER_CAP_DEPRECATED (1 << 0)
 #define OBS_ENCODER_CAP_PASS_TEXTURE (1 << 1)

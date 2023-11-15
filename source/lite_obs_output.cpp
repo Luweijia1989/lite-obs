@@ -4,10 +4,9 @@
 #include "lite-obs/util/log.h"
 #include "lite-obs/lite_encoder_info.h"
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/lite_obs.h"
+#include "lite-obs/lite_obs_internal.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/lite_obs_core_audio.h"
-#include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
 
@@ -18,7 +17,7 @@
 
 struct lite_obs_output_private
 {
-    std::shared_ptr<lite_obs_output_callbak> signal_callback{};
+    lite_obs_output_callbak signal_callback{};
 
     bool received_video{};
     bool received_audio{};
@@ -112,12 +111,12 @@ void lite_obs_output::free_packets()
     d_ptr->interleaved_packets.clear();
 }
 
-void lite_obs_output::set_output_signal_callback(std::shared_ptr<lite_obs_output_callbak> sig)
+void lite_obs_output::set_output_signal_callback(lite_obs_output_callbak callback)
 {
-    d_ptr->signal_callback = sig;
+    d_ptr->signal_callback = callback;
 }
 
-std::shared_ptr<lite_obs_output_callbak> lite_obs_output::output_signal_callback()
+const lite_obs_output_callbak &lite_obs_output::output_signal_callback()
 {
     return d_ptr->signal_callback;
 }
@@ -213,8 +212,8 @@ bool lite_obs_output::lite_obs_output_start()
     }
 
     if (lite_obs_output_actual_start()) {
-        if (d_ptr->signal_callback) {
-            d_ptr->signal_callback->starting();
+        if (d_ptr->signal_callback.start) {
+            d_ptr->signal_callback.starting(d_ptr->signal_callback.opaque);
         }
         return true;
     }
@@ -237,9 +236,9 @@ void lite_obs_output::obs_output_stop_internal()
     if (i_output_valid()) {
         i_stop(0);
     } else if (was_reconnecting) {
-        d_ptr->stop_code = OBS_OUTPUT_SUCCESS;
-        if (d_ptr->signal_callback)
-            d_ptr->signal_callback->stop(d_ptr->stop_code, d_ptr->last_error_message);
+        d_ptr->stop_code = LITE_OBS_OUTPUT_SUCCESS;
+        if (d_ptr->signal_callback.stop)
+            d_ptr->signal_callback.stop(d_ptr->stop_code, d_ptr->last_error_message.c_str(), d_ptr->signal_callback.opaque);
         os_event_signal(d_ptr->stopping_event);
     }
 }
@@ -251,8 +250,8 @@ void lite_obs_output::lite_obs_output_stop()
 
     if (!stopping()) {
         d_ptr->stop_code = 0;
-        if (d_ptr->signal_callback)
-            d_ptr->signal_callback->stopping();
+        if (d_ptr->signal_callback.stopping)
+            d_ptr->signal_callback.stopping(d_ptr->signal_callback.opaque);
     }
     obs_output_stop_internal();
 }
@@ -1140,19 +1139,19 @@ bool lite_obs_output::lite_obs_output_begin_data_capture()
     d_ptr->data_active = true;
     hook_data_capture(i_encoded(), i_has_video(), i_has_audio());
 
-    if (d_ptr->signal_callback)
-        d_ptr->signal_callback->activate();
+    if (d_ptr->signal_callback.activate)
+        d_ptr->signal_callback.activate(d_ptr->signal_callback.opaque);
 
     d_ptr->active = true;
 
     if (d_ptr->reconnecting) {
-        if (d_ptr->signal_callback)
-            d_ptr->signal_callback->reconnect_success();
+        if (d_ptr->signal_callback.reconnect_success)
+            d_ptr->signal_callback.reconnect_success(d_ptr->signal_callback.opaque);
 
         d_ptr->reconnecting = false;
     } else {
-        if (d_ptr->signal_callback)
-            d_ptr->signal_callback->start();
+        if (d_ptr->signal_callback.start)
+            d_ptr->signal_callback.start(d_ptr->signal_callback.opaque);
     }
 
     return true;
@@ -1224,8 +1223,8 @@ void lite_obs_output::end_data_capture_thread_internal()
         }
     }
 
-    if (d_ptr->signal_callback)
-        d_ptr->signal_callback->deactivate();
+    if (d_ptr->signal_callback.deactivate)
+        d_ptr->signal_callback.deactivate(d_ptr->signal_callback.opaque);
     d_ptr->active = false;
     os_event_signal(d_ptr->stopping_event);
 }
@@ -1240,10 +1239,10 @@ void lite_obs_output::lite_obs_output_end_data_capture_internal(bool sig)
 {
     if (!d_ptr->active || !d_ptr->data_active) {
         if (sig) {
-            if (d_ptr->signal_callback)
-                d_ptr->signal_callback->stop(d_ptr->stop_code, d_ptr->last_error_message);
+            if (d_ptr->signal_callback.stop)
+                d_ptr->signal_callback.stop(d_ptr->stop_code, d_ptr->last_error_message.c_str(), d_ptr->signal_callback.opaque);
 
-            d_ptr->stop_code = OBS_OUTPUT_SUCCESS;
+            d_ptr->stop_code = LITE_OBS_OUTPUT_SUCCESS;
             os_event_signal(d_ptr->stopping_event);
         }
         return;
@@ -1260,9 +1259,9 @@ void lite_obs_output::lite_obs_output_end_data_capture_internal(bool sig)
     d_ptr->end_data_capture_thread = std::thread(lite_obs_output::end_data_capture_thread, this);
 
     if (sig) {
-        if (d_ptr->signal_callback)
-            d_ptr->signal_callback->stop(d_ptr->stop_code, d_ptr->last_error_message);
-        d_ptr->stop_code = OBS_OUTPUT_SUCCESS;
+        if (d_ptr->signal_callback.stop)
+            d_ptr->signal_callback.stop(d_ptr->stop_code, d_ptr->last_error_message.c_str(), d_ptr->signal_callback.opaque);
+        d_ptr->stop_code = LITE_OBS_OUTPUT_SUCCESS;
     }
 }
 
@@ -1292,7 +1291,7 @@ bool lite_obs_output::can_reconnect(int code)
 {
     bool reconnect_active = d_ptr->reconnect_retry_max != 0;
 
-    return (d_ptr->reconnecting && code != OBS_OUTPUT_SUCCESS) || (reconnect_active && code == OBS_OUTPUT_DISCONNECTED);
+    return (d_ptr->reconnecting && code != LITE_OBS_OUTPUT_SUCCESS) || (reconnect_active && code == LITE_OBS_OUTPUT_DISCONNECTED);
 }
 
 void lite_obs_output::reconnect_thread(void *param)
@@ -1318,7 +1317,7 @@ void lite_obs_output::output_reconnect()
     }
 
     if (d_ptr->reconnect_retries >= d_ptr->reconnect_retry_max) {
-        d_ptr->stop_code = OBS_OUTPUT_DISCONNECTED;
+        d_ptr->stop_code = LITE_OBS_OUTPUT_DISCONNECTED;
         d_ptr->reconnecting = false;
         lite_obs_output_end_data_capture();
         return;
@@ -1331,12 +1330,12 @@ void lite_obs_output::output_reconnect()
 
     d_ptr->reconnect_retries++;
 
-    d_ptr->stop_code = OBS_OUTPUT_DISCONNECTED;
+    d_ptr->stop_code = LITE_OBS_OUTPUT_DISCONNECTED;
     d_ptr->reconnect_thread = std::thread(lite_obs_output::reconnect_thread, this);
     blog(LOG_INFO, "Reconnecting in %d seconds..", d_ptr->reconnect_retry_sec);
 
-    if(d_ptr->signal_callback)
-        d_ptr->signal_callback->reconnect();
+    if(d_ptr->signal_callback.reconnect)
+        d_ptr->signal_callback.reconnect(d_ptr->signal_callback.opaque);
 }
 
 void lite_obs_output::lite_obs_output_signal_stop(int code)

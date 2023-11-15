@@ -1,5 +1,4 @@
 #include "lite-obs/lite_obs_core_video.h"
-#include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/lite_obs_source.h"
 #include "lite-obs/lite_encoder.h"
 #include "lite-obs/graphics/gs_subsystem.h"
@@ -25,7 +24,7 @@ struct obs_vframe_info {
     int count{};
 };
 
-struct obs_graphics_context {
+struct lite_obs_graphics_context {
     uint64_t last_time{};
     uint64_t interval{};
     uint64_t frame_time_total_ns{};
@@ -567,7 +566,7 @@ void lite_obs_core_video::output_frame(bool raw_active, const bool gpu_active)
         d_ptr->cur_texture = 0;
 }
 
-bool lite_obs_core_video::graphics_loop(obs_graphics_context *context)
+bool lite_obs_core_video::graphics_loop(lite_obs_graphics_context *context)
 {
     const bool stop_requested = d_ptr->video->video_output_stopped();
 
@@ -619,7 +618,7 @@ void lite_obs_core_video::graphics_task_func()
 
     srand((unsigned int)time(NULL));
 
-    obs_graphics_context context;
+    lite_obs_graphics_context context;
     context.interval = interval;
     context.frame_time_total_ns = 0;
     context.fps_total_ns = 0;
@@ -903,11 +902,11 @@ int lite_obs_core_video::lite_obs_start_video(uint32_t width, uint32_t height, u
     if (errorcode != VIDEO_OUTPUT_SUCCESS) {
         if (errorcode == VIDEO_OUTPUT_INVALIDPARAM) {
             blog(LOG_ERROR, "Invalid video parameters specified");
-            return OBS_VIDEO_INVALID_PARAM;
+            return LITE_OBS_VIDEO_INVALID_PARAM;
         } else {
             blog(LOG_ERROR, "Could not open video output");
         }
-        return OBS_VIDEO_FAIL;
+        return LITE_OBS_VIDEO_FAIL;
     }
     d_ptr->video = video;
 
@@ -923,11 +922,11 @@ int lite_obs_core_video::lite_obs_start_video(uint32_t width, uint32_t height, u
 
     d_ptr->graphics = graphics_subsystem::gs_create_graphics_system(d_ptr->plat);
     if (!d_ptr->graphics) {
-        return OBS_VIDEO_FAIL;
+        return LITE_OBS_VIDEO_FAIL;
     }
 
     d_ptr->video_thread = std::thread(lite_obs_core_video::graphics_thread, this);
-    return OBS_VIDEO_SUCCESS;
+    return LITE_OBS_VIDEO_SUCCESS;
 }
 
 bool lite_obs_core_video::lite_obs_video_active()

@@ -4,7 +4,6 @@
 #include <list>
 #include <thread>
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/lite_obs_defines.h"
 #include "lite-obs/media-io/ffmpeg_formats.h"
 #include "lite-obs/media-io/video_output.h"
 #include "lite-obs/media-io/audio_output.h"
@@ -176,7 +175,7 @@ void lite_ffmpeg_mux::i_encoded_packet(std::shared_ptr<struct encoder_packet> pa
         init_params();
         if (!mux_init()) {
             deactivate(0);
-            lite_obs_output_signal_stop(OBS_OUTPUT_ERROR);
+            lite_obs_output_signal_stop(LITE_OBS_OUTPUT_ERROR);
             d_ptr->capturing = false;
             return;
         }
