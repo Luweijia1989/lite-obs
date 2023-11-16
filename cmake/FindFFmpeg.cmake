@@ -12,16 +12,20 @@ elseif(ANDROID)
     set(FFMPEG_LIB_SUFFIX ${CMAKE_ANDROID_ARCH_ABI})
 endif()
 
-if(MSVC)
+if(MSVC OR ANDROID)
     find_library(
         FFmpeg_LIBS
         NAMES ffmpeg
         PATHS ${FFMPEG_PATH}/lib/${FFMPEG_LIB_SUFFIX}
         NO_DEFAULT_PATH)
 
-    find_file(FFmpeg_BIN_FILE NAMES ffmpeg-6.dll ffmpeg.dll
-        PATHS ${FFMPEG_PATH}/bin/${FFMPEG_LIB_SUFFIX}
-        NO_DEFAULT_PATH)
+    if(MSVC)
+        find_file(FFmpeg_BIN_FILE NAMES ffmpeg-6.dll ffmpeg.dll
+            PATHS ${FFMPEG_PATH}/bin/${FFMPEG_LIB_SUFFIX}
+            NO_DEFAULT_PATH)
+    else()
+        set(FFmpeg_BIN_FILE ${FFmpeg_LIBS})
+    endif()
 else()
     set(FFMPEG_DEP_LIST "libavcodec.a" "libavformat.a" "libavutil.a" "libswresample.a" "libswscale.a")
     foreach(library ${FFMPEG_DEP_LIST})
