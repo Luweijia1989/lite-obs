@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.14)
 
 project(liteobs-qt-example VERSION 0.1 LANGUAGES CXX)
 
+set(LITEOBS_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../output/windows-desktop)
+
+if (LITEOBS_SDK_DIR)
+        # LITEOBS_SDK_DIR path set by user
+else()
+        set(LITEOBS_SDK_DIR "" CACHE PATH "Path to LITEOBS_SDK_DIR")
+        message(WARNING "LITEOBS_SDK_DIR variable is missing.  Please set this variable to specify path to LITEOBS_SDK_DIR")
+endif()
+
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -52,11 +61,11 @@ else()
 endif()
 endif()
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../output/windows-desktop/include)
-target_link_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../output/windows-desktop/lib)
-
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick lite-obs)
+    PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
+
+include(${LITEOBS_SDK_DIR}/lib/cmake/FindLiteOBS.cmake)
+target_link_libraries(${PROJECT_NAME} PRIVATE lite-obs)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER liteobs.luweijia.com
