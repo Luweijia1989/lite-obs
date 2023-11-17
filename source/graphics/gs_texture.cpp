@@ -298,13 +298,6 @@ bool gs_texture::gs_texture_load_texture_sampler(std::shared_ptr<gs_sampler_stat
     if (!gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_WRAP_R, ss->address_w))
         success = false;
 
-    if (d_ptr->base.format == gs_color_format::GS_A8) {
-        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-        gl_tex_param_i(d_ptr->base.gl_target, GL_TEXTURE_SWIZZLE_A, GL_RED);
-    }
-
     return success;
 }
 
