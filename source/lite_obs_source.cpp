@@ -1353,7 +1353,7 @@ bool lite_obs_source::set_async_texture_size(const std::shared_ptr<lite_obs_sour
     const bool async_gpu_conversion = (cur != CONVERT_NONE) && init_gpu_conversion(frame);
     d_ptr->async_gpu_conversion = async_gpu_conversion;
     if (async_gpu_conversion) {
-        d_ptr->async_texrender = std::make_shared<gs_texture_render>(format, gs_zstencil_format::GS_ZS_NONE);
+        d_ptr->async_texrender = std::make_shared<gs_texture_render>(format);
 
         for (int c = 0; c < d_ptr->async_channel_count; ++c)
             d_ptr->async_textures[c] = gs_texture_create(d_ptr->async_convert_width[c], d_ptr->async_convert_height[c], d_ptr->async_texture_formats[c], GS_DYNAMIC);
@@ -1633,7 +1633,7 @@ void lite_obs_source::do_update_transform(const std::shared_ptr<gs_texture> &tex
         if (d_ptr->item_render && !crop_enabled)
             d_ptr->item_render.reset();
         else if (!d_ptr->item_render && crop_enabled)
-            d_ptr->item_render = std::make_shared<gs_texture_render>(gs_color_format::GS_RGBA, gs_zstencil_format::GS_ZS_NONE);
+            d_ptr->item_render = std::make_shared<gs_texture_render>(gs_color_format::GS_RGBA);
 
         auto mat = glm::mat4x4{1};
         if (!crop_enabled) {

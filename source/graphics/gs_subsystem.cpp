@@ -370,12 +370,12 @@ void gs_enable_blending(bool enable)
         gl_disable(GL_BLEND);
 }
 
-void gs_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zstencil_buffer> zs)
+void gs_set_render_target(std::shared_ptr<gs_texture> tex)
 {
     if (!gs_valid("gs_set_render_target"))
         return;
 
-    if (!thread_graphics->d_ptr->device->gs_device_set_render_target(tex, zs))
+    if (!thread_graphics->d_ptr->device->gs_device_set_render_target(tex))
         blog(LOG_ERROR, "device_set_render_target (GL) failed");
 }
 
@@ -680,14 +680,6 @@ std::shared_ptr<gs_texture> gs_get_render_target()
         return nullptr;
 
     return thread_graphics->d_ptr->device->gs_device_get_render_target();
-}
-
-std::shared_ptr<gs_zstencil_buffer> gs_get_zstencil_target()
-{
-    if (!gs_valid("gs_get_zstencil_target"))
-        return nullptr;
-
-    return thread_graphics->d_ptr->device->gs_device_get_zstencil_target();
 }
 
 std::shared_ptr<gs_program> gs_get_effect_by_name(const char *name)

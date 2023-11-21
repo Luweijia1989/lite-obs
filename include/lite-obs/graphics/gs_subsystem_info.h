@@ -176,32 +176,6 @@ static inline GLenum get_gl_format_type(gs_color_format format)
     return GL_UNSIGNED_BYTE;
 }
 
-enum class gs_zstencil_format {
-    GS_ZS_NONE,
-    GS_Z16,
-    GS_Z24_S8,
-    GS_Z32F,
-    GS_Z32F_S8X24,
-};
-
-static inline GLenum convert_zstencil_format(gs_zstencil_format format)
-{
-    switch (format) {
-    case gs_zstencil_format::GS_Z16:
-        return GL_DEPTH_COMPONENT16;
-    case gs_zstencil_format::GS_Z24_S8:
-        return GL_DEPTH24_STENCIL8;
-    case gs_zstencil_format::GS_Z32F:
-        return GL_DEPTH_COMPONENT32F;
-    case gs_zstencil_format::GS_Z32F_S8X24:
-        return GL_DEPTH32F_STENCIL8;
-    case gs_zstencil_format::GS_ZS_NONE:
-        return 0;
-    }
-
-    return 0;
-}
-
 #define GS_CLEAR_COLOR (1 << 0)
 #define GS_CLEAR_DEPTH (1 << 1)
 #define GS_CLEAR_STENCIL (1 << 2)

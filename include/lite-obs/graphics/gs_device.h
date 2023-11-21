@@ -40,7 +40,7 @@ public:
 
     void device_blend_function_separate(gs_blend_type src_c, gs_blend_type dest_c, gs_blend_type src_a, gs_blend_type dest_a);
 
-    bool gs_device_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zstencil_buffer> zs);
+    bool gs_device_set_render_target(std::shared_ptr<gs_texture> tex);
 
     void gs_device_ortho(float left, float right, float top, float bottom, float near, float far);
     void gs_device_set_viewport(int x, int y, int width, int height);
@@ -50,7 +50,6 @@ public:
     void gs_device_projection_pop();
 
     std::shared_ptr<gs_texture> gs_device_get_render_target();
-    std::shared_ptr<gs_zstencil_buffer> gs_device_get_zstencil_target();
 
     void gs_device_load_vertexbuffer(std::shared_ptr<gs_vertexbuffer> vb);
 

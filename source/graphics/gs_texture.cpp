@@ -12,28 +12,6 @@ bool fbo_info::attach_rendertarget(std::shared_ptr<gs_texture> tex) {
     return gl_success("glFramebufferTexture2D");
 }
 
-bool fbo_info::attach_zstencil(std::shared_ptr<gs_zstencil_buffer> zs)
-{
-    GLuint zsbuffer = 0;
-    GLenum zs_attachment = GL_DEPTH_STENCIL_ATTACHMENT;
-
-    if (cur_zstencil_buffer.lock() == zs)
-        return true;
-
-    cur_zstencil_buffer = zs;
-
-    if (zs) {
-        zsbuffer = zs->buffer;
-        zs_attachment = zs->attachment;
-    }
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, zs_attachment, GL_RENDERBUFFER, zsbuffer);
-    if (!gl_success("glFramebufferRenderbuffer"))
-        return false;
-
-    return true;
-}
-
 fbo_info::~fbo_info() {
     glDeleteFramebuffers(1, &fbo);
     gl_success("glDeleteFramebuffers");
@@ -258,7 +236,6 @@ std::shared_ptr<fbo_info> gs_texture::get_fbo()
     d_ptr->base.fbo->height = height;
     d_ptr->base.fbo->format = d_ptr->base.format;
     d_ptr->base.fbo->cur_render_target.reset();
-    d_ptr->base.fbo->cur_zstencil_buffer.reset();
 
     return d_ptr->base.fbo;
 }

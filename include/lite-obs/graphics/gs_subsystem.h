@@ -14,7 +14,6 @@ class gs_device;
 class gs_texture;
 class gs_program;
 class gs_shader;
-struct gs_zstencil_buffer;
 class graphics_subsystem
 {
 public:
@@ -45,7 +44,7 @@ void gs_get_viewport(gs_rect &rect);
 void gs_clear(uint32_t clear_flags, glm::vec4 *color, float depth, uint8_t stencil);
 void gs_flush();
 void gs_set_render_size(uint32_t width, uint32_t height);
-void gs_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zstencil_buffer> zs);
+void gs_set_render_target(std::shared_ptr<gs_texture> tex);
 void gs_set_cur_effect(std::shared_ptr<gs_program> program);
 void gs_load_texture(std::weak_ptr<gs_texture> tex, int unit);
 
@@ -67,7 +66,6 @@ void gs_matrix_translate(const glm::vec3 &offset);
 void gs_matrix_identity();
 
 std::shared_ptr<gs_texture> gs_get_render_target();
-std::shared_ptr<gs_zstencil_buffer> gs_get_zstencil_target();
 
 std::shared_ptr<gs_program> gs_get_effect_by_name(const char *name);
 void gs_draw_sprite(std::shared_ptr<gs_texture> tex, uint32_t flip, uint32_t width, uint32_t height);

@@ -193,7 +193,7 @@ void lite_obs_core_video::render_all_sources()
 void lite_obs_core_video::render_main_texture()
 {
     glm::vec4 clear_color(0);
-    gs_set_render_target(d_ptr->render_texture, NULL);
+    gs_set_render_target(d_ptr->render_texture);
     gs_clear(GS_CLEAR_COLOR, &clear_color, 1.0f, 0);
 
     gs_set_render_size(d_ptr->base_width, d_ptr->base_height);
@@ -238,7 +238,7 @@ std::shared_ptr<gs_texture> lite_obs_core_video::render_output_texture()
     if ((program->gs_program_name() == "Default_Draw") && (width == d_ptr->base_width) && (height == d_ptr->base_height))
         return texture;
 
-    gs_set_render_target(target, nullptr);
+    gs_set_render_target(target);
     gs_set_render_size(width, height);
 
     glm::vec2 base = {(float)d_ptr->base_width, (float)d_ptr->base_height};
@@ -267,7 +267,7 @@ void lite_obs_core_video::render_convert_plane(std::shared_ptr<gs_texture> targe
     const uint32_t width = target->gs_texture_get_width();
     const uint32_t height = target->gs_texture_get_height();
 
-    gs_set_render_target(target, NULL);
+    gs_set_render_target(target);
     gs_set_render_size(width, height);
 
     gs_technique_begin();
@@ -367,7 +367,7 @@ void lite_obs_core_video::render_video(bool raw_active, const bool gpu_active, i
             stage_output_texture(texture, cur_texture);
     }
 
-    gs_set_render_target(NULL, NULL);
+    gs_set_render_target(nullptr);
     gs_enable_blending(true);
 
     gs_end_scene();

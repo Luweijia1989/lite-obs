@@ -159,7 +159,6 @@ struct gs_init_data {
     uint32_t cx{}, cy{};
     uint32_t num_backbuffers{};
     gs_color_format format{};
-    gs_zstencil_format zsformat{};
     uint32_t adapter{};
 };
 
@@ -316,34 +315,10 @@ static inline int get_color_format_bits(gs_color_format format)
     }
 }
 
-static inline int get_depth_format_bits(gs_zstencil_format zsformat)
-{
-    switch (zsformat) {
-    case gs_zstencil_format::GS_Z16:
-        return 16;
-    case gs_zstencil_format::GS_Z24_S8:
-        return 24;
-    default:
-        return 0;
-    }
-}
-
-static inline int get_stencil_format_bits(gs_zstencil_format zsformat)
-{
-    switch (zsformat) {
-    case gs_zstencil_format::GS_Z24_S8:
-        return 8;
-    default:
-        return 0;
-    }
-}
-
 /* Creates the real pixel format for the target window */
 static int gl_choose_pixel_format(HDC hdc, const gs_init_data *info)
 {
     int color_bits = get_color_format_bits(info->format);
-    int depth_bits = get_depth_format_bits(info->zsformat);
-    int stencil_bits = get_stencil_format_bits(info->zsformat);
     UINT num_formats;
     BOOL success;
     int format;
@@ -361,8 +336,8 @@ static int gl_choose_pixel_format(HDC hdc, const gs_init_data *info)
         WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
         WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
         WGL_COLOR_BITS_ARB, color_bits,
-        WGL_DEPTH_BITS_ARB, depth_bits,
-        WGL_STENCIL_BITS_ARB, stencil_bits,
+        WGL_DEPTH_BITS_ARB, 0,
+        WGL_STENCIL_BITS_ARB, 0,
         0, 0,
     };
 
@@ -420,7 +395,6 @@ void *gs_device::gl_platform_create(void *plat_info)
     auto dummy = std::make_unique<dummy_context>();
     gs_init_data info;
     info.format = gs_color_format::GS_RGBA;
-    info.zsformat = gs_zstencil_format::GS_ZS_NONE;
     int pixel_format;
     PIXELFORMATDESCRIPTOR pfd;
 

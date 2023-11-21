@@ -20,7 +20,6 @@ struct gs_device_private
     GLuint empty_vao{};
 
     std::weak_ptr<gs_texture> cur_render_target{};
-    std::weak_ptr<gs_zstencil_buffer> cur_zstencil_buffer{};
     std::weak_ptr<fbo_info> cur_fbo{};
 
     std::vector<std::weak_ptr<gs_texture>> cur_textures;
@@ -149,7 +148,6 @@ bool gs_device::set_current_fbo(std::shared_ptr<fbo_info> fbo)
 
         if (cur_fbo) {
             cur_fbo->cur_render_target.reset();
-            cur_fbo->cur_zstencil_buffer.reset();
         }
     }
 
@@ -214,16 +212,14 @@ void gs_device::update_viewproj_matrix()
     vs->gs_shader_set_matrix4(d_ptr->cur_viewproj);
 }
 
-bool gs_device::gs_device_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zstencil_buffer> zs)
+bool gs_device::gs_device_set_render_target(std::shared_ptr<gs_texture> tex)
 {
     auto cur_render_target = d_ptr->cur_render_target.lock();
-    auto cur_zstencil_buffer = d_ptr->cur_zstencil_buffer.lock();
 
-    if (cur_render_target == tex && cur_zstencil_buffer == zs)
+    if (cur_render_target == tex)
         return true;
 
     d_ptr->cur_render_target = tex;
-    d_ptr->cur_zstencil_buffer = zs;
 
     if (!tex) {
         return set_current_fbo(nullptr);
@@ -236,8 +232,6 @@ bool gs_device::gs_device_set_render_target(std::shared_ptr<gs_texture> tex, std
     set_current_fbo(fbo);
 
     if (!fbo->attach_rendertarget(tex))
-        return false;
-    if (!fbo->attach_zstencil(zs))
         return false;
 
     return true;
@@ -305,11 +299,6 @@ void gs_device::gs_device_projection_pop()
 std::shared_ptr<gs_texture> gs_device::gs_device_get_render_target()
 {
     return d_ptr->cur_render_target.lock();
-}
-
-std::shared_ptr<gs_zstencil_buffer> gs_device::gs_device_get_zstencil_target()
-{
-    return d_ptr->cur_zstencil_buffer.lock();
 }
 
 void gs_device::gs_device_load_vertexbuffer(std::shared_ptr<gs_vertexbuffer> vb)
