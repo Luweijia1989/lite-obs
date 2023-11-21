@@ -8,3 +8,8 @@ set(TARGET_OS windows-desktop)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CMAKE_CXX_FLAGS_RELEASE "/MD"
     CMAKE_CXX_FLAGS_DEBUG "/MDd")
+
+target_compile_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Release>:/Zi>")
+target_link_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+target_link_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+target_link_options(${PROJECT_NAME} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
