@@ -31,16 +31,10 @@
 
 #define GS_SUCCESS 0
 #define GS_ERROR_FAIL -1
-#define GS_ERROR_MODULE_NOT_FOUND -2
-#define GS_ERROR_NOT_SUPPORTED -3
 
-#define GS_BUILD_MIPMAPS (1 << 0)
-#define GS_DYNAMIC (1 << 1)
-#define GS_RENDER_TARGET (1 << 2)
-#define GS_GL_DUMMYTEX (1 << 3) /**<< texture with no allocated texture data */
-#define GS_DUP_BUFFER \
-    (1 << 4) /**<< do not pass buffer ownership when
-    *    creating a vertex/index buffer */
+#define GS_DYNAMIC (1 << 0)
+#define GS_RENDER_TARGET (1 << 1)
+
 
 #define GS_FLIP_U (1 << 0)
 #define GS_FLIP_V (1 << 1)
@@ -211,12 +205,6 @@ static inline GLenum convert_zstencil_format(gs_zstencil_format format)
 #define GS_CLEAR_COLOR (1 << 0)
 #define GS_CLEAR_DEPTH (1 << 1)
 #define GS_CLEAR_STENCIL (1 << 2)
-
-enum class gs_cull_mode {
-    GS_BACK,
-    GS_FRONT,
-    GS_NEITHER,
-};
 
 enum class gs_draw_mode {
     GS_POINTS,

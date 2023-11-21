@@ -30,7 +30,6 @@ struct gs_device_private
 
     std::weak_ptr<gs_program> cur_program{};
 
-    gs_cull_mode cur_cull_mode{};
     gs_rect cur_viewport{};
 
     glm::mat4x4 cur_proj{0};
@@ -242,24 +241,6 @@ bool gs_device::gs_device_set_render_target(std::shared_ptr<gs_texture> tex, std
         return false;
 
     return true;
-}
-
-void gs_device::gs_device_set_cull_mode(gs_cull_mode mode)
-{
-    if (d_ptr->cur_cull_mode == mode)
-        return;
-
-    if (d_ptr->cur_cull_mode == gs_cull_mode::GS_NEITHER)
-        gl_enable(GL_CULL_FACE);
-
-    d_ptr->cur_cull_mode = mode;
-
-    if (mode == gs_cull_mode::GS_BACK)
-        gl_cull_face(GL_BACK);
-    else if (mode == gs_cull_mode::GS_FRONT)
-        gl_cull_face(GL_FRONT);
-    else
-        gl_disable(GL_CULL_FACE);
 }
 
 void gs_device::gs_device_ortho(float left, float right, float top, float bottom, float znear, float zfar)

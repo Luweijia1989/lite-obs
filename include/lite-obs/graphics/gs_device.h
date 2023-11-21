@@ -41,7 +41,6 @@ public:
     void device_blend_function_separate(gs_blend_type src_c, gs_blend_type dest_c, gs_blend_type src_a, gs_blend_type dest_a);
 
     bool gs_device_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zstencil_buffer> zs);
-    void gs_device_set_cull_mode(gs_cull_mode mode);
 
     void gs_device_ortho(float left, float right, float top, float bottom, float near, float far);
     void gs_device_set_viewport(int x, int y, int width, int height);

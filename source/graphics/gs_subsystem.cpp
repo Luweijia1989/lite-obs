@@ -368,14 +368,6 @@ void gs_set_render_target(std::shared_ptr<gs_texture> tex, std::shared_ptr<gs_zs
         blog(LOG_ERROR, "device_set_render_target (GL) failed");
 }
 
-void gs_set_cull_mode(gs_cull_mode mode)
-{
-    if (!gs_valid("gs_set_cull_mode"))
-        return;
-
-    thread_graphics->d_ptr->device->gs_device_set_cull_mode(mode);
-}
-
 void gs_ortho(float left, float right, float top, float bottom, float znear, float zfar)
 {
     if (!gs_valid("gs_ortho"))
@@ -435,9 +427,6 @@ void gs_set_render_size(uint32_t width, uint32_t height)
 {
     if (!gs_valid("gs_set_render_size"))
         return;
-
-    gs_enable_depth_test(false);
-    gs_set_cull_mode(gs_cull_mode::GS_NEITHER);
 
     gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f, 100.0f);
     gs_set_viewport(0, 0, width, height);
