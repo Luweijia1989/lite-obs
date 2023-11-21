@@ -346,6 +346,17 @@ void gs_enable_depth_test(bool enable)
         gl_disable(GL_DEPTH_TEST);
 }
 
+void gs_enable_cull_face(bool enable)
+{
+    if (!gs_valid("gs_enable_cull_face"))
+        return;
+
+    if (enable)
+        gl_enable(GL_CULL_FACE);
+    else
+        gl_disable(GL_CULL_FACE);
+}
+
 void gs_enable_blending(bool enable)
 {
     if (!gs_valid("gs_enable_blending"))

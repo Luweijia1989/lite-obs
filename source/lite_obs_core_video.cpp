@@ -349,6 +349,7 @@ void lite_obs_core_video::render_video(bool raw_active, const bool gpu_active, i
     gs_begin_scene();
 
     gs_enable_depth_test(false);
+    gs_enable_cull_face(false);
 
     render_main_texture();
 

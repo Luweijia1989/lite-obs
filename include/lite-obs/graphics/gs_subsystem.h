@@ -38,6 +38,7 @@ void gs_begin_scene();
 void gs_end_scene();
 void gs_enable_depth_test(bool enable);
 void gs_enable_blending(bool enable);
+void gs_enable_cull_face(bool enable);
 void gs_ortho(float left, float right, float top, float bottom, float znear, float zfar);
 void gs_set_viewport(int x, int y, int width, int height);
 void gs_get_viewport(gs_rect &rect);
