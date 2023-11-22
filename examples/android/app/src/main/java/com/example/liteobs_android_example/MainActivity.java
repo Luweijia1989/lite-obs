@@ -39,22 +39,17 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        Button startButton = findViewById(R.id.start_stream);
-        startButton.setOnClickListener(new View.OnClickListener() {
+        Button startOutput = findViewById(R.id.start_stream);
+        startOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startScreenRecording();
+                setupLiteOBS();
+                startOutput();
             }
         });
     }
 
-    private void startScreenRecording() {
-        setupLiteOBS();
-    }
-    /**
-     * A native method that is implemented by the 'liteobs_android_example' native library,
-     * which is packaged with this application.
-     */
     public native String stringFromJNI();
     public native void setupLiteOBS();
+    public native void startOutput();
 }
