@@ -2,14 +2,16 @@ cmake_minimum_required(VERSION 3.14)
 
 project(liteobs-qt-example VERSION 0.1 LANGUAGES CXX)
 
-set(LITEOBS_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../output/windows-desktop)
+#set(LITEOBS_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../output/android)
 
-if (LITEOBS_SDK_DIR)
-        # LITEOBS_SDK_DIR path set by user
-else()
-        set(LITEOBS_SDK_DIR "" CACHE PATH "Path to LITEOBS_SDK_DIR")
-        message(WARNING "LITEOBS_SDK_DIR variable is missing.  Please set this variable to specify path to LITEOBS_SDK_DIR")
-endif()
+#if (LITEOBS_SDK_DIR)
+#        # LITEOBS_SDK_DIR path set by user
+#else()
+#        set(LITEOBS_SDK_DIR "" CACHE PATH "Path to LITEOBS_SDK_DIR")
+#        message(WARNING "LITEOBS_SDK_DIR variable is missing.  Please set this variable to specify path to LITEOBS_SDK_DIR")
+#endif()
+
+#include(${LITEOBS_SDK_DIR}/lib/cmake/FindLiteOBS.cmake)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -64,7 +66,6 @@ endif()
 target_link_libraries(${PROJECT_NAME}
     PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
 
-include(${LITEOBS_SDK_DIR}/lib/cmake/FindLiteOBS.cmake)
 target_link_libraries(${PROJECT_NAME} PRIVATE lite-obs)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -93,6 +94,10 @@ elseif (TARGET_OS STREQUAL windows-desktop)
         COMMAND ${CMAKE_COMMAND} -E copy
         ${FFmpeg_BIN_FILE} ${PROJECT_BINARY_DIR}
     )
+elseif (TARGET_OS STREQUAL android)
+    add_library(lite-obs-ffmpeg SHARED IMPORTED)
+    set_target_properties(lite-obs-ffmpeg PROPERTIES IMPORTED_LOCATION ${FFmpeg_LIBS})
+    target_link_libraries(${PROJECT_NAME} INTERFACE lite-obs-ffmpeg) # ensure libffmpeg.so will be copied by gradle
 endif()
 
 install(TARGETS ${PROJECT_NAME}
