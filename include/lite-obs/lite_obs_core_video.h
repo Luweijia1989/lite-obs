@@ -71,12 +71,11 @@ private:
     std::shared_ptr<gs_program> get_scale_effect_internal();
     std::shared_ptr<gs_program> get_scale_effect(uint32_t width, uint32_t height);
     void stage_output_texture(const std::shared_ptr<gs_texture> &tex, int cur_texture);
-    void render_convert_plane(std::shared_ptr<gs_texture> target);
     void render_convert_texture(std::shared_ptr<gs_texture> texture);
     void render_all_sources();
     void render_main_texture();
     std::shared_ptr<gs_texture> render_output_texture();
-    void render_video(bool raw_active, const bool gpu_active, int cur_texture, int prev_texture);
+    void render_video(bool raw_active, const bool gpu_active, int cur_texture);
     bool download_frame(int prev_texture, struct video_data *frame);
     void set_gpu_converted_data_internal(bool using_nv12_tex, class video_frame *output, const struct video_data *input, video_format format, uint32_t width, uint32_t height);
     void set_gpu_converted_data(class video_frame *output, const struct video_data *input, const struct video_output_info *info);

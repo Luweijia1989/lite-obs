@@ -191,7 +191,7 @@ static inline bool validate_param(const program_param &pp, size_t expected_size)
     return true;
 }
 
-void gs_program::gs_effect_upload_parameters(bool change_only)
+void gs_program::gs_effect_upload_parameters(bool change_only, std::function<void(std::weak_ptr<gs_texture>, int)> texture_update)
 {
     for (size_t i = 0; i < d_ptr->params.size(); ++i) {
         auto &param = d_ptr->params[i];
@@ -252,7 +252,7 @@ void gs_program::gs_effect_upload_parameters(bool change_only)
             }
         } else if (param.param->type == gs_shader_param_type::GS_SHADER_PARAM_TEXTURE) {
             glUniform1i(param.obj, param.param->texture_id);
-            gs_load_texture(param.param->texture, param.param->texture_id);
+            texture_update(param.param->texture, param.param->texture_id);
         }
 
         param.param->changed = false;

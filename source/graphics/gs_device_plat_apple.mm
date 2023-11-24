@@ -1,4 +1,5 @@
-#include "lite-obs/graphics/gs_device.h"
+#include "lite-obs/graphics/gs_context_gl.h"
+#include "lite-obs/graphics/gs_subsystem_info.h"
 #include "lite-obs/util/log.h"
 
 #if TARGET_PLATFORM == PLATFORM_MAC || TARGET_PLATFORM == PLATFORM_IOS
@@ -16,17 +17,17 @@ struct gl_platform
     }
 };
 
-void *gs_device::gs_create_platform_rc()
+void *gs_context_gl::gs_create_platform_rc()
 {
     return nullptr;
 }
 
-void gs_device::gs_destroy_platform_rc(void *plat)
+void gs_context_gl::gs_destroy_platform_rc(void *plat)
 {
     (void)plat;
 }
 
-void *gs_device::gl_platform_create(void *)
+void *gs_context_gl::gl_platform_create(void *)
 {
     auto pair = gl_create_context(gl_current_context());
     if (pair.second)
@@ -53,25 +54,25 @@ gl_context_helper::~gl_context_helper()
     }
 }
 
-void gs_device::device_enter_context_internal(void *param)
+void gs_context_gl::device_enter_context_internal(void *param)
 {
     gl_platform *plat = (gl_platform *)param;
     gl_make_current(plat->ctx);
 }
 
-void gs_device::device_leave_context_internal(void *param)
+void gs_context_gl::device_leave_context_internal(void *param)
 {
     (void)param;
     gl_done_current();
 }
 
-void gs_device::gl_platform_destroy(void *plat)
+void gs_context_gl::gl_platform_destroy(void *plat)
 {
     gl_platform *p = (gl_platform *)plat;
     delete p;
 }
 
-void *gs_device::get_device_context_internal(void *param)
+void *gs_context_gl::get_device_context_internal(void *param)
 {
     gl_platform *plat = (gl_platform *)param;
     return plat->ctx;

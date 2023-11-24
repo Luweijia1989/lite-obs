@@ -9,7 +9,6 @@
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_obs_core_video.h"
 #include "lite-obs/graphics/gs_texture.h"
-#include "lite-obs/graphics/gs_texture_render.h"
 #include "lite-obs/graphics/gs_subsystem.h"
 #include "lite-obs/graphics/gs_program.h"
 #include <mutex>
@@ -87,6 +86,21 @@ static void calc_size(uint32_t tex_width, uint32_t tex_height,
         out_width = tex_width;
         out_height = (uint32_t)(out_width / target_ratio);
     }
+}
+
+static void matrix_mul(glm::mat4x4 &mat, const glm::mat4x4 &matrix)
+{
+    mat = mat * matrix;
+}
+
+static void matrix_scale(glm::mat4x4 &mat, const glm::vec3 &scale)
+{
+    mat = glm::scale(mat, scale);
+}
+
+static void matrix_translate(glm::mat4x4 &mat, const glm::vec3 &offset)
+{
+    mat = glm::translate(mat, offset);
 }
 
 enum convert_type {
@@ -280,7 +294,7 @@ struct lite_source_private
 
     /* async video data */
     std::vector<std::shared_ptr<gs_texture>> async_textures{};
-    std::shared_ptr<gs_texture_render> async_texrender{};
+    std::shared_ptr<gs_texture> async_texure_out{};
     std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> cur_async_frame{};
     bool async_gpu_conversion{};
     enum video_format async_format{};
@@ -324,7 +338,7 @@ struct lite_source_private
     std::atomic_bool should_update_tranform{};
     glm::mat4x4 draw_transform{1};
     transform_info source_transform;
-    std::shared_ptr<gs_texture_render> item_render{};
+    std::shared_ptr<gs_texture> crop_cache_texture{};
     render_box_info source_render_box;
 
     lite_source_private(source_type t) {
@@ -354,14 +368,17 @@ struct lite_source_private
     }
 
     ~lite_source_private() {
-        gs_enter_contex(core_video.lock()->graphics());
+        graphics_subsystem::make_current(core_video.lock()->graphics());
 
-        if (async_texrender)
-            async_texrender.reset();
+        if (async_texure_out)
+            async_texure_out.reset();
 
         async_textures.clear();
 
-        gs_leave_context();
+        sync_texture.reset();
+        crop_cache_texture.reset();
+
+        graphics_subsystem::done_current();
 
         for (int i = 0; i < MAX_AV_PLANES; i++)
             free((void *)audio_data.data[i]);
@@ -1057,7 +1074,7 @@ void lite_obs_source::lite_source_output_video(int texture_id, uint32_t texture_
         return;
     }
 
-    if (!core_video->graphics() || !core_video->graphics()->gs_texture_share_enabled()) {
+    if (!core_video->graphics() || !core_video->graphics()->texture_share_enabled()) {
         blog(LOG_INFO, "texture share not support due to unsupport opengl context");
         return;
     }
@@ -1069,6 +1086,26 @@ void lite_obs_source::lite_source_output_video(int texture_id, uint32_t texture_
     }
 
     d_ptr->sync_texture = gs_texture_create_with_external(texture_id, texture_width, texture_height);
+}
+
+void lite_obs_source::lite_source_output_video(const uint8_t *img_data, uint32_t img_width, uint32_t img_height)
+{
+    std::lock_guard<std::mutex> locker(d_ptr->sync_mutex);
+
+    if (d_ptr->type & source_type::SOURCE_ASYNC) {
+        return;
+    }
+
+    auto c_v = d_ptr->core_video.lock();
+    if (!c_v || !c_v->graphics()) {
+        blog(LOG_ERROR, "lite_source_output_video error, invalid graphics.");
+        return;
+    }
+
+    graphics_subsystem::make_current(d_ptr->core_video.lock()->graphics());
+    d_ptr->sync_texture = gs_texture_create(img_width, img_height, gs_color_format::GS_RGBA, GS_DYNAMIC);
+    d_ptr->sync_texture->gs_texture_set_image(img_data, img_width * 4, false);
+    graphics_subsystem::done_current();
 }
 
 void lite_obs_source::lite_source_clear_video()
@@ -1341,27 +1378,21 @@ bool lite_obs_source::set_async_texture_size(const std::shared_ptr<lite_obs_sour
     d_ptr->async_format = frame->format;
     d_ptr->async_full_range = frame->full_range;
 
-    gs_enter_contex(d_ptr->core_video.lock()->graphics());
-
     for (size_t c = 0; c < MAX_AV_PLANES; c++) {
         d_ptr->async_textures[c].reset();
     }
 
-    d_ptr->async_texrender.reset();
+    d_ptr->async_texure_out.reset();
 
     auto format = convert_video_format(frame->format);
     const bool async_gpu_conversion = (cur != CONVERT_NONE) && init_gpu_conversion(frame);
     d_ptr->async_gpu_conversion = async_gpu_conversion;
     if (async_gpu_conversion) {
-        d_ptr->async_texrender = std::make_shared<gs_texture_render>(format);
-
         for (int c = 0; c < d_ptr->async_channel_count; ++c)
             d_ptr->async_textures[c] = gs_texture_create(d_ptr->async_convert_width[c], d_ptr->async_convert_height[c], d_ptr->async_texture_formats[c], GS_DYNAMIC);
     } else {
         d_ptr->async_textures[0] = gs_texture_create(frame->width, frame->height, format, GS_DYNAMIC);
     }
-
-    gs_leave_context();
 
     return d_ptr->async_textures[0] != NULL;
 }
@@ -1397,10 +1428,8 @@ std::shared_ptr<lite_obs_source::lite_obs_source_video_frame> lite_obs_source::g
     return frame;
 }
 
-bool lite_obs_source::update_async_texrender(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
+bool lite_obs_source::update_async_texrender(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, std::shared_ptr<gs_texture> &out)
 {
-    texrender->gs_texrender_reset();
-
     switch (get_convert_type(frame->format, frame->full_range)) {
     case CONVERT_422_PACK:
     case CONVERT_800:
@@ -1429,67 +1458,61 @@ bool lite_obs_source::update_async_texrender(const std::shared_ptr<lite_obs_sour
     uint32_t cy = d_ptr->async_height;
 
     const char *tech_name = select_conversion_technique(frame->format, frame->full_range);
-    auto program = gs_get_effect_by_name(tech_name);
+    auto program = graphics_subsystem::get_effect_by_name(tech_name);
     if (!program)
         return false;
 
-    const bool success = texrender->gs_texrender_begin(cx, cy);
-    if (success) {
-        if (tex[0])
-            program->gs_effect_set_texture("image", tex[0]);
-        if (tex[1])
-            program->gs_effect_set_texture("image1", tex[1]);
-        if (tex[2])
-            program->gs_effect_set_texture("image2", tex[2]);
-        if (tex[3])
-            program->gs_effect_set_texture("image3", tex[3]);
+    if (!out || (out->gs_texture_get_width() != cx || out->gs_texture_get_height() != cy)) {
+        if (out)
+            out.reset();
 
-        program->gs_effect_set_param("width", (float)cx);
-        program->gs_effect_set_param("height", (float)cy);
-        program->gs_effect_set_param("width_d2", (float)cx * 0.5f);
-        program->gs_effect_set_param("height_d2", (float)cy * 0.5f);
-        program->gs_effect_set_param("width_x2_i", 0.5f / (float)cx);
-
-        glm::vec4 vec0 = {frame->color_matrix[0], frame->color_matrix[1], frame->color_matrix[2], frame->color_matrix[3]};
-        glm::vec4 vec1 = {frame->color_matrix[4], frame->color_matrix[5], frame->color_matrix[6], frame->color_matrix[7]};
-        glm::vec4 vec2 = {frame->color_matrix[8], frame->color_matrix[9], frame->color_matrix[10], frame->color_matrix[11]};
-
-        program->gs_effect_set_param("color_vec0", vec0);
-        program->gs_effect_set_param("color_vec1", vec1);
-        program->gs_effect_set_param("color_vec2", vec2);
-        if (!frame->full_range) {
-            program->gs_effect_set_param("color_range_min", frame->color_range_min, sizeof(float) * 3);
-            program->gs_effect_set_param("color_range_max", frame->color_range_max, sizeof(float) * 3);
-        } else {
-            float range_min[3] = {0.0, 0.0, 0.0};
-            float range_max[3] = {1.0, 1.0, 1.0};
-            program->gs_effect_set_param("color_range_min", range_min, sizeof(float) * 3);
-            program->gs_effect_set_param("color_range_max", range_max, sizeof(float) * 3);
-        }
-
-        gs_set_cur_effect(program);
-
-        gs_enable_blending(false);
-
-        gs_technique_begin();
-        gs_draw(gs_draw_mode::GS_TRIS, 0, 3);
-        gs_technique_end();
-
-        gs_enable_blending(true);
-
-        texrender->gs_texrender_end();
+        out = gs_texture_create(cx, cy, convert_video_format(d_ptr->async_format), GS_RENDER_TARGET);
     }
 
-    return success;
+    if (tex[0])
+        program->gs_effect_set_texture("image", tex[0]);
+    if (tex[1])
+        program->gs_effect_set_texture("image1", tex[1]);
+    if (tex[2])
+        program->gs_effect_set_texture("image2", tex[2]);
+    if (tex[3])
+        program->gs_effect_set_texture("image3", tex[3]);
+
+    program->gs_effect_set_param("width", (float)cx);
+    program->gs_effect_set_param("height", (float)cy);
+    program->gs_effect_set_param("width_d2", (float)cx * 0.5f);
+    program->gs_effect_set_param("height_d2", (float)cy * 0.5f);
+    program->gs_effect_set_param("width_x2_i", 0.5f / (float)cx);
+
+    glm::vec4 vec0 = {frame->color_matrix[0], frame->color_matrix[1], frame->color_matrix[2], frame->color_matrix[3]};
+    glm::vec4 vec1 = {frame->color_matrix[4], frame->color_matrix[5], frame->color_matrix[6], frame->color_matrix[7]};
+    glm::vec4 vec2 = {frame->color_matrix[8], frame->color_matrix[9], frame->color_matrix[10], frame->color_matrix[11]};
+
+    program->gs_effect_set_param("color_vec0", vec0);
+    program->gs_effect_set_param("color_vec1", vec1);
+    program->gs_effect_set_param("color_vec2", vec2);
+    if (!frame->full_range) {
+        program->gs_effect_set_param("color_range_min", frame->color_range_min, sizeof(float) * 3);
+        program->gs_effect_set_param("color_range_max", frame->color_range_max, sizeof(float) * 3);
+    } else {
+        float range_min[3] = {0.0, 0.0, 0.0};
+        float range_max[3] = {1.0, 1.0, 1.0};
+        program->gs_effect_set_param("color_range_min", range_min, sizeof(float) * 3);
+        program->gs_effect_set_param("color_range_max", range_max, sizeof(float) * 3);
+    }
+
+    graphics_subsystem::draw_convert(out, program);
+
+    return true;
 }
 
-bool lite_obs_source::update_async_textures(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, const std::shared_ptr<gs_texture_render> &texrender)
+bool lite_obs_source::update_async_textures(const std::shared_ptr<lite_obs_source_video_frame> &frame, const std::vector<std::shared_ptr<gs_texture>> &tex, std::shared_ptr<gs_texture> &out)
 {
     d_ptr->async_flip = frame->flip;
     d_ptr->async_flip_h = frame->flip_h;
 
-    if (d_ptr->async_gpu_conversion && texrender)
-        return update_async_texrender(frame, tex, texrender);
+    if (d_ptr->async_gpu_conversion)
+        return update_async_texrender(frame, tex, out);
 
     auto type = get_convert_type(frame->format, frame->full_range);
     if (type == CONVERT_NONE) {
@@ -1516,7 +1539,7 @@ void lite_obs_source::update_async_video(uint64_t sys_time)
             d_ptr->timing_set = true;
 
             if (d_ptr->async_update_texture) {
-                update_async_textures(frame, d_ptr->async_textures, d_ptr->async_texrender);
+                update_async_textures(frame, d_ptr->async_textures, d_ptr->async_texure_out);
                 d_ptr->async_update_texture = false;
             }
 
@@ -1527,36 +1550,25 @@ void lite_obs_source::update_async_video(uint64_t sys_time)
 
 bool lite_obs_source::render_crop_texture(const std::shared_ptr<gs_texture> &texture)
 {
-    if (!d_ptr->item_render)
+    if (!d_ptr->crop_cache_texture)
         return false;
 
-    auto width = texture->gs_texture_get_width();
-    auto height = texture->gs_texture_get_height();
-    uint32_t cx, cy;
-    calc_size(width, height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, cx, cy);
-    d_ptr->item_render->gs_texrender_reset();
-    if (!d_ptr->item_render->gs_texrender_begin(cx, cy))
+    uint32_t cx = d_ptr->crop_cache_texture->gs_texture_get_width();
+    uint32_t cy = d_ptr->crop_cache_texture->gs_texture_get_height();
+
+    auto program = graphics_subsystem::get_effect_by_name("Default_Draw");
+    if(!program)
         return false;
 
-    glm::vec4 clear_color(1, 0, 0, 1);
-    gs_clear(GS_CLEAR_COLOR, &clear_color, 0.0f, 0);
-    gs_ortho(0.0f, (float)width, 0.0f, (float)height, -100.0f, 100.0f);
-
-    float cx_scale = (float)width / (float)cx;
-    float cy_scale = (float)height / (float)cy;
-    gs_matrix_translate(glm::vec3((int)(cx - width) / 2, (int)(height - cy) / 2, 0.0f));
-    gs_matrix_scale(glm::vec3(cx_scale, cy_scale, 1.0f));
-
-    auto program = gs_get_effect_by_name("Default_Draw");
-    if(program) {
-        gs_set_cur_effect(program);
-        gs_technique_begin();
-        program->gs_effect_set_texture("image", texture);
-        gs_draw_sprite(texture, 0, 0, 0);
-        gs_technique_end();
-    }
-
-    d_ptr->item_render->gs_texrender_end();
+    program->gs_effect_set_texture("image", texture);
+    graphics_subsystem::draw_sprite(program, texture, d_ptr->crop_cache_texture, 0, 0, 0, false, [cx, cy, &texture](glm::mat4x4 &mat){
+        auto width = texture->gs_texture_get_width();
+        auto height = texture->gs_texture_get_height();
+        float cx_scale = (float)width / (float)cx;
+        float cy_scale = (float)height / (float)cy;
+        matrix_scale(mat, glm::vec3(cx_scale, cy_scale, 1.0f));
+        matrix_translate(mat, glm::vec3((int)(cx - width) / 2, (int)(cy - height) / 2, 0.0f));
+    });
 
     auto mat = glm::mat4x4{1};
     mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
@@ -1577,17 +1589,11 @@ void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
     }
 
     if (render_crop_texture(texture))
-        texture = d_ptr->item_render->gs_texrender_get_texture();
+        texture = d_ptr->crop_cache_texture;
 
-    auto program = gs_get_effect_by_name("Default_Draw");
+    auto program = graphics_subsystem::get_effect_by_name("Default_Draw");
     if( !program)
         return;
-
-    gs_matrix_push();
-    gs_matrix_mul(d_ptr->draw_transform);
-
-    gs_set_cur_effect(program);
-    gs_technique_begin();
 
     program->gs_effect_set_texture("image", texture);
 
@@ -1596,19 +1602,18 @@ void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
         flag |= GS_FLIP_V;
     if (d_ptr->async_flip_h)
         flag |= GS_FLIP_U;
-    gs_draw_sprite(texture, flag, 0, 0);
 
-    gs_technique_end();
-
-    gs_matrix_pop();
+    graphics_subsystem::draw_sprite(program, texture, nullptr, flag, 0, 0, true, [this](glm::mat4x4 &mat){
+        matrix_mul(mat, d_ptr->draw_transform);
+    });
 }
 
 void lite_obs_source::async_render()
 {
     if (d_ptr->async_textures[0] && d_ptr->async_active) {
         auto tex = d_ptr->async_textures[0];
-        if (d_ptr->async_texrender)
-            tex = d_ptr->async_texrender->gs_texrender_get_texture();
+        if (d_ptr->async_texure_out)
+            tex = d_ptr->async_texure_out;
         render_texture(tex);
     }
 }
@@ -1625,39 +1630,46 @@ void lite_obs_source::render()
 
 void lite_obs_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
 {
+    bool need_crop = false;
+    auto tex_width = tex->gs_texture_get_width();
+    auto tex_height = tex->gs_texture_get_height();
     if (d_ptr->source_render_box.enabled) {
-        auto tex_width = tex->gs_texture_get_width();
-        auto tex_height = tex->gs_texture_get_height();
-        bool crop_enabled = d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
-                            && ((int)tex_width != d_ptr->source_render_box.width || (int)tex_height != d_ptr->source_render_box.height);
-        if (d_ptr->item_render && !crop_enabled)
-            d_ptr->item_render.reset();
-        else if (!d_ptr->item_render && crop_enabled)
-            d_ptr->item_render = std::make_shared<gs_texture_render>(gs_color_format::GS_RGBA);
-
-        auto mat = glm::mat4x4{1};
-        if (!crop_enabled) {
-            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
-                uint32_t cx, cy;
-                scaled_to(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, d_ptr->source_render_box.mode, cx, cy);
-                mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x + (d_ptr->source_render_box.width - cx) / 2, d_ptr->source_render_box.y + (d_ptr->source_render_box.height -cy) / 2, 0.0f));
-                mat = glm::scale(mat, glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f));
-            } else {
-                mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
-                if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO) {
-                    mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)tex_width, (float)d_ptr->source_render_box.height / (float)tex_height, 1.0f));
-                }
-            }
-        } else {
-            mat = glm::translate(mat, d_ptr->source_transform.pos);
-            mat = glm::scale(mat, d_ptr->source_transform.scale);
-        }
-        d_ptr->draw_transform = mat;
+        need_crop = d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
+                    && ((int)tex_width != d_ptr->source_render_box.width || (int)tex_height != d_ptr->source_render_box.height);
     }
+    bool do_crop = d_ptr->source_render_box.enabled && need_crop;
+
+    if (d_ptr->crop_cache_texture && !do_crop)
+        d_ptr->crop_cache_texture.reset();
+    else if (!d_ptr->crop_cache_texture && do_crop) {
+        uint32_t cx, cy;
+        calc_size(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, cx, cy);
+        d_ptr->crop_cache_texture = gs_texture_create(cx, cy, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
+    }
+
+    auto mat = glm::mat4x4{1};
+    if (d_ptr->source_render_box.enabled && !need_crop) {
+        if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
+            uint32_t cx, cy;
+            scaled_to(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, d_ptr->source_render_box.mode, cx, cy);
+            mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x + (d_ptr->source_render_box.width - cx) / 2, d_ptr->source_render_box.y + (d_ptr->source_render_box.height -cy) / 2, 0.0f));
+            mat = glm::scale(mat, glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f));
+        } else {
+            mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
+            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO) {
+                mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)tex_width, (float)d_ptr->source_render_box.height / (float)tex_height, 1.0f));
+            }
+        }
+    } else {
+        mat = glm::translate(mat, d_ptr->source_transform.pos);
+        mat = glm::scale(mat, d_ptr->source_transform.scale);
+    }
+    d_ptr->draw_transform = mat;
 }
 
 void lite_obs_source::lite_source_set_pos(float x, float y)
 {
+    d_ptr->source_render_box.enabled = false;
     d_ptr->source_transform.pos.x = x;
     d_ptr->source_transform.pos.y = y;
     d_ptr->should_update_tranform = true;
@@ -1665,6 +1677,7 @@ void lite_obs_source::lite_source_set_pos(float x, float y)
 
 void lite_obs_source::lite_source_set_scale(float width_scale, float height_scale)
 {
+    d_ptr->source_render_box.enabled = false;
     d_ptr->source_transform.scale.x = width_scale;
     d_ptr->source_transform.scale.y = height_scale;
     d_ptr->should_update_tranform = true;

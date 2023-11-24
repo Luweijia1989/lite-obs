@@ -220,4 +220,8 @@ struct gs_rect {
     int y;
     int cx;
     int cy;
+
+    bool is_null() {
+        return x == 0 && y == 0 && cx == 0 && cy == 0;
+    }
 };

@@ -1,4 +1,5 @@
-#include "lite-obs/graphics/gs_device.h"
+#include "lite-obs/graphics/gs_context_gl.h"
+#include "lite-obs/graphics/gs_subsystem_info.h"
 #include "lite-obs/util/log.h"
 
 #if TARGET_PLATFORM == PLATFORM_WIN32
@@ -67,7 +68,7 @@ static bool register_dummy_class(void)
     return true;
 }
 
-void *gs_device::gs_create_platform_rc()
+void *gs_context_gl::gs_create_platform_rc()
 {
     if (!register_dummy_class())
         return nullptr;
@@ -107,7 +108,7 @@ void *gs_device::gs_create_platform_rc()
     return plat;
 }
 
-void gs_device::gs_destroy_platform_rc(void *plat)
+void gs_context_gl::gs_destroy_platform_rc(void *plat)
 {
     if (!plat)
         return;
@@ -121,7 +122,7 @@ void gs_device::gs_destroy_platform_rc(void *plat)
     }
 }
 
-void gs_device::device_enter_context_internal(void *param)
+void gs_context_gl::device_enter_context_internal(void *param)
 {
     gl_platform *plat = (gl_platform *)param;
     HDC hdc = plat->window.hdc;
@@ -130,7 +131,7 @@ void gs_device::device_enter_context_internal(void *param)
     }
 }
 
-void gs_device::device_leave_context_internal(void *param)
+void gs_context_gl::device_leave_context_internal(void *param)
 {
     if (!wglMakeCurrent(NULL, NULL))
         blog(LOG_DEBUG, "device_leave_context (GL) failed");
@@ -385,7 +386,7 @@ static bool init_default_swap(gl_platform *plat, int pixel_format, PIXELFORMATDE
     return true;
 }
 
-void *gs_device::gl_platform_create(void *plat_info)
+void *gs_context_gl::gl_platform_create(void *plat_info)
 {
     auto ctx = wglGetCurrentContext();
     auto dc = wglGetCurrentDC();
@@ -437,13 +438,13 @@ void *gs_device::gl_platform_create(void *plat_info)
     return plat.release();
 }
 
-void gs_device::gl_platform_destroy(void *plat)
+void gs_context_gl::gl_platform_destroy(void *plat)
 {
     gl_platform *p = (gl_platform *)plat;
     delete p;
 }
 
-void *gs_device::get_device_context_internal(void *param)
+void *gs_context_gl::get_device_context_internal(void *param)
 {
     gl_platform *plat = (gl_platform *)param;
     return plat->hrc;

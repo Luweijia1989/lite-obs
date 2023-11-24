@@ -375,9 +375,6 @@ bool gs_texture::create_pixel_unpack_buffer()
 
 std::shared_ptr<gs_texture> gs_texture_create(uint32_t width, uint32_t height, gs_color_format color_format, uint32_t flags)
 {
-    if (!gs_valid("gs_texture_create"))
-        return NULL;
-
     auto tex = std::make_shared<gs_texture>();
     if (!tex->create(width, height, color_format, flags)) {
         blog(LOG_DEBUG, "Cannot create texture, width: %d, height:%d, format: %d", width, height, (int)color_format);

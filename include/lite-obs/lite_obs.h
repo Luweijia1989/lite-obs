@@ -19,6 +19,8 @@ typedef struct lite_obs_media_source_api {
                           video_format format, video_range_type range,
                           video_colorspace color_space, uint32_t width,
                           uint32_t height);
+    //only support RGBA format
+    void (*output_video3)(struct lite_obs_media_source_api *source_api, const uint8_t *img_data, uint32_t img_width, uint32_t img_height);
     void (*clear_video)(struct lite_obs_media_source_api *source_api);
 
     void (*set_pos)(struct lite_obs_media_source_api *source_api, float x, float y);

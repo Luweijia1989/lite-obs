@@ -43,6 +43,7 @@ public:
                       video_format format, video_range_type range,
                       video_colorspace color_space, uint32_t width,
                       uint32_t height);
+    void output_video(const uint8_t *img_data, uint32_t img_width, uint32_t img_height);
     void clear_video();
 
     void set_pos(float x, float y);

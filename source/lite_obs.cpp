@@ -40,6 +40,9 @@ lite_obs_media_source_api *lite_obs_media_source_new(const lite_obs_api *api, so
                                          uint32_t height){
         source_api->obj->source_internal->output_video(video_data, line_size, format, range, color_space, width, height);
     };
+    media_source_api->output_video3 = [](struct lite_obs_media_source_api *source_api, const uint8_t *img_data, uint32_t img_width, uint32_t img_height){
+        source_api->obj->source_internal->output_video(img_data, img_width, img_height);
+    };
     media_source_api->clear_video = [](struct lite_obs_media_source_api *source_api){
         source_api->obj->source_internal->clear_video();
     };
@@ -65,6 +68,7 @@ void lite_obs_media_source_delete(const lite_obs_api *api, lite_obs_media_source
         return;
 
     api->object->api_internal->lite_obs_destroy_source((*source)->obj->source_internal);
+    *source = nullptr;
 }
 
 
