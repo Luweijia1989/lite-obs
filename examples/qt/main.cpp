@@ -14,6 +14,8 @@ static void log_handler(int log_level, const char *msg)
 
 int main(int argc, char *argv[])
 {
+    qRegisterMetaType<uint32_t>("uint32_t");
+
     lite_obs_set_log_handle(log_handler);
 
     qmlRegisterType<FboInSGRenderer>("com.ypp", 1, 0, "Render");
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
     const QUrl url(QStringLiteral("qrc:/main.qml"));
     view.setSource(url);
     view.setResizeMode(QQuickView::SizeRootObjectToView);
-    view.resize(1280, 720);
+    view.resize(400, 1280);
     view.show();
 
     return app.exec();

@@ -20,6 +20,7 @@ public slots:
     void doTextureMix(int id, uint32_t width, uint32_t height);
     void setSourceOrder(int order);
     void resetEncoderType(bool sw);
+    void doImgMix(bool enabled);
 
 private:
     lite_obs_api *m_liteObs = nullptr;
@@ -28,4 +29,7 @@ private:
 
     std::thread m_videoTestThread;
     bool videoTestRunning{};
+
+    lite_obs_media_source_api *m_testSource = nullptr;
+    lite_obs_media_source_api *m_pngSource = nullptr;
 };

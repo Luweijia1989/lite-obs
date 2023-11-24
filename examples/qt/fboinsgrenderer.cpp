@@ -10,6 +10,6 @@ FboInSGRenderer::FboInSGRenderer()
 QQuickFramebufferObject::Renderer *FboInSGRenderer::createRenderer() const
 {
     auto render =  new LogoInFboRenderer();
-    connect(render, &LogoInFboRenderer::newTexture, this, &FboInSGRenderer::newTexture);
+    connect(render, &LogoInFboRenderer::newTexture, this, &FboInSGRenderer::newTexture, Qt::DirectConnection);
     return render;
 }

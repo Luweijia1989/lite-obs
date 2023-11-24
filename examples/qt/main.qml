@@ -64,6 +64,14 @@ Item {
         }
 
         Button {
+            text: "mix img"
+            checkable: true
+            onClicked: {
+                example.doImgMix(checked)
+            }
+        }
+
+        Button {
             text: "start output"
             onClicked: {
                 example.doStartOutput()

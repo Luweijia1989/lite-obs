@@ -4,6 +4,7 @@
 #include <QFile>
 #include <QRandomGenerator>
 #include <QThread>
+#include <QImage>
 
 LiteObsExample::LiteObsExample(QObject *parent)
     : QObject(parent)
@@ -22,6 +23,10 @@ LiteObsExample::~LiteObsExample()
     if (m_videoTestThread.joinable())
         m_videoTestThread.join();
 
+    if(m_testSource)
+        lite_obs_media_source_delete(m_liteObs, &m_testSource);
+
+    lite_obs_media_source_delete(m_liteObs, &m_pngSource);
     lite_obs_api_delete(&m_liteObs);
 }
 
@@ -73,7 +78,7 @@ void LiteObsExample::doVideoFrameMixTest(bool start)
         videoTestRunning = true;
         m_videoTestThread = std::thread([=](){
             auto source = lite_obs_media_source_new(m_liteObs, source_type::SOURCE_ASYNCVIDEO);
-
+            source->set_pos(source, 400, 400);
             QFile audiofile(":/resource/640360420p.yuv");
             audiofile.open(QFile::ReadOnly);
             auto alldata = audiofile.readAll();
@@ -128,8 +133,8 @@ void LiteObsExample::doStartOutput()
     cb.first_media_packet = [](void *){qDebug() << "===first_media_packet";};
     cb.opaque = this;
 
-//    auto path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
-//    path = path + "/output.flv";
+    //    auto path = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    //    path = path + "/output.flv";
     QString path = "rtmp://192.168.16.28/live/test";
     m_liteObs->lite_obs_start_output(m_liteObs, path.toStdString().c_str(), 4000, 160, cb);
 }
@@ -139,27 +144,38 @@ void LiteObsExample::doStopOutput()
     m_liteObs->lite_obs_stop_output(m_liteObs);
 }
 
-static lite_obs_media_source_api *source{};
 void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
 {
     qDebug() << "texture mix: " << id << width <<height << QThread::currentThreadId();
+    if(!m_testSource)
+        m_testSource = lite_obs_media_source_new(m_liteObs, source_type::SOURCE_VIDEO);
 
-    if (!source)
-        source = lite_obs_media_source_new(m_liteObs, source_type::SOURCE_VIDEO);
-
-    source->output_video(source, id, width, height);
-//    source->set_scale(0.2f, 0.2f);
-//    source->set_pos(100, 100);
-    source->set_render_box(source, 50, 100, 600, 600, source_aspect_ratio_mode::IGNORE_ASPECT_RATIO);
+    m_testSource->output_video(m_testSource, id, width, height);
+//    m_testSource->set_scale(m_testSource, 0.2f, 0.2f);
+//    m_testSource->set_pos(m_testSource, 200, 200);
+    m_testSource->set_render_box(m_testSource, 50, 100, 400, 600, source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING);
 }
 
 void LiteObsExample::setSourceOrder(int order)
 {
-    if (source)
-        source->set_order(source, (order_movement)order);
+    m_testSource->set_order(m_testSource, (order_movement)order);
 }
 
 void LiteObsExample::resetEncoderType(bool sw)
 {
     m_liteObs->lite_obs_reset_encoder(m_liteObs, sw);
+}
+
+void LiteObsExample::doImgMix(bool enabled)
+{
+    if(!enabled && m_pngSource) {
+        lite_obs_media_source_delete(m_liteObs, &m_pngSource);
+    } else {
+        if (!m_pngSource)
+            m_pngSource = lite_obs_media_source_new(m_liteObs, source_type::SOURCE_VIDEO);
+
+        QImage img(":/resource/test.png");
+        img = img.convertedTo(QImage::Format_RGBA8888);
+        m_pngSource->output_video3(m_pngSource, img.constBits(), img.width(), img.height());
+    }
 }
