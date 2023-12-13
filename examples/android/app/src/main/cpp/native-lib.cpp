@@ -7,36 +7,40 @@
 #define TAG "lite-obs-example"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG,TAG ,__VA_ARGS__)
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_liteobs_1android_1example_MainActivity_stringFromJNI(
-        JNIEnv* env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
-
-lite_obs_api *g_obs = nullptr;
-
 static void log_handler(int log_level, const char *msg)
 {
     LOGD("lite-obs log===> %s", msg);
 }
 
-extern "C" JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_MainActivity_setupLiteOBS(
-        JNIEnv* env,
-        jobject /* this */) {
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBS_createLiteOBS(JNIEnv *env, jobject thiz) {
     lite_obs_set_log_handle(log_handler);
-    g_obs = lite_obs_api_new();
-    int ret = g_obs->lite_obs_reset_video(g_obs, 720, 1280, 20);
-    LOGD("lite_obs_reset_video ret: %d", ret);
-    bool r = g_obs->lite_obs_reset_audio(g_obs, 48000);
-    LOGD("lite_obs_reset_audio ret: %d", r);
+    return reinterpret_cast<jlong>(lite_obs_api_new());
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_MainActivity_startOutput(JNIEnv *env, jobject thiz) {
+Java_com_example_liteobs_1android_1example_LiteOBS_deleteLiteOBS(JNIEnv *env, jobject thiz,
+                                                                 jlong ptr) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
+    lite_obs_api_delete(&api_ptr);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBS_resetVideoAudio(JNIEnv *env, jobject thiz,
+                                                                   jlong ptr, jint width,
+                                                                   jint height, jint fps) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
+    api_ptr->lite_obs_reset_video(api_ptr, width, height, fps);
+    api_ptr->lite_obs_reset_audio(api_ptr, 48000);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBS_startStream(JNIEnv *env, jobject thiz, jlong ptr) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     lite_obs_output_callbak cb{};
     cb.start = [](void *){LOGD("===start");};
     cb.stop = [](int code, const char *msg, void *){LOGD("===stop");};
@@ -49,5 +53,58 @@ Java_com_example_liteobs_1android_1example_MainActivity_startOutput(JNIEnv *env,
     cb.connected = [](void *){LOGD("===connected");};
     cb.first_media_packet = [](void *){LOGD("===first_media_packet");};
     cb.opaque = nullptr;
-    g_obs->lite_obs_start_output(g_obs, "rtmp://192.168.16.28/live/test", 4000, 160, cb);
+    api_ptr->lite_obs_start_output(api_ptr, "rtmp://192.168.16.28/live/test", 4000, 160, cb);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBS_stopStream(JNIEnv *env, jobject thiz,
+                                                              jlong ptr) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
+    api_ptr->lite_obs_stop_output(api_ptr);
+}
+
+extern "C"
+JNIEXPORT jlong JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBSSource_createSource(JNIEnv *env, jobject thiz,
+                                                                      jlong ptr, jint type) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
+    return reinterpret_cast<jlong>(lite_obs_media_source_new(api_ptr, (source_type)type));
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBSSource_deleteSource(JNIEnv *env, jobject thiz,
+                                                                      jlong obs_ptr,
+                                                                      jlong source_ptr) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(obs_ptr);
+    lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
+    lite_obs_media_source_delete(api_ptr, &source);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBSSource_outputVideo(JNIEnv *env, jobject thiz,
+                                                                     jlong source_ptr,
+                                                                     jbyteArray data,
+                                                                     jintArray linesize, jint width,
+                                                                     jint height) {
+    jbyte* data_ptr = env->GetByteArrayElements(data, NULL);
+    jint* linesize_ptr = env->GetIntArrayElements(linesize, NULL);
+
+    const uint8_t *v_data[MAX_AV_PLANES] = {};
+    v_data[0] = (uint8_t *)data_ptr;
+    v_data[1] = v_data[0] + width * height;
+    v_data[2] = v_data[0] + width * height * 5 / 4;
+
+    lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
+    source->output_video2(source, v_data, linesize_ptr, VIDEO_FORMAT_I420, VIDEO_RANGE_FULL, VIDEO_CS_709, width, height);
+
+    env->ReleaseIntArrayElements(linesize, linesize_ptr, JNI_ABORT);
+    env->ReleaseByteArrayElements(data, data_ptr, JNI_ABORT);
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liteobs_1android_1example_LiteOBSSource_rotate(JNIEnv *env, jobject thiz,
+                                                                jlong source_ptr, jfloat rot) {
+    lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
+    source->set_rotate(source, rot);
 }
