@@ -134,6 +134,11 @@ void lite_obs_media_source_internal::set_flip(bool flip_h, bool flip_v)
     d_ptr->internal_source->lite_source_set_flip(flip_h, flip_v);
 }
 
+void lite_obs_media_source_internal::reset_transform()
+{
+    d_ptr->internal_source->lite_source_reset_transform();
+}
+
 struct lite_obs_private
 {
     std::shared_ptr<lite_obs_core_video> video{};

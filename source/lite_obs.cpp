@@ -64,6 +64,9 @@ lite_obs_media_source_api *lite_obs_media_source_new(const lite_obs_api *api, so
     media_source_api->set_flip = [](struct lite_obs_media_source_api *source_api, bool flip_h, bool flip_v){
         source_api->obj->source_internal->set_flip(flip_h, flip_v);
     };
+    media_source_api->reset_transform = [](struct lite_obs_media_source_api *source_api){
+        source_api->obj->source_internal->reset_transform();
+    };
 
     return media_source_api;
 }

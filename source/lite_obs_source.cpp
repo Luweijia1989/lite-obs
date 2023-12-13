@@ -342,6 +342,7 @@ struct lite_source_private
         flip,
         rotate,
         box,
+        reset,
     };
     std::mutex transform_setting_mutex{};
     std::list<std::pair<transform_type, void*>> transform_setting_list{};
@@ -1676,6 +1677,9 @@ void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
             }
 
             delete box;
+        } if (type == lite_source_private::transform_type::reset) {
+            d_ptr->reset_transform();
+            d_ptr->crop_cache_texture.reset();
         } else {
             auto vec2 = (glm::vec2 *)data;
             auto tl = top_left();
@@ -1789,4 +1793,10 @@ void lite_obs_source::lite_source_set_flip(bool flip_h, bool flip_v)
 {
     std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
     d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::flip, new glm::vec2(flip_h ? -1.0f : 1.0f, flip_v ? -1.0f : 1.0f));
+}
+
+void lite_obs_source::lite_source_reset_transform()
+{
+    std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::reset, nullptr);
 }

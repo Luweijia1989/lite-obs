@@ -179,6 +179,7 @@ public:
     // use this function to render source in a specific box will ignore the set_pos and set_scale settings
     void lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
     void lite_source_set_flip(bool flip_h, bool flip_v);
+    void lite_source_reset_transform();
 
 public:
     static std::recursive_mutex sources_mutex;

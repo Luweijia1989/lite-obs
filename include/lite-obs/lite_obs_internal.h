@@ -52,6 +52,7 @@ public:
     void set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
     void set_order(order_movement movement);
     void set_flip(bool flip_h, bool flip_v);
+    void reset_transform();
 
 private:
     ~lite_obs_media_source_internal();

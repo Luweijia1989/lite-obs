@@ -29,6 +29,7 @@ typedef struct lite_obs_media_source_api {
     void (*set_render_box)(struct lite_obs_media_source_api *source_api, int x, int y, int width, int height, source_aspect_ratio_mode mode);
     void (*set_order)(struct lite_obs_media_source_api *source_api, order_movement movement);
     void (*set_flip)(struct lite_obs_media_source_api *source_api, bool flip_h, bool flip_v);
+    void (*reset_transform)(struct lite_obs_media_source_api *source_api);
 } lite_obs_media_source_api;
 
 struct lite_obs;
