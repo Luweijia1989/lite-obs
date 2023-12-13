@@ -171,8 +171,10 @@ void LiteObsExample::doImgMix(bool enabled)
     if(!enabled && m_pngSource) {
         lite_obs_media_source_delete(m_liteObs, &m_pngSource);
     } else {
-        if (!m_pngSource)
+        if (!m_pngSource) {
             m_pngSource = lite_obs_media_source_new(m_liteObs, source_type::SOURCE_VIDEO);
+            m_pngSource->set_rotate(m_pngSource, 90.f);
+        }
 
         QImage img(":/resource/test.png");
         img = img.convertedTo(QImage::Format_RGBA8888);
