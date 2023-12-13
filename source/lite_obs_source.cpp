@@ -321,13 +321,14 @@ struct lite_source_private
     std::shared_ptr<gs_texture> sync_texture{};
     std::mutex sync_mutex{};
 
-    struct transform_info {
-        glm::vec3 pos{0};
-        glm::vec3 scale{1};
-    };
+    glm::vec2 pos{0};
+    glm::vec2 scale{1};
+    float rot{0.f};
+
+    glm::mat4x4 draw_transform{1};
+    glm::mat4x4 box_transform{1};
 
     struct render_box_info {
-        bool enabled{};
         int x{};
         int y{};
         int width{};
@@ -335,11 +336,16 @@ struct lite_source_private
         source_aspect_ratio_mode mode{};
     };
 
-    std::atomic_bool should_update_tranform{};
-    glm::mat4x4 draw_transform{1};
-    transform_info source_transform;
+    enum class transform_type {
+        pos,
+        scale,
+        flip,
+        rotate,
+        box,
+    };
+    std::mutex transform_setting_mutex{};
+    std::list<std::pair<transform_type, void*>> transform_setting_list{};
     std::shared_ptr<gs_texture> crop_cache_texture{};
-    render_box_info source_render_box;
 
     lite_source_private(source_type t) {
         video_frame = std::make_unique<lite_obs_source::lite_obs_source_video_frame>();
@@ -393,6 +399,12 @@ struct lite_source_private
         async_cache.clear();
         async_frames.clear();
         cur_async_frame.reset();
+    }
+
+    void reset_transform() {
+        pos = glm::vec3{};
+        scale = glm::vec3{1};
+        rot = 0.f;
     }
 };
 std::recursive_mutex lite_obs_source::sources_mutex{};
@@ -1570,12 +1582,52 @@ bool lite_obs_source::render_crop_texture(const std::shared_ptr<gs_texture> &tex
         matrix_translate(mat, glm::vec3((int)(cx - width) / 2, (int)(cy - height) / 2, 0.0f));
     });
 
+    return true;
+}
+
+void lite_obs_source::update_draw_transform(const std::shared_ptr<gs_texture> &texture)
+{
     auto mat = glm::mat4x4{1};
-    mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
-    mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)cx, (float)d_ptr->source_render_box.height / (float)cy, 1.0f));
+    mat = glm::translate(mat, glm::vec3(d_ptr->pos, 0.0f));
+    mat = glm::rotate(mat, glm::radians(d_ptr->rot), glm::vec3(0.0f, 0.0f, 1.0f));
+    mat = glm::scale(mat, glm::vec3(d_ptr->scale, 1.0f));
     d_ptr->draw_transform = mat;
 
-    return true;
+    auto box_mat = glm::mat4x4{1};
+    box_mat = glm::translate(box_mat, glm::vec3(d_ptr->pos, 0.0f));
+    box_mat = glm::rotate(box_mat, glm::radians(d_ptr->rot), glm::vec3(0.0f, 0.0f, 1.0f));
+    box_mat = glm::scale(box_mat, glm::vec3(d_ptr->scale.x * (float)texture->gs_texture_get_width(), d_ptr->scale.y * (float)texture->gs_texture_get_height(), 1.0f));
+    d_ptr->box_transform = box_mat;
+}
+
+#define M_INFINITE 3.4e38f
+glm::vec3 lite_obs_source::top_left()
+{
+    glm::vec3 ret(M_INFINITE, M_INFINITE, 0.0f);
+    auto get_min_pos = [&](float x, float y) {
+        glm::mat4x4 transpose = glm::transpose(d_ptr->box_transform);
+        glm::vec4 dst;
+        glm::vec4 v(x, y, 0.0f, 1.0f);
+        dst.x = glm::dot(transpose[0], v);
+        dst.y = glm::dot(transpose[1], v);
+        dst.z = glm::dot(transpose[2], v);
+
+        ret = glm::min(ret, glm::vec3(dst.x, dst.y, dst.z));
+    };
+
+    get_min_pos(0.0f, 0.0f);
+    get_min_pos(1.0f, 0.0f);
+    get_min_pos(0.0f, 1.0f);
+    get_min_pos(1.0f, 1.0f);
+
+    return ret;
+}
+
+void lite_obs_source::set_item_top_left(glm::vec3 tl)
+{
+    auto new_tl = top_left();
+    d_ptr->pos.x += tl.x - new_tl.x;
+    d_ptr->pos.y += tl.y - new_tl.y;
 }
 
 void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
@@ -1583,9 +1635,83 @@ void lite_obs_source::render_texture(std::shared_ptr<gs_texture> texture)
     if (!texture)
         return;
 
-    if (d_ptr->should_update_tranform) {
-        do_update_transform(texture);
-        d_ptr->should_update_tranform = false;
+    // render box transform will override all the transform settings
+    auto update_transform = [=](lite_source_private::transform_type type, void *data){
+        if (type == lite_source_private::transform_type::box) {
+            d_ptr->reset_transform();
+
+            auto box = (lite_source_private::render_box_info *)data;
+
+            // update crop texture
+            auto tex_width = texture->gs_texture_get_width();
+            auto tex_height = texture->gs_texture_get_height();
+            bool need_crop = box->mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
+                             && ((int)tex_width != box->width || (int)tex_height != box->height);
+            if (need_crop) {
+                uint32_t cx = 0, cy = 0;
+                calc_size(tex_width, tex_height, box->width, box->height, cx, cy);
+                if (d_ptr->crop_cache_texture && (d_ptr->crop_cache_texture->gs_texture_get_width() != cx || d_ptr->crop_cache_texture->gs_texture_get_height() != cy))
+                    d_ptr->crop_cache_texture.reset();
+
+                d_ptr->crop_cache_texture = gs_texture_create(cx, cy, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
+            }
+
+            if (!need_crop) {
+                if (box->mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
+                    uint32_t cx = 0, cy = 0;
+                    scaled_to(tex_width, tex_height, box->width, box->height, box->mode, cx, cy);
+                    d_ptr->pos = glm::vec3(box->x + (box->width - cx) / 2, box->y + (box->height -cy) / 2, 0.0f);
+                    d_ptr->scale = glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f);
+                } else {
+                    d_ptr->pos = glm::vec3(box->x, box->y, 0.0f);
+                    if (box->mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO) {
+                        d_ptr->scale = glm::vec3((float)box->width / (float)tex_width, (float)box->height / (float)tex_height, 1.0f);
+                    }
+                }
+            } else {
+                d_ptr->pos = glm::vec3(box->x, box->y, 0.0f);
+                d_ptr->scale = glm::vec3((float)box->width / (float)d_ptr->crop_cache_texture->gs_texture_get_width(),
+                                         (float)box->height / (float)d_ptr->crop_cache_texture->gs_texture_get_height(),
+                                         1.0f);
+            }
+
+            delete box;
+        } else {
+            auto vec2 = (glm::vec2 *)data;
+            auto tl = top_left();
+            if (type == lite_source_private::transform_type::pos) {
+                auto offset = (*vec2) - glm::vec2(tl.x, tl.y);
+                d_ptr->pos += offset;
+            } else if (type == lite_source_private::transform_type::scale) {
+                glm::vec2 v(d_ptr->scale.x < 0 ? -1.f : 1.f, d_ptr->scale.y < 0 ? -1.f : 1.f);
+                d_ptr->scale = *vec2 * v;
+            } else if (type == lite_source_private::transform_type::flip) {
+                d_ptr->scale = d_ptr->scale * (*vec2);
+            } else if (type == lite_source_private::transform_type::rotate) {
+                auto rot = d_ptr->rot + vec2->x;
+                if (rot >= 360.0f)
+                    rot -= 360.0f;
+                else if (rot <= -360.0f)
+                    rot += 360.0f;
+
+                d_ptr->rot = rot;
+            }
+            if (type != lite_source_private::transform_type::pos) {
+                update_draw_transform(texture);
+                set_item_top_left(tl);
+            }
+            delete vec2;
+        }
+    };
+
+    {
+        std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+        for (auto iter = d_ptr->transform_setting_list.begin(); iter != d_ptr->transform_setting_list.end(); iter++) {
+            const auto &pair = *iter;
+            update_transform(pair.first, pair.second);
+        }
+        d_ptr->transform_setting_list.clear();
+        update_draw_transform(texture);
     }
 
     if (render_crop_texture(texture))
@@ -1628,59 +1754,24 @@ void lite_obs_source::render()
     }
 }
 
-void lite_obs_source::do_update_transform(const std::shared_ptr<gs_texture> &tex)
-{
-    bool need_crop = false;
-    auto tex_width = tex->gs_texture_get_width();
-    auto tex_height = tex->gs_texture_get_height();
-    if (d_ptr->source_render_box.enabled) {
-        need_crop = d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING
-                    && ((int)tex_width != d_ptr->source_render_box.width || (int)tex_height != d_ptr->source_render_box.height);
-    }
-    bool do_crop = d_ptr->source_render_box.enabled && need_crop;
-
-    if (d_ptr->crop_cache_texture && !do_crop)
-        d_ptr->crop_cache_texture.reset();
-    else if (!d_ptr->crop_cache_texture && do_crop) {
-        uint32_t cx, cy;
-        calc_size(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, cx, cy);
-        d_ptr->crop_cache_texture = gs_texture_create(cx, cy, gs_color_format::GS_RGBA, GS_RENDER_TARGET);
-    }
-
-    auto mat = glm::mat4x4{1};
-    if (d_ptr->source_render_box.enabled && !need_crop) {
-        if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::KEEP_ASPECT_RATIO) {
-            uint32_t cx, cy;
-            scaled_to(tex_width, tex_height, d_ptr->source_render_box.width, d_ptr->source_render_box.height, d_ptr->source_render_box.mode, cx, cy);
-            mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x + (d_ptr->source_render_box.width - cx) / 2, d_ptr->source_render_box.y + (d_ptr->source_render_box.height -cy) / 2, 0.0f));
-            mat = glm::scale(mat, glm::vec3((float)cx / (float)tex_width, (float)cy / (float)tex_height, 1.0f));
-        } else {
-            mat = glm::translate(mat, glm::vec3(d_ptr->source_render_box.x, d_ptr->source_render_box.y, 0.0f));
-            if (d_ptr->source_render_box.mode == source_aspect_ratio_mode::IGNORE_ASPECT_RATIO) {
-                mat = glm::scale(mat, glm::vec3((float)d_ptr->source_render_box.width / (float)tex_width, (float)d_ptr->source_render_box.height / (float)tex_height, 1.0f));
-            }
-        }
-    } else {
-        mat = glm::translate(mat, d_ptr->source_transform.pos);
-        mat = glm::scale(mat, d_ptr->source_transform.scale);
-    }
-    d_ptr->draw_transform = mat;
-}
-
 void lite_obs_source::lite_source_set_pos(float x, float y)
 {
-    d_ptr->source_render_box.enabled = false;
-    d_ptr->source_transform.pos.x = x;
-    d_ptr->source_transform.pos.y = y;
-    d_ptr->should_update_tranform = true;
+    std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+    auto pos = new glm::vec2(x, y);
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::pos, pos);
 }
 
 void lite_obs_source::lite_source_set_scale(float width_scale, float height_scale)
 {
-    d_ptr->source_render_box.enabled = false;
-    d_ptr->source_transform.scale.x = width_scale;
-    d_ptr->source_transform.scale.y = height_scale;
-    d_ptr->should_update_tranform = true;
+    std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+    auto pos = new glm::vec2(width_scale, height_scale);
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::scale, pos);
+}
+
+void lite_obs_source::lite_source_set_rotate(float rot)
+{
+    std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::rotate, new glm::vec2(rot, 0.f));
 }
 
 void lite_obs_source::lite_source_set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
@@ -1690,6 +1781,12 @@ void lite_obs_source::lite_source_set_render_box(int x, int y, int width, int he
         return;
     }
 
-    d_ptr->source_render_box = {true, x, y, width, height, mode};
-    d_ptr->should_update_tranform = true;
+    auto box = new lite_source_private::render_box_info{x, y, width, height, mode};
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::box, box);
+}
+
+void lite_obs_source::lite_source_set_flip(bool flip_h, bool flip_v)
+{
+    std::lock_guard<std::mutex> locker(d_ptr->transform_setting_mutex);
+    d_ptr->transform_setting_list.emplace_back(lite_source_private::transform_type::flip, new glm::vec2(flip_h ? -1.0f : 1.0f, flip_v ? -1.0f : 1.0f));
 }

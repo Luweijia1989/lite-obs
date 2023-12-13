@@ -48,8 +48,10 @@ public:
 
     void set_pos(float x, float y);
     void set_scale(float s_w, float s_h);
+    void set_rotate(float rot);
     void set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode);
     void set_order(order_movement movement);
+    void set_flip(bool flip_h, bool flip_v);
 
 private:
     ~lite_obs_media_source_internal();

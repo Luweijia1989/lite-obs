@@ -52,11 +52,17 @@ lite_obs_media_source_api *lite_obs_media_source_new(const lite_obs_api *api, so
     media_source_api->set_scale = [](struct lite_obs_media_source_api *source_api, float s_w, float s_h){
         source_api->obj->source_internal->set_scale(s_w, s_h);
     };
+    media_source_api->set_rotate = [](struct lite_obs_media_source_api *source_api, float rot){
+        source_api->obj->source_internal->set_rotate(rot);
+    };
     media_source_api->set_render_box = [](struct lite_obs_media_source_api *source_api, int x, int y, int width, int height, source_aspect_ratio_mode mode){
         source_api->obj->source_internal->set_render_box(x, y, width, height, mode);
     };
     media_source_api->set_order = [](struct lite_obs_media_source_api *source_api, order_movement movement){
         source_api->obj->source_internal->set_order(movement);
+    };
+    media_source_api->set_flip = [](struct lite_obs_media_source_api *source_api, bool flip_h, bool flip_v){
+        source_api->obj->source_internal->set_flip(flip_h, flip_v);
     };
 
     return media_source_api;

@@ -76,6 +76,11 @@ void lite_obs_media_source_internal::set_scale(float s_w, float s_h)
     d_ptr->internal_source->lite_source_set_scale(s_w, s_h);
 }
 
+void lite_obs_media_source_internal::set_rotate(float rot)
+{
+    d_ptr->internal_source->lite_source_set_rotate(rot);
+}
+
 void lite_obs_media_source_internal::set_render_box(int x, int y, int width, int height, source_aspect_ratio_mode mode)
 {
     d_ptr->internal_source->lite_source_set_render_box(x, y, width, height, mode);
@@ -122,6 +127,11 @@ void lite_obs_media_source_internal::set_order(order_movement movement)
     default:
         break;
     }
+}
+
+void lite_obs_media_source_internal::set_flip(bool flip_h, bool flip_v)
+{
+    d_ptr->internal_source->lite_source_set_flip(flip_h, flip_v);
 }
 
 struct lite_obs_private
