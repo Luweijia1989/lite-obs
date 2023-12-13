@@ -21,6 +21,10 @@ public slots:
     void setSourceOrder(int order);
     void resetEncoderType(bool sw);
     void doImgMix(bool enabled);
+    void move();
+    void scale();
+    void flip();
+    void rotate();
 
 private:
     lite_obs_api *m_liteObs = nullptr;

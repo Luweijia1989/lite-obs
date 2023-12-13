@@ -153,7 +153,7 @@ void LiteObsExample::doTextureMix(int id, uint32_t width, uint32_t height)
     m_testSource->output_video(m_testSource, id, width, height);
 //    m_testSource->set_scale(m_testSource, 0.2f, 0.2f);
 //    m_testSource->set_pos(m_testSource, 200, 200);
-    m_testSource->set_render_box(m_testSource, 50, 100, 400, 600, source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING);
+//    m_testSource->set_render_box(m_testSource, 50, 100, 400, 600, source_aspect_ratio_mode::KEEP_ASPECT_RATIO_BY_EXPANDING);
 }
 
 void LiteObsExample::setSourceOrder(int order)
@@ -178,4 +178,40 @@ void LiteObsExample::doImgMix(bool enabled)
         img = img.convertedTo(QImage::Format_RGBA8888);
         m_pngSource->output_video3(m_pngSource, img.constBits(), img.width(), img.height());
     }
+}
+
+void LiteObsExample::move()
+{
+    static int offset = 10;
+    if (!m_pngSource)
+        return;
+
+    m_pngSource->set_pos(m_pngSource, offset, offset);
+    offset += 10;
+}
+
+void LiteObsExample::scale()
+{
+    static float s = 1.0f;
+    if (!m_pngSource)
+        return;
+
+    m_pngSource->set_scale(m_pngSource, s, s);
+    s -= 0.1f;
+}
+
+void LiteObsExample::flip()
+{
+    if (!m_pngSource)
+        return;
+
+    m_pngSource->set_flip(m_pngSource, true, false);
+}
+
+void LiteObsExample::rotate()
+{
+    if (!m_pngSource)
+        return;
+
+    m_pngSource->set_rotate(m_pngSource, 90.f);
 }

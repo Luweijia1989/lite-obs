@@ -47,6 +47,37 @@ Item {
     }
 
     ColumnLayout {
+        anchors.right: parent.right
+        Button {
+            text: "move"
+            onClicked: {
+                example.move()
+            }
+        }
+
+        Button {
+            text: "scale"
+            onClicked: {
+                example.scale()
+            }
+        }
+
+        Button {
+            text: "flip"
+            onClicked: {
+                example.flip()
+            }
+        }
+
+        Button {
+            text: "rotate"
+            onClicked: {
+                example.rotate()
+            }
+        }
+    }
+
+    ColumnLayout {
         Button {
             text: "mix audio"
             checkable: true
