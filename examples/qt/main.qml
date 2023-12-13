@@ -75,6 +75,13 @@ Item {
                 example.rotate()
             }
         }
+
+        Button {
+            text: "reset"
+            onClicked: {
+                example.reset();
+            }
+        }
     }
 
     ColumnLayout {

@@ -25,6 +25,7 @@ public slots:
     void scale();
     void flip();
     void rotate();
+    void reset();
 
 private:
     lite_obs_api *m_liteObs = nullptr;

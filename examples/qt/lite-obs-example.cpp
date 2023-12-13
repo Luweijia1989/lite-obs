@@ -215,3 +215,11 @@ void LiteObsExample::rotate()
 
     m_pngSource->set_rotate(m_pngSource, 90.f);
 }
+
+void LiteObsExample::reset()
+{
+    if (!m_pngSource)
+        return;
+
+    m_pngSource->reset_transform(m_pngSource);
+}
