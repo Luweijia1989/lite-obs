@@ -14,14 +14,14 @@ static void log_handler(int log_level, const char *msg)
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBS_createLiteOBS(JNIEnv *env, jobject thiz) {
+Java_com_liteobskit_sdk_LiteOBS_createLiteOBS(JNIEnv *env, jobject thiz) {
     lite_obs_set_log_handle(log_handler);
     return reinterpret_cast<jlong>(lite_obs_api_new());
 }
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBS_deleteLiteOBS(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBS_deleteLiteOBS(JNIEnv *env, jobject thiz,
                                                                  jlong ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     lite_obs_api_delete(&api_ptr);
@@ -29,7 +29,7 @@ Java_com_example_liteobs_1android_1example_LiteOBS_deleteLiteOBS(JNIEnv *env, jo
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBS_resetVideoAudio(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBS_resetVideoAudio(JNIEnv *env, jobject thiz,
                                                                    jlong ptr, jint width,
                                                                    jint height, jint fps) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
@@ -39,7 +39,7 @@ Java_com_example_liteobs_1android_1example_LiteOBS_resetVideoAudio(JNIEnv *env, 
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBS_startStream(JNIEnv *env, jobject thiz, jlong ptr) {
+Java_com_liteobskit_sdk_LiteOBS_startStream(JNIEnv *env, jobject thiz, jlong ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     lite_obs_output_callbak cb{};
     cb.start = [](void *){LOGD("===start");};
@@ -58,7 +58,7 @@ Java_com_example_liteobs_1android_1example_LiteOBS_startStream(JNIEnv *env, jobj
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBS_stopStream(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBS_stopStream(JNIEnv *env, jobject thiz,
                                                               jlong ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     api_ptr->lite_obs_stop_output(api_ptr);
@@ -66,14 +66,14 @@ Java_com_example_liteobs_1android_1example_LiteOBS_stopStream(JNIEnv *env, jobje
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBSSource_createSource(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBSSource_createSource(JNIEnv *env, jobject thiz,
                                                                       jlong ptr, jint type) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     return reinterpret_cast<jlong>(lite_obs_media_source_new(api_ptr, (source_type)type));
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBSSource_deleteSource(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBSSource_deleteSource(JNIEnv *env, jobject thiz,
                                                                       jlong obs_ptr,
                                                                       jlong source_ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(obs_ptr);
@@ -82,7 +82,7 @@ Java_com_example_liteobs_1android_1example_LiteOBSSource_deleteSource(JNIEnv *en
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBSSource_outputVideo(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBSSource_outputVideo(JNIEnv *env, jobject thiz,
                                                                      jlong source_ptr,
                                                                      jbyteArray data,
                                                                      jintArray linesize, jint width,
@@ -103,7 +103,7 @@ Java_com_example_liteobs_1android_1example_LiteOBSSource_outputVideo(JNIEnv *env
 }
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_example_liteobs_1android_1example_LiteOBSSource_rotate(JNIEnv *env, jobject thiz,
+Java_com_liteobskit_sdk_LiteOBSSource_rotate(JNIEnv *env, jobject thiz,
                                                                 jlong source_ptr, jfloat rot) {
     lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
     source->set_rotate(source, rot);

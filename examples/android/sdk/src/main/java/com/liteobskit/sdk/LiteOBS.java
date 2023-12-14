@@ -1,16 +1,15 @@
-package com.example.liteobs_android_example;
-
+package com.liteobskit.sdk;
 public class LiteOBS {
     static {
         System.loadLibrary("liteobs_android");
     }
     private long apiPtr;
 
-    LiteOBS() {
+    public LiteOBS() {
         apiPtr = createLiteOBS();
     }
 
-    long getApiPtr() {
+    public long getApiPtr() {
         return apiPtr;
     }
     @Override

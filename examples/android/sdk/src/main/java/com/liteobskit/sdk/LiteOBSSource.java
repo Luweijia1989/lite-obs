@@ -1,10 +1,9 @@
-package com.example.liteobs_android_example;
-
+package com.liteobskit.sdk;
 public class LiteOBSSource {
     private long sourcePtr;
     private long obsPtr;
 
-    LiteOBSSource(long obsPtr, int type) {
+    public LiteOBSSource(long obsPtr, int type) {
         this.obsPtr = obsPtr;
         sourcePtr = createSource(obsPtr, type);
     }

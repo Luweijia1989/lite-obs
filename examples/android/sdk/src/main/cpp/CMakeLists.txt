@@ -26,7 +26,7 @@ project("liteobs_android")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
-        native-lib.cpp)
+        liteobs-jni.cpp)
 
 set(LITEOBS_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../../output/android)
 include(${LITEOBS_SDK_DIR}/lib/cmake/FindLiteOBS.cmake)
@@ -38,7 +38,6 @@ include(${LITEOBS_SDK_DIR}/lib/cmake/FindLiteOBS.cmake)
 # build script, prebuilt third-party libraries, or Android system libraries.
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
         # List libraries link to the target library
+        lite-obs
         android
         log)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE lite-obs)

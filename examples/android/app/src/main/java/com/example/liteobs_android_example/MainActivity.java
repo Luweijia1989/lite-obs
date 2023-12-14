@@ -5,22 +5,13 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
-import android.opengl.GLES10;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
+
+import com.liteobskit.sdk.LiteOBS;
+import com.liteobskit.sdk.LiteOBSSource;
 
 import com.example.liteobs_android_example.databinding.ActivityMainBinding;
 
@@ -94,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-                //mCamera2Wrapper.startCamera();
+//                mCamera2Wrapper.startCamera();
             } else {
                 //Toast.makeText(this, "We need the camera permission.", Toast.LENGTH_SHORT).show();
             }

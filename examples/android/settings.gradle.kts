@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "liteobs-android-example"
 include(":app")
- 
+include(":sdk")
