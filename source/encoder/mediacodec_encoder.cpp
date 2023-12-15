@@ -13,17 +13,8 @@
 #include <EGL/eglext.h>
 #include <GLES3/gl3.h>
 
-struct mediacodec_encoder_private
+struct surface_encode_rc
 {
-    int width{};
-    int height{};
-    int fps_num{};
-    int fps_den{};
-    bool initialized = false;
-    std::vector<uint8_t> sei;
-    std::vector<uint8_t> header;
-    std::shared_ptr<std::vector<uint8_t>> buffer;
-
     std::shared_ptr<gs_simple_texture_drawer> texture_drawer{};
 
     EGLContext shared_ctx = EGL_NO_CONTEXT;
@@ -35,8 +26,134 @@ struct mediacodec_encoder_private
     int egl_version = 0;
     EGLConfig egl_config = nullptr;
 
-    AMediaCodec*    mediacodec = nullptr;
     ANativeWindow*  mediacodec_input_window = nullptr;
+
+    void reset() {
+        if (display != EGL_NO_DISPLAY) {
+            if (eglMakeCurrent(display, egl_surface, egl_surface, egl_ctx)) {
+                texture_drawer.reset();
+            }
+
+            eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+            if (egl_ctx)
+                eglDestroyContext(display, egl_ctx);
+            if (egl_surface)
+                eglDestroySurface(display, egl_surface);
+            eglReleaseThread();
+            eglTerminate(display);
+            display = EGL_NO_DISPLAY;
+        }
+
+        if (mediacodec_input_window) {
+            ANativeWindow_release(mediacodec_input_window);
+            mediacodec_input_window = nullptr;
+        }
+    }
+
+    bool init() {
+        if (!shared_ctx) {
+            blog(LOG_ERROR, "mediacodec_encoder: OpenGL share context required");
+            return false;
+        }
+
+        display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        if(display == EGL_NO_DISPLAY) {
+            blog(LOG_ERROR, "eglGetDisplay wrong");
+            return false;
+        }
+
+        EGLint major = 0, minor = 0;
+        if (!eglInitialize(display, &major, &minor) ) {
+            display = NULL;
+            blog(LOG_ERROR, "unable to initialize");
+            return false;
+        }
+
+        int attribute_list[] = {
+            EGL_RED_SIZE, 8,
+            EGL_GREEN_SIZE, 8,
+            EGL_BLUE_SIZE, 8,
+            EGL_ALPHA_SIZE, 8,
+            EGL_DEPTH_SIZE, 16,
+            EGL_STENCIL_SIZE, 8,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+            EGL_RECORDABLE_ANDROID, 1,
+            EGL_NONE
+        };
+
+        int numConfigs = 0;
+        if (!eglChooseConfig(display, attribute_list, &egl_config, 1, &numConfigs)) {
+            return false;
+        }
+
+        const EGLint attrib3_list[] = {
+            EGL_CONTEXT_CLIENT_VERSION, 3,
+            EGL_NONE
+        };
+        egl_ctx = eglCreateContext(display, egl_config, shared_ctx, attrib3_list);
+        if (eglGetError() != EGL_SUCCESS) {
+            blog(LOG_ERROR, "error create encoder egl context.");
+            return false;
+        }
+
+        int surfaceAttribs[] = {
+            EGL_NONE
+        };
+        egl_surface = eglCreateWindowSurface(display, egl_config, mediacodec_input_window, surfaceAttribs);
+        if (egl_surface == NULL) {
+            blog(LOG_ERROR, "EGLSurface is NULL!");
+            return false;
+        }
+
+        blog(LOG_INFO, "Mediacodec EGL success");
+        return true;
+    }
+
+    void draw_texture(int tex_id, int width, int height)
+    {
+        glViewport(0, 0, width, height);
+        if (!texture_drawer)
+            texture_drawer = std::make_shared<gs_simple_texture_drawer>();
+
+        texture_drawer->draw_texture(tex_id);
+        glFlush();
+    }
+
+    bool prepare_encode_texture(encoder_frame *frame, int width, int height, int fps_den, int fps_num) {
+        if (!eglMakeCurrent(display, egl_surface, egl_surface, egl_ctx)) {
+            blog(LOG_ERROR, "NOTE: eglMakeCurrent failed");
+            return false;
+        }
+
+        int tex_id = *((int *)frame->data[0]);
+        draw_texture(tex_id, width, height);
+
+        auto pts = frame->pts * fps_den * 1000000 / fps_num;
+        eglPresentationTimeANDROID(display, egl_surface, pts * 1000);
+
+        if (!eglSwapBuffers(display, egl_surface)) {
+            blog(LOG_ERROR, "NOTE: eglSwapBuffers failed");
+            return false;
+        }
+
+        eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
+        return true;
+    }
+};
+
+struct mediacodec_encoder_private
+{
+    int width{};
+    int height{};
+    int fps_num{};
+    int fps_den{};
+    bool initialized = false;
+    std::vector<uint8_t> sei;
+    std::vector<uint8_t> header;
+    std::shared_ptr<std::vector<uint8_t>> buffer;
+    AMediaCodec*    mediacodec = nullptr;
+    std::shared_ptr<surface_encode_rc> rc = nullptr;
+    video_format format{};
 };
 
 mediacodec_encoder::mediacodec_encoder(lite_obs_encoder *encoder)
@@ -44,6 +161,7 @@ mediacodec_encoder::mediacodec_encoder(lite_obs_encoder *encoder)
 {
     d_ptr = std::make_unique<mediacodec_encoder_private>();
     d_ptr->buffer = std::make_shared<std::vector<uint8_t>>();
+    d_ptr->rc = std::make_shared<surface_encode_rc>();
 }
 
 mediacodec_encoder::~mediacodec_encoder()
@@ -64,7 +182,12 @@ obs_encoder_type mediacodec_encoder::i_encoder_type()
 
 void mediacodec_encoder::i_set_gs_render_ctx(void *ctx)
 {
-    d_ptr->shared_ctx = ctx;
+    d_ptr->rc->shared_ctx = ctx;
+}
+
+bool mediacodec_encoder::format_valid()
+{
+    return d_ptr->format == video_format::VIDEO_FORMAT_NV12;
 }
 
 bool mediacodec_encoder::init_mediacodec()
@@ -76,6 +199,10 @@ bool mediacodec_encoder::init_mediacodec()
     auto voi = video->video_output_get_info();
     d_ptr->fps_num = voi->fps_num;
     d_ptr->fps_den = voi->fps_den;
+    d_ptr->format = voi->format;
+    if (!format_valid())
+        return false;
+
     d_ptr->mediacodec = AMediaCodec_createEncoderByType("video/avc");
 
     AMediaFormat* format = AMediaFormat_new();
@@ -87,7 +214,6 @@ bool mediacodec_encoder::init_mediacodec()
     }
     AMediaFormat_setInt32(format, "width",  d_ptr->width);
     AMediaFormat_setInt32(format, "height", d_ptr->height);
-    AMediaFormat_setInt32(format, "color-format", 0x7F000789);
     AMediaFormat_setInt32(format, "bitrate", encoder->lite_obs_encoder_bitrate() * 1000);
     AMediaFormat_setInt32(format, "frame-rate", voi->fps_num / voi->fps_den);
     AMediaFormat_setInt32(format, "i-frame-interval", 2);
@@ -96,6 +222,13 @@ bool mediacodec_encoder::init_mediacodec()
 #if __ANDROID_API__ >= 28
     AMediaFormat_setInt32(format, "bitrate-mode", 2); //CBR
 #endif
+
+#if __ANDROID_API__ >= 26
+    AMediaFormat_setInt32(format, "color-format", 0x7F000789);
+#else
+    AMediaFormat_setInt32(format, "color-format", 21);
+#endif
+
     blog(LOG_INFO, "AMediaCodec_configure format : %s", AMediaFormat_toString(format));
     auto rc = AMediaCodec_configure(d_ptr->mediacodec, format, NULL, NULL, AMEDIACODEC_CONFIGURE_FLAG_ENCODE);
     if (rc != AMEDIA_OK) {
@@ -105,7 +238,10 @@ bool mediacodec_encoder::init_mediacodec()
     AMediaFormat_delete(format);
     blog(LOG_INFO, "CodecEncoder AMediaCodec_configure %d ", rc);
 
-    rc = AMediaCodec_createInputSurface(d_ptr->mediacodec, &d_ptr->mediacodec_input_window);
+#if __ANDROID_API__ >= 26
+    rc = AMediaCodec_createInputSurface(d_ptr->mediacodec, &d_ptr->rc->mediacodec_input_window);
+#endif
+
     if(AMEDIA_OK == rc) {
         rc = AMediaCodec_start(d_ptr->mediacodec);
         blog(LOG_INFO, "CodecEncoder AMediaCodec_start %d ",rc);
@@ -131,74 +267,21 @@ bool mediacodec_encoder::init_mediacodec()
     }
 }
 
-bool mediacodec_encoder::init_egl_related()
-{
-    d_ptr->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if(d_ptr->display == EGL_NO_DISPLAY) {
-        blog(LOG_ERROR, "eglGetDisplay wrong");
-        return false;
-    }
-
-    EGLint major = 0, minor = 0;
-    if (!eglInitialize(d_ptr->display, &major, &minor) ) {
-        d_ptr->display = NULL;
-        blog(LOG_ERROR, "unable to initialize");
-        return false;
-    }
-
-    int attribute_list[] = {
-        EGL_RED_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE, 8,
-        EGL_ALPHA_SIZE, 8,
-        EGL_DEPTH_SIZE, 16,
-        EGL_STENCIL_SIZE, 8,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
-        EGL_RECORDABLE_ANDROID, 1,
-        EGL_NONE
-    };
-
-    int numConfigs = 0;
-    if (!eglChooseConfig(d_ptr->display, attribute_list, &d_ptr->egl_config, 1, &numConfigs)) {
-        return false;
-    }
-
-    const EGLint attrib3_list[] = {
-        EGL_CONTEXT_CLIENT_VERSION, 3,
-        EGL_NONE
-    };
-    d_ptr->egl_ctx = eglCreateContext(d_ptr->display, d_ptr->egl_config, d_ptr->shared_ctx, attrib3_list);
-    if (eglGetError() != EGL_SUCCESS) {
-        blog(LOG_ERROR, "error create encoder egl context.");
-        return false;
-    }
-
-    int surfaceAttribs[] = {
-        EGL_NONE
-    };
-    d_ptr->egl_surface = eglCreateWindowSurface(d_ptr->display, d_ptr->egl_config, d_ptr->mediacodec_input_window, surfaceAttribs);
-    if (d_ptr->egl_surface == NULL) {
-        blog(LOG_ERROR, "EGLSurface is NULL!");
-        return false;
-    }
-
-    blog(LOG_INFO, "Mediacodec EGL success");
-    return true;
-}
-
 bool mediacodec_encoder::i_create()
 {
-    if (!d_ptr->shared_ctx) {
-        blog(LOG_ERROR, "mediacodec_encoder: OpenGL share context required");
-        return false;
-    }
-
     bool success = true;
     do {
-        if (!init_mediacodec() || !init_egl_related()) {
+        if (!init_mediacodec()) {
             success = false;
             break;
         }
+#if __ANDROID_API__ >= 26
+        if (!d_ptr->rc->init()) {
+            success = false;
+            break;
+        }
+#endif
+
     } while(0);
 
     if (!success)
@@ -217,25 +300,7 @@ void mediacodec_encoder::i_destroy()
         d_ptr->mediacodec = NULL;
     }
 
-    if (d_ptr->display != EGL_NO_DISPLAY) {
-        if (eglMakeCurrent(d_ptr->display, d_ptr->egl_surface, d_ptr->egl_surface, d_ptr->egl_ctx)) {
-            d_ptr->texture_drawer.reset();
-        }
-
-        eglMakeCurrent(d_ptr->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-        if (d_ptr->egl_ctx)
-            eglDestroyContext(d_ptr->display, d_ptr->egl_ctx);
-        if (d_ptr->egl_surface)
-            eglDestroySurface(d_ptr->display, d_ptr->egl_surface);
-        eglReleaseThread();
-        eglTerminate(d_ptr->display);
-        d_ptr->display = EGL_NO_DISPLAY;
-    }
-
-    if (d_ptr->mediacodec_input_window) {
-        ANativeWindow_release(d_ptr->mediacodec_input_window);
-        d_ptr->mediacodec_input_window = nullptr;
-    }
+    d_ptr->rc->reset();
 
     blog(LOG_DEBUG, "mediacodec_encoder destroy");
 }
@@ -245,37 +310,30 @@ bool mediacodec_encoder::i_encoder_valid()
     return d_ptr->initialized;
 }
 
-void mediacodec_encoder::draw_texture(int tex_id)
-{
-    glViewport(0, 0, d_ptr->width, d_ptr->height);
-    if (!d_ptr->texture_drawer)
-        d_ptr->texture_drawer = std::make_shared<gs_simple_texture_drawer>();
-
-    d_ptr->texture_drawer->draw_texture(tex_id);
-    glFlush();
-}
-
 #define AMEDIACODEC_BUFFER_FLAG_KEY_FRAME 1
 #define TIMEOUT_USEC 8000
 bool mediacodec_encoder::i_encode(encoder_frame *frame, std::shared_ptr<encoder_packet> packet, std::function<void (std::shared_ptr<encoder_packet>)> send_off)
 {
-    if (!eglMakeCurrent(d_ptr->display, d_ptr->egl_surface, d_ptr->egl_surface, d_ptr->egl_ctx)) {
-        blog(LOG_ERROR, "NOTE: eglMakeCurrent failed");
+#if __ANDROID_API__ >= 26
+    if (!d_ptr->rc->prepare_encode_texture(frame, d_ptr->width, d_ptr->height, d_ptr->fps_den, d_ptr->fps_num))
         return false;
+#else
+    while (true) {
+        // nv12
+        ssize_t idx = AMediaCodec_dequeueInputBuffer(d_ptr->mediacodec, TIMEOUT_USEC);
+        if(idx>=0) {
+            size_t buf_size = 0;
+            auto pts = frame->pts * d_ptr->fps_den * 1000000 / d_ptr->fps_num;
+            uint8_t *buf = AMediaCodec_getInputBuffer(d_ptr->mediacodec, idx, &buf_size);
+            int copy_index = 0;
+            memcpy(buf + copy_index, frame->data[0], frame->linesize[0] * d_ptr->height);
+            copy_index += frame->linesize[0] * d_ptr->height;
+            memcpy(buf + copy_index, frame->data[1], frame->linesize[1] * d_ptr->height / 2);
+            AMediaCodec_queueInputBuffer(d_ptr->mediacodec, idx, 0, d_ptr->width * d_ptr->height * 3 / 2, pts, 0);
+            break;
+        }
     }
-
-    int tex_id = *((int *)frame->data[0]);
-    draw_texture(tex_id);
-
-    auto pts = frame->pts * d_ptr->fps_den * 1000000 / d_ptr->fps_num;
-    eglPresentationTimeANDROID(d_ptr->display, d_ptr->egl_surface, pts * 1000);
-
-    if (!eglSwapBuffers(d_ptr->display, d_ptr->egl_surface)) {
-        blog(LOG_ERROR, "NOTE: eglSwapBuffers failed");
-        return false;
-    }
-
-    eglMakeCurrent(d_ptr->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT );
+#endif
 
     try {
         while (true) {
@@ -362,7 +420,11 @@ bool mediacodec_encoder::i_get_sei_data(uint8_t **sei_data, size_t *size)
 
 bool mediacodec_encoder::i_gpu_encode_available()
 {
+#if __ANDROID_API__ >= 26
     return true;
+#else
+    return false;
+#endif
 }
 
 void mediacodec_encoder::i_update_encode_bitrate(int bitrate)

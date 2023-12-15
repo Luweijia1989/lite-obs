@@ -25,9 +25,8 @@ public:
     virtual void i_update_encode_bitrate(int bitrate);
 
 private:
+    bool format_valid();
     bool init_mediacodec();
-    bool init_egl_related();
-    void draw_texture(int tex_id);
 
 private:
     std::unique_ptr<mediacodec_encoder_private> d_ptr{};
