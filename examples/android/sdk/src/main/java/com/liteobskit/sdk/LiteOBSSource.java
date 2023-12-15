@@ -17,6 +17,10 @@ public class LiteOBSSource {
         outputVideo(sourcePtr, data, linesize, width, height);
     }
 
+    public void outputAudio(byte[] data, int frames) {
+        outputAudio(sourcePtr, data, frames);
+    }
+
     public void rotate(float rot) {
         rotate(sourcePtr, rot);
     }
@@ -24,5 +28,6 @@ public class LiteOBSSource {
     private native long createSource(long obsPtr, int type);
     private native void deleteSource(long obsPtr, long sourcePtr);
     private native void outputVideo(long sourcePtr, byte[] data, int[] linesize, int width, int height);
+    private native void outputAudio(long sourcePtr, byte[] data, int frames);
     private native void rotate(long sourcePtr, float rot);
 }

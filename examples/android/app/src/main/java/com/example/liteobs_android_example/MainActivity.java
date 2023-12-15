@@ -19,11 +19,13 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
 
     private static String TAG = "MainActivity";
     private static final String[] REQUEST_PERMISSIONS = {
-            Manifest.permission.CAMERA
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
     };
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1;
     private Camera2Wrapper camera2Wrapper;
+    private MicRecoder micRecoder;
     private LiteOBS liteOBS;
     private LiteOBSSource videoSource;
 
@@ -48,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         liteOBS.resetVideoAudio(720, 1280, 20);
         videoSource = new LiteOBSSource(liteOBS.getApiPtr(), 5);
         videoSource.rotate(-90.f);
+        micRecoder = new MicRecoder(liteOBS.getApiPtr(), this);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -56,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         startOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                micRecoder.startRecord();
                 liteOBS.startStream();
             }
         });

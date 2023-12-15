@@ -108,3 +108,18 @@ Java_com_liteobskit_sdk_LiteOBSSource_rotate(JNIEnv *env, jobject thiz,
     lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
     source->set_rotate(source, rot);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liteobskit_sdk_LiteOBSSource_outputAudio(JNIEnv *env, jobject thiz, jlong source_ptr,
+                                                  jbyteArray data, jint frames) {
+    jbyte* data_ptr = env->GetByteArrayElements(data, NULL);
+
+    const uint8_t *a_data[MAX_AV_PLANES] = {};
+    a_data[0] = (uint8_t *)data_ptr;
+
+    lite_obs_media_source_api *source = reinterpret_cast<lite_obs_media_source_api *>(source_ptr);
+    source->output_audio(source, a_data, frames, audio_format::AUDIO_FORMAT_16BIT, speaker_layout::SPEAKERS_MONO, 44100);
+
+    env->ReleaseByteArrayElements(data, data_ptr, JNI_ABORT);
+}
