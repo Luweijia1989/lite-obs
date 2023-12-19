@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lite-obs/lite_obs_media_defines.h"
+#include "lite-obs/lite_obs_defines.h"
 
 static inline bool format_is_yuv(video_format format)
 {

@@ -9,7 +9,7 @@ public:
     rtmp_stream_output();
     virtual ~rtmp_stream_output();
 
-    virtual void i_set_output_info(const std::string &info) override;
+    virtual void i_set_output_info(void *info) override;
     virtual bool i_output_valid() override;
     virtual bool i_has_video() override;
     virtual bool i_has_audio() override;

@@ -21,7 +21,7 @@ public:
     lite_obs_media_source_internal *lite_obs_create_source(source_type type);
     void lite_obs_destroy_source(lite_obs_media_source_internal *source);
 
-    bool lite_obs_start_output(std::string output_info, int vb, int ab, const lite_obs_output_callbak &callback);
+    bool lite_obs_start_output(output_type type, void *output_info, int vb, int ab, const lite_obs_output_callbak &callback);
     void lite_obs_stop_output();
 
     void lite_obs_reset_encoder(bool sw);

@@ -175,9 +175,9 @@ rtmp_stream_output::~rtmp_stream_output()
 #endif
 }
 
-void rtmp_stream_output::i_set_output_info(const std::string &info)
+void rtmp_stream_output::i_set_output_info(void *info)
 {
-    d_ptr->stream_url = info;
+    d_ptr->stream_url = (char *)info;
 }
 
 bool rtmp_stream_output::i_output_valid()

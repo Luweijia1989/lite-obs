@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "lite_obs_media_defines.h"
+#include "lite_obs_defines.h"
 
 #define MAX_BUFFERING_TICKS 45
 

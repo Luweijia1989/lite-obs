@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lite-obs/lite_obs_media_defines.h"
+#include "lite-obs/lite_obs_defines.h"
 #include <stdint.h>
 #include <memory>
 #include <vector>

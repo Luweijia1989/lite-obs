@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lite_obs_global.h"
-#include "lite_obs_media_defines.h"
+#include "lite_obs_defines.h"
 #include "lite_obs_callback.h"
 #include <stdint.h>
 
@@ -39,7 +39,7 @@ typedef struct lite_obs_api {
     int (*lite_obs_reset_video)(struct lite_obs_api *core_api, uint32_t width, uint32_t height, uint32_t fps);
     bool (*lite_obs_reset_audio)(struct lite_obs_api *core_api, uint32_t sample_rate);
 
-    bool (*lite_obs_start_output)(struct lite_obs_api *core_api, const char *output_info, int vb, int ab, struct lite_obs_output_callbak callback);
+    bool (*lite_obs_start_output)(struct lite_obs_api *core_api, output_type type, void *output_info, int vb, int ab, struct lite_obs_output_callbak callback);
     void (*lite_obs_stop_output)(struct lite_obs_api *core_api);
 
     void (*lite_obs_reset_encoder)(struct lite_obs_api *core_api, bool sw);

@@ -2,11 +2,13 @@
 
 #include "lite-obs/lite_obs_output.h"
 
-struct null_output_private;
-class null_output : public lite_obs_output
+struct aoa_output_private;
+class aoa_output : public lite_obs_output
 {
 public:
-    null_output();
+    aoa_output();
+    virtual ~aoa_output();
+    virtual void i_set_output_info(void *info);
     virtual bool i_output_valid();
     virtual bool i_has_video();
     virtual bool i_has_audio();
@@ -24,5 +26,5 @@ public:
     static void stop_thread(void *data);
 
 private:
-    std::shared_ptr<null_output_private> d_ptr{};
+    std::shared_ptr<aoa_output_private> d_ptr{};
 };

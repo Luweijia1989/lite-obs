@@ -7,3 +7,6 @@
 [submodule "cmake/tools"]
 	path = cmake/tools
 	url = https://github.com/Luweijia1989/cmake-tools.git
+[submodule "source/third-party/JMI"]
+	path = source/third-party/JMI
+	url = git@github.com:Luweijia1989/JMI.git

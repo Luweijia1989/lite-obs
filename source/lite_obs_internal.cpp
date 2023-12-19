@@ -4,7 +4,7 @@
 #include "lite-obs/lite_obs_core_audio.h"
 #include "lite-obs/lite_obs_source.h"
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/output/null_output.h"
+#include "lite-obs/output/aoa_output.h"
 #include "lite-obs/output/file_output.h"
 #include "lite-obs/output/srt_stream_output.h"
 #include "lite-obs/output/rtmp_stream_output.h"
@@ -228,13 +228,36 @@ bool lite_obs_internal::obs_reset_audio(uint32_t sample_rate)
     return d_ptr->audio->lite_obs_start_audio(sample_rate);
 }
 
-bool lite_obs_internal::lite_obs_start_output(std::string output_info, int vb, int ab, const lite_obs_output_callbak &callback)
+bool lite_obs_internal::lite_obs_start_output(output_type type, void *output_info, int vb, int ab, const lite_obs_output_callbak &callback)
 {
     if (!d_ptr->output)
     {
-        //auto output = std::make_shared<mpeg_ts_output>();
-        //auto output = std::make_shared<lite_ffmpeg_mux>();
-        auto output = std::make_shared<rtmp_stream_output>();
+        std::shared_ptr<lite_obs_output> output = nullptr;
+        switch (type) {
+        case output_type::rtmp:
+            output = std::make_shared<rtmp_stream_output>();
+            break;
+        case output_type::srt:
+            output = std::make_shared<mpeg_ts_output>();
+            break;
+        case output_type::file:
+            output = std::make_shared<lite_ffmpeg_mux>();
+            break;
+        case output_type::android_aoa:
+#if TARGET_PLATFORM == PLATFORM_ANDROID
+            output = std::make_shared<aoa_output>();
+#endif
+            break;
+        case output_type::iOS_usb:
+
+            break;
+        default:
+            break;
+        }
+
+        if (!output)
+            return false;
+
         output->i_set_output_info(output_info);
         if (!output->lite_obs_output_create(d_ptr->video, d_ptr->audio))
             return false;

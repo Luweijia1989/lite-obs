@@ -9,6 +9,8 @@ target_compile_definitions(
     PUBLIC LITEOBS_USE_GLES
 )
 
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/source/third-party/JMI)
+
 # cmake-format: off
 target_compile_options(liteobs-compiler-options INTERFACE $<$<CONFIG:Release>:-Oz> $<$<CONFIG:Release>:-Qunused-arguments> $<$<CONFIG:Release>:-flto>)
 # cmake-format: on
@@ -29,4 +31,6 @@ target_link_libraries(
     android
     z
     mediandk
+    jmi
 )
+

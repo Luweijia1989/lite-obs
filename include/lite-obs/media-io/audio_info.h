@@ -2,7 +2,7 @@
 
 #include <cstddef>
 #include "lite-obs/util/util_uint128.h"
-#include "lite-obs/lite_obs_media_defines.h"
+#include "lite-obs/lite_obs_defines.h"
 
 #define MAX_AUDIO_MIXES 6
 #define MAX_AUDIO_CHANNELS 8

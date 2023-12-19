@@ -188,7 +188,7 @@ else()
         ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
         ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_callback.h
         ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_global.h
-        ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_media_defines.h
+        ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
     )
 
     install(FILES ${EXPORT_HEADERS} DESTINATION include/lite-obs)

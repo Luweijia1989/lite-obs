@@ -134,6 +134,11 @@ mpeg_ts_output::mpeg_ts_output()
     d_ptr = std::make_unique<mpeg_ts_output_private>();
 }
 
+mpeg_ts_output::~mpeg_ts_output()
+{
+
+}
+
 void mpeg_ts_output::ffmpeg_mpegts_log_error(int log_level, struct ffmpeg_data *data, const char *format, ...)
 {
     va_list args;
@@ -148,9 +153,9 @@ void mpeg_ts_output::ffmpeg_mpegts_log_error(int log_level, struct ffmpeg_data *
     blog(log_level, "%s", out);
 }
 
-void mpeg_ts_output::i_set_output_info(const std::string &info)
+void mpeg_ts_output::i_set_output_info(void *info)
 {
-    d_ptr->stream_info = info;
+    d_ptr->stream_info = (char *)info;
 }
 
 bool mpeg_ts_output::i_output_valid()

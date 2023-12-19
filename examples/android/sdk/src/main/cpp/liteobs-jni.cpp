@@ -39,7 +39,7 @@ Java_com_liteobskit_sdk_LiteOBS_resetVideoAudio(JNIEnv *env, jobject thiz,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_liteobskit_sdk_LiteOBS_startStream(JNIEnv *env, jobject thiz, jlong ptr) {
+Java_com_liteobskit_sdk_LiteOBS_startAOAStream(JNIEnv *env, jobject thiz, jobject file, jlong ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     lite_obs_output_callbak cb{};
     cb.start = [](void *){LOGD("===start");};
@@ -53,7 +53,29 @@ Java_com_liteobskit_sdk_LiteOBS_startStream(JNIEnv *env, jobject thiz, jlong ptr
     cb.connected = [](void *){LOGD("===connected");};
     cb.first_media_packet = [](void *){LOGD("===first_media_packet");};
     cb.opaque = nullptr;
-    api_ptr->lite_obs_start_output(api_ptr, "rtmp://192.168.16.28/live/test", 4000, 160, cb);
+    api_ptr->lite_obs_start_output(api_ptr, output_type::android_aoa, file, 4000, 160, cb);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_liteobskit_sdk_LiteOBS_startRtmpStream(JNIEnv *env, jobject thiz, jstring url, jlong ptr) {
+    lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
+    lite_obs_output_callbak cb{};
+    cb.start = [](void *){LOGD("===start");};
+    cb.stop = [](int code, const char *msg, void *){LOGD("===stop");};
+    cb.starting = [](void *){LOGD("===starting");};
+    cb.stopping = [](void *){LOGD("===stopping");};
+    cb.activate = [](void *){LOGD("===activate");};
+    cb.deactivate = [](void *){LOGD("===deactivate");};
+    cb.reconnect = [](void *){LOGD("===reconnect");};
+    cb.reconnect_success = [](void *){LOGD("===reconnect_success");};
+    cb.connected = [](void *){LOGD("===connected");};
+    cb.first_media_packet = [](void *){LOGD("===first_media_packet");};
+    cb.opaque = nullptr;
+
+    auto c_url = env->GetStringUTFChars(url, nullptr);
+    api_ptr->lite_obs_start_output(api_ptr, output_type::rtmp, (void *)c_url, 4000, 160, cb);
+    env->ReleaseStringUTFChars(url, c_url);
 }
 
 extern "C"

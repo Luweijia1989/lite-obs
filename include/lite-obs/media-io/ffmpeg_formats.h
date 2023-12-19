@@ -5,7 +5,7 @@ extern "C"
 #include <libavcodec/avcodec.h>
 #include <libavutil/pixdesc.h>
 }
-#include "lite-obs/lite_obs_media_defines.h"
+#include "lite-obs/lite_obs_defines.h"
 
 static inline int64_t rescale_ts(int64_t val, AVCodecContext *context,
                                  AVRational new_base)

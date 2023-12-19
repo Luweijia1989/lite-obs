@@ -100,3 +100,11 @@ enum source_aspect_ratio_mode {
     KEEP_ASPECT_RATIO,
     KEEP_ASPECT_RATIO_BY_EXPANDING,
 };
+
+enum output_type {
+    rtmp,
+    srt,
+    file,
+    android_aoa,
+    iOS_usb
+};

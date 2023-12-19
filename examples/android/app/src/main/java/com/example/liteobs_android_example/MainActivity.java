@@ -1,7 +1,6 @@
 package com.example.liteobs_android_example;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
@@ -14,8 +13,14 @@ import com.liteobskit.sdk.LiteOBS;
 import com.liteobskit.sdk.LiteOBSSource;
 
 import com.example.liteobs_android_example.databinding.ActivityMainBinding;
+import com.liteobskit.sdk.PhoneCameraActivity;
 
-public class MainActivity extends AppCompatActivity implements Camera2FrameCallback {
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+public class MainActivity extends PhoneCameraActivity implements Camera2FrameCallback {
 
     private static String TAG = "MainActivity";
     private static final String[] REQUEST_PERMISSIONS = {
@@ -26,10 +31,10 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1;
     private Camera2Wrapper camera2Wrapper;
     private MicRecoder micRecoder;
-    private LiteOBS liteOBS;
     private LiteOBSSource videoSource;
 
     private ActivityMainBinding binding;
+    private FileOutputStream fileStream;
 
     protected boolean hasPermissionsGranted(String[] permissions) {
         for (String permission : permissions) {
@@ -42,12 +47,11 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         camera2Wrapper = new Camera2Wrapper(this);
-        liteOBS = new LiteOBS();
-        liteOBS.resetVideoAudio(720, 1280, 20);
+
         videoSource = new LiteOBSSource(liteOBS.getApiPtr(), 5);
         videoSource.rotate(-90.f);
         micRecoder = new MicRecoder(liteOBS.getApiPtr(), this);
@@ -60,7 +64,9 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
             @Override
             public void onClick(View v) {
                 micRecoder.startRecord();
-                liteOBS.startStream();
+
+//                liteOBS.test(fileStream, liteOBS);
+                liteOBS.startStream("rtmp://192.168.16.28/live/test");
             }
         });
 
@@ -71,7 +77,7 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         }
     }
 
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
     }
 

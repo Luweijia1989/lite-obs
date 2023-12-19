@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "lite_obs_media_defines.h"
+#include "lite_obs_defines.h"
 
 #define LITE_OBS_VIDEO_SUCCESS 0
 #define LITE_OBS_VIDEO_FAIL -1

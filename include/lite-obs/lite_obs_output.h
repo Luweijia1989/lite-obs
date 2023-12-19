@@ -28,7 +28,7 @@ public:
     lite_obs_output();
     ~lite_obs_output();
 
-    virtual void i_set_output_info(const std::string &info){ }
+    virtual void i_set_output_info(void *info){ }
     virtual bool i_output_valid() = 0;
     virtual bool i_has_video() = 0;
     virtual bool i_has_audio() = 0;

@@ -82,9 +82,9 @@ lite_ffmpeg_mux::~lite_ffmpeg_mux()
 
 }
 
-void lite_ffmpeg_mux::i_set_output_info(const std::string &info)
+void lite_ffmpeg_mux::i_set_output_info(void *info)
 {
-    d_ptr->output_path = info;
+    d_ptr->output_path = (char *)info;
 }
 
 bool lite_ffmpeg_mux::i_output_valid()

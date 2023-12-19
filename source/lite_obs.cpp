@@ -95,8 +95,8 @@ lite_obs_api *lite_obs_api_new()
         return core_api->object->api_internal->obs_reset_audio(sample_rate);
     };
 
-    api->lite_obs_start_output = [](struct lite_obs_api *core_api, const char *output_info, int vb, int ab, struct lite_obs_output_callbak callback){
-        return core_api->object->api_internal->lite_obs_start_output(output_info, vb, ab, callback);
+    api->lite_obs_start_output = [](struct lite_obs_api *core_api, output_type type, void *output_info, int vb, int ab, struct lite_obs_output_callbak callback){
+        return core_api->object->api_internal->lite_obs_start_output(type, output_info, vb, ab, callback);
     };
 
     api->lite_obs_stop_output = [](struct lite_obs_api *core_api){
