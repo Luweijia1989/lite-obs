@@ -81,6 +81,8 @@ public class PhoneCamera {
             return;
         }
 
+        liteOBS.stopStream();
+
         try {
             if (mFileDescriptor != null)
                 mFileDescriptor.close();
@@ -97,7 +99,6 @@ public class PhoneCamera {
         }
 
         mConnected = false;
-        liteOBS.stopStream();
         mUsbCallback.onDisconnect();
     }
 
@@ -110,6 +111,14 @@ public class PhoneCamera {
             mUsbCallback.onLog("request start stream");
             liteOBS.startStream(this);
         }
+    }
+
+    public void startStream(String url) {
+        liteOBS.startStream(url);
+    }
+
+    public void stopStream() {
+        liteOBS.stopStream();
     }
 
     public void onVideoData(byte[] data) {

@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.liteobs_android_example.databinding.ActivityMainBinding;
 import com.liteobskit.sdk.PhoneCamera;
@@ -106,11 +107,19 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         setContentView(binding.getRoot());
 
         Button startOutput = findViewById(R.id.start_stream);
+        Button stopOutput = findViewById(R.id.stop_stream);
         mDebugView = findViewById(R.id.debug_view);
         startOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPhoneCamera.startStream();
+                mPhoneCamera.startStream("rtmp://192.168.16.28/live/test");
+            }
+        });
+
+        stopOutput.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPhoneCamera.stopStream();
             }
         });
 
@@ -169,9 +178,9 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == CAMERA_PERMISSION_REQUEST_CODE) {
             if (hasPermissionsGranted(REQUEST_PERMISSIONS)) {
-//                mCamera2Wrapper.startCamera();
+                camera2Wrapper.startCamera();
             } else {
-                //Toast.makeText(this, "We need the camera permission.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "We need the camera permission.", Toast.LENGTH_SHORT).show();
             }
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
