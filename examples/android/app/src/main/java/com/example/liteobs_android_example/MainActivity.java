@@ -1,26 +1,29 @@
 package com.example.liteobs_android_example;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.hardware.usb.UsbAccessory;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-
-import com.liteobskit.sdk.LiteOBS;
-import com.liteobskit.sdk.LiteOBSSource;
+import android.widget.TextView;
 
 import com.example.liteobs_android_example.databinding.ActivityMainBinding;
-import com.liteobskit.sdk.PhoneCameraActivity;
+import com.liteobskit.sdk.PhoneCamera;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
-public class MainActivity extends PhoneCameraActivity implements Camera2FrameCallback {
+public class MainActivity extends AppCompatActivity implements Camera2FrameCallback {
 
     private static String TAG = "MainActivity";
     private static final String[] REQUEST_PERMISSIONS = {
@@ -30,11 +33,12 @@ public class MainActivity extends PhoneCameraActivity implements Camera2FrameCal
 
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 1;
     private Camera2Wrapper camera2Wrapper;
-    private MicRecoder micRecoder;
-    private LiteOBSSource videoSource;
+//    private MicRecoder micRecoder;
 
     private ActivityMainBinding binding;
-    private FileOutputStream fileStream;
+    private PhoneCamera mPhoneCamera;
+    UsbManager mUsbManager;
+    TextView mDebugView;
 
     protected boolean hasPermissionsGranted(String[] permissions) {
         for (String permission : permissions) {
@@ -46,27 +50,67 @@ public class MainActivity extends PhoneCameraActivity implements Camera2FrameCal
         return true;
     }
 
+    private void usbInit() {
+        mUsbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
+        IntentFilter filter = new IntentFilter(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
+        registerReceiver(mUsbReceiver, filter);
+    }
+
+    private void usbUninit() {
+        unregisterReceiver(mUsbReceiver);
+    }
+
+    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
+                UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+                if (accessory != null) {
+                    mPhoneCamera.closeAccessory();
+                }
+            }
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        camera2Wrapper = new Camera2Wrapper(this);
+        usbInit();
 
-        videoSource = new LiteOBSSource(liteOBS.getApiPtr(), 5);
-        videoSource.rotate(-90.f);
-        micRecoder = new MicRecoder(liteOBS.getApiPtr(), this);
+        camera2Wrapper = new Camera2Wrapper(this);
+        mPhoneCamera = new PhoneCamera(this, new PhoneCamera.UsbConnectCallback() {
+            @Override
+            public void onConnect() {
+                mDebugView.append("usb connected!!!!\n");
+            }
+
+            @Override
+            public void onDisconnect() {
+                mDebugView.append("usb disconnected!!!!\n");
+            }
+
+            @Override
+            public void onLog(String log) {
+                mDebugView.append(log);
+                mDebugView.append("\n");
+            }
+        });
+
+        mPhoneCamera.onCreate();
+
+        //micRecoder = new MicRecoder(liteOBS.getApiPtr(), this);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         Button startOutput = findViewById(R.id.start_stream);
+        mDebugView = findViewById(R.id.debug_view);
         startOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                micRecoder.startRecord();
-
-//                liteOBS.test(fileStream, liteOBS);
-                liteOBS.startStream("rtmp://192.168.16.28/live/test");
+                mPhoneCamera.startStream();
             }
         });
 
@@ -79,12 +123,42 @@ public class MainActivity extends PhoneCameraActivity implements Camera2FrameCal
 
     public void onResume() {
         super.onResume();
+
+        mDebugView.append("onResumen");
+
+        UsbAccessory[] accessories = mUsbManager.getAccessoryList();
+        UsbAccessory accessory = (accessories == null ? null : accessories[0]);
+        if (accessory != null) {
+            if (mUsbManager.hasPermission(accessory)) {
+                Log.d(TAG, "openAccessory in resume");
+                mPhoneCamera.openAccessory(accessory);
+            } else {
+                Log.d(TAG, "fail to openAccessory, no permission");
+            }
+        } else {
+            Log.d(TAG, "mAccessory is null");
+        }
+    }
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        mPhoneCamera.closeAccessory();
+        usbUninit();
+
+        mPhoneCamera.destroy();
+        mPhoneCamera = null;
     }
 
     @Override
     public void onPreviewFrame(byte[] data, int width, int height) {
         int[] ls = new int[]{width, width/2, width/2};
-        videoSource.outputVideo(data, ls, width, height);
+        mPhoneCamera.outputVideo(data, ls, width, height);
     }
 
     @Override
