@@ -137,6 +137,7 @@ void LiteObsExample::doStartOutput()
     //    path = path + "/output.flv";
     QString path = "rtmp://192.168.16.28/live/test";
     m_liteObs->lite_obs_start_output(m_liteObs, output_type::rtmp, (void *)path.toStdString().c_str(), 4000, 160, cb);
+//    m_liteObs->lite_obs_start_output(m_liteObs, output_type::android_aoa, nullptr, 4000, 160, cb);
 }
 
 void LiteObsExample::doStopOutput()

@@ -1,13 +1,16 @@
 #include "lite-obs/output/aoa_output.h"
 #include "lite-obs/lite_obs_platform_config.h"
 
-#if TARGET_PLATFORM == PLATFORM_ANDROID
 
 #include <thread>
+#if TARGET_PLATFORM == PLATFORM_ANDROID
 #include <jni.h>
 #include <jmi.h>
+#endif
 #include "lite-obs/lite_encoder.h"
 
+
+#if TARGET_PLATFORM == PLATFORM_ANDROID
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv* env;
     if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK) {
@@ -17,6 +20,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     jmi::javaVM(vm, JNI_VERSION_1_6);
     return JNI_VERSION_1_6;
 }
+#endif
 
 //#define DUMP_VIDEO
 
@@ -25,23 +29,14 @@ struct aoa_output_private
     std::thread stop_thread;
     bool initilized{};
     bool sent_header{};
+
+#if TARGET_PLATFORM == PLATFORM_ANDROID
     jobject phone_camera{};
+#endif
     uint8_t header[13]{};
 #ifdef DUMP_VIDEO
     FILE *dump_file{};
 #endif
-
-    aoa_output_private() {
-#ifdef DUMP_VIDEO
-        dump_file = fopen("264dump.h264", "wb");
-#endif
-    }
-
-    ~aoa_output_private() {
-#ifdef DUMP_VIDEO
-        fclose(dump_file);
-#endif
-    }
 };
 
 aoa_output::aoa_output()
@@ -51,13 +46,17 @@ aoa_output::aoa_output()
 
 aoa_output::~aoa_output()
 {
+#if TARGET_PLATFORM == PLATFORM_ANDROID
     if (d_ptr->phone_camera)
         jmi::getEnv()->DeleteGlobalRef(d_ptr->phone_camera);
+#endif
 }
 
 void aoa_output::i_set_output_info(void *info)
 {
+#if TARGET_PLATFORM == PLATFORM_ANDROID
     d_ptr->phone_camera = jmi::getEnv()->NewGlobalRef((jobject)info);
+#endif
 }
 
 bool aoa_output::i_output_valid()
@@ -105,7 +104,15 @@ bool aoa_output::i_start()
     if (d_ptr->stop_thread.joinable())
         d_ptr->stop_thread.join();
 
+#ifdef DUMP_VIDEO
+    char path[100] = {};
+    static int count = 0;
+    count++;
+    sprintf_s(path, "dump_%d.h264", count);
+    d_ptr->dump_file = fopen(path, "wb");
+#endif
     lite_obs_output_begin_data_capture();
+    d_ptr->sent_header = false;
     return true;
 }
 
@@ -121,6 +128,9 @@ void aoa_output::i_stop(uint64_t ts)
         d_ptr->stop_thread.join();
 
     d_ptr->stop_thread = std::thread(stop_thread, this);
+#ifdef DUMP_VIDEO
+    fclose(d_ptr->dump_file);
+#endif
 }
 
 void aoa_output::i_raw_video(video_data *frame)
@@ -143,6 +153,7 @@ void aoa_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
         d_ptr->header[4] = 1;
         memcpy(d_ptr->header + 5, &pts, 8);
 
+#if TARGET_PLATFORM == PLATFORM_ANDROID
         auto cls = jmi::getEnv()->GetObjectClass(d_ptr->phone_camera);
         auto method = jmi::getEnv()->GetMethodID(cls, "onVideoData", "([B)V");
         auto bytes = jmi::getEnv()->NewByteArray(len + 13);
@@ -150,6 +161,7 @@ void aoa_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
         jmi::getEnv()->SetByteArrayRegion(bytes, 13, len, (const jbyte*)data);
         jmi::getEnv()->CallVoidMethod(d_ptr->phone_camera, method, bytes);
         jmi::getEnv()->DeleteLocalRef(bytes);
+#endif
     };
 
     if (!d_ptr->sent_header) {
@@ -183,5 +195,3 @@ int aoa_output::i_get_dropped_frames()
 {
     return 0;
 }
-
-#endif

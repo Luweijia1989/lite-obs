@@ -244,9 +244,7 @@ bool lite_obs_internal::lite_obs_start_output(output_type type, void *output_inf
             output = std::make_shared<lite_ffmpeg_mux>();
             break;
         case output_type::android_aoa:
-#if TARGET_PLATFORM == PLATFORM_ANDROID
             output = std::make_shared<aoa_output>();
-#endif
             break;
         case output_type::iOS_usb:
 
