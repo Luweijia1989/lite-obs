@@ -1,10 +1,6 @@
 package com.liteobskit.sdk;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
 import android.os.ParcelFileDescriptor;
@@ -112,7 +108,16 @@ public class PhoneCamera {
     public void startStream() {
         if (mConnected && mOutputStream != null) {
             mUsbCallback.onLog("request start stream");
-            liteOBS.startStream(mOutputStream);
+            liteOBS.startStream(this);
+        }
+    }
+
+    public void onVideoData(byte[] data) {
+        try {
+            mOutputStream.write(data);
+            mOutputStream.flush();
+        } catch (Exception e) {
+            // connection lost
         }
     }
 }

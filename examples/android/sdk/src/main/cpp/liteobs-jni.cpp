@@ -39,7 +39,7 @@ Java_com_liteobskit_sdk_LiteOBS_resetVideoAudio(JNIEnv *env, jobject thiz,
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_liteobskit_sdk_LiteOBS_startAOAStream(JNIEnv *env, jobject thiz, jobject file, jlong ptr) {
+Java_com_liteobskit_sdk_LiteOBS_startAOAStream(JNIEnv *env, jobject thiz, jobject obj, jlong ptr) {
     lite_obs_api *api_ptr = reinterpret_cast<lite_obs_api *>(ptr);
     lite_obs_output_callbak cb{};
     cb.start = [](void *){LOGD("===start");};
@@ -53,7 +53,7 @@ Java_com_liteobskit_sdk_LiteOBS_startAOAStream(JNIEnv *env, jobject thiz, jobjec
     cb.connected = [](void *){LOGD("===connected");};
     cb.first_media_packet = [](void *){LOGD("===first_media_packet");};
     cb.opaque = nullptr;
-    api_ptr->lite_obs_start_output(api_ptr, output_type::android_aoa, file, 4000, 160, cb);
+    api_ptr->lite_obs_start_output(api_ptr, output_type::android_aoa, obj, 4000, 160, cb);
 }
 
 extern "C"

@@ -7,7 +7,6 @@
 #include <jni.h>
 #include <jmi.h>
 #include "lite-obs/lite_encoder.h"
-#include "lite-obs/util/log.h"
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved) {
     JNIEnv* env;
@@ -26,7 +25,7 @@ struct aoa_output_private
     std::thread stop_thread;
     bool initilized{};
     bool sent_header{};
-    jobject file_stream{};
+    jobject phone_camera{};
     uint8_t header[13]{};
 #ifdef DUMP_VIDEO
     FILE *dump_file{};
@@ -52,13 +51,13 @@ aoa_output::aoa_output()
 
 aoa_output::~aoa_output()
 {
-    if (d_ptr->file_stream)
-        jmi::getEnv()->DeleteGlobalRef(d_ptr->file_stream);
+    if (d_ptr->phone_camera)
+        jmi::getEnv()->DeleteGlobalRef(d_ptr->phone_camera);
 }
 
 void aoa_output::i_set_output_info(void *info)
 {
-    d_ptr->file_stream = jmi::getEnv()->NewGlobalRef((jobject)info);
+    d_ptr->phone_camera = jmi::getEnv()->NewGlobalRef((jobject)info);
 }
 
 bool aoa_output::i_output_valid()
@@ -141,25 +140,15 @@ void aoa_output::i_encoded_packet(std::shared_ptr<encoder_packet> packet)
 
     auto send = [this](uint8_t *data, size_t len, int64_t pts){
         memcpy(d_ptr->header, &len, 4);
-        memcpy(d_ptr->header + 4, &pts, 8);
-        d_ptr->header[12] = 1;
+        d_ptr->header[4] = 1;
+        memcpy(d_ptr->header + 5, &pts, 8);
 
-        auto cls = jmi::getEnv()->GetObjectClass(d_ptr->file_stream);
-        auto method = jmi::getEnv()->GetMethodID(cls, "write", "([B)V");
-        auto flush = jmi::getEnv()->GetMethodID(cls, "flush", "()V");
+        auto cls = jmi::getEnv()->GetObjectClass(d_ptr->phone_camera);
+        auto method = jmi::getEnv()->GetMethodID(cls, "onVideoData", "([B)V");
         auto bytes = jmi::getEnv()->NewByteArray(len + 13);
         jmi::getEnv()->SetByteArrayRegion(bytes, 0, 13, (const jbyte*)d_ptr->header);
         jmi::getEnv()->SetByteArrayRegion(bytes, 13, len, (const jbyte*)data);
-        jmi::getEnv()->CallVoidMethod(d_ptr->file_stream, method, bytes);
-        jmi::getEnv()->CallVoidMethod(d_ptr->file_stream, flush);
-
-        if(jmi::getEnv()->ExceptionCheck()) {
-            jmi::getEnv()->ExceptionDescribe(); // writes to logcat
-            jmi::getEnv()->ExceptionClear();
-            lite_obs_output_signal_stop(LITE_OBS_OUTPUT_ERROR);
-            blog(LOG_INFO, "exception occur when write data!!");
-        }
-
+        jmi::getEnv()->CallVoidMethod(d_ptr->phone_camera, method, bytes);
         jmi::getEnv()->DeleteLocalRef(bytes);
     };
 
