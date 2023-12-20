@@ -967,7 +967,6 @@ void rtmp_stream_output::drop_frames(const char *name, int highest_priority, boo
 #endif
 
     std::list<std::shared_ptr<encoder_packet>> new_buf;
-    new_buf.resize(8);
 
     int num_frames_dropped = 0;
     while (d_ptr->packets.size()) {
