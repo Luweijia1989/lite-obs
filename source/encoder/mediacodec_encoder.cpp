@@ -29,10 +29,13 @@ struct surface_encode_rc
     ANativeWindow*  mediacodec_input_window = nullptr;
 
     void reset() {
+        blog(LOG_DEBUG, "surface_encode_rc: start reset gl resource");
         if (display != EGL_NO_DISPLAY) {
             if (eglMakeCurrent(display, egl_surface, egl_surface, egl_ctx)) {
+                blog(LOG_DEBUG, "surface_encode_rc: release texture drawer");
                 texture_drawer.reset();
-            }
+            } else
+                blog(LOG_DEBUG, "surface_encode_rc: error in make gl current");
 
             eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
             if (egl_ctx)
@@ -48,6 +51,8 @@ struct surface_encode_rc
             ANativeWindow_release(mediacodec_input_window);
             mediacodec_input_window = nullptr;
         }
+
+        blog(LOG_DEBUG, "surface_encode_rc: reset gl resource");
     }
 
     bool init() {
@@ -112,8 +117,10 @@ struct surface_encode_rc
     void draw_texture(int tex_id, int width, int height)
     {
         glViewport(0, 0, width, height);
-        if (!texture_drawer)
+        if (!texture_drawer) {
+            blog(LOG_DEBUG, "surface_encode_rc: create texture drawer");
             texture_drawer = std::make_shared<gs_simple_texture_drawer>();
+        }
 
         texture_drawer->draw_texture(tex_id);
         glFlush();
@@ -293,14 +300,16 @@ bool mediacodec_encoder::i_create()
 
 void mediacodec_encoder::i_destroy()
 {
+#if __ANDROID_API__ >= 26
+    d_ptr->rc->reset();
+#endif
+
     if (d_ptr->mediacodec) {
         AMediaCodec_flush(d_ptr->mediacodec);
         AMediaCodec_stop(d_ptr->mediacodec);
         AMediaCodec_delete(d_ptr->mediacodec);
         d_ptr->mediacodec = NULL;
     }
-
-    d_ptr->rc->reset();
 
     blog(LOG_DEBUG, "mediacodec_encoder destroy");
 }
