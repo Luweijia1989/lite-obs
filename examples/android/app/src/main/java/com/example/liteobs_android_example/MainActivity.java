@@ -5,23 +5,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
-import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.hardware.usb.UsbAccessory;
-import android.hardware.usb.UsbManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.liteobs_android_example.databinding.ActivityMainBinding;
-import com.liteobskit.sdk.PhoneCamera;
+import com.liteobskit.sdk.AOAStreamer;
 
 
 public class MainActivity extends AppCompatActivity implements Camera2FrameCallback {
@@ -37,8 +29,7 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
 //    private MicRecoder micRecoder;
 
     private ActivityMainBinding binding;
-    private PhoneCamera mPhoneCamera;
-    UsbManager mUsbManager;
+    private AOAStreamer mAOAStreamer;
     TextView mDebugView;
 
     protected boolean hasPermissionsGranted(String[] permissions) {
@@ -51,45 +42,20 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         return true;
     }
 
-    private void usbInit() {
-        mUsbManager = (UsbManager)getSystemService(Context.USB_SERVICE);
-        IntentFilter filter = new IntentFilter(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-        registerReceiver(mUsbReceiver, filter);
-    }
-
-    private void usbUninit() {
-        unregisterReceiver(mUsbReceiver);
-    }
-
-    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-                UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-                if (accessory != null) {
-                    mPhoneCamera.closeAccessory();
-                }
-            }
-        }
-    };
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        usbInit();
-
         camera2Wrapper = new Camera2Wrapper(this);
-        mPhoneCamera = new PhoneCamera(this, new PhoneCamera.UsbConnectCallback() {
+        mAOAStreamer = new AOAStreamer(this, new AOAStreamer.UsbConnectCallback() {
             @Override
             public void onConnect() {
-                mDebugView.append("usb connected!!!!\n");
+                mDebugView.append("usb connected!!!!, can click start stream\n");
             }
 
             @Override
             public void onDisconnect() {
-                mDebugView.append("usb disconnected!!!!\n");
+                mDebugView.append("usb disconnected!!!!, stream stopped, switch ui state\n");
             }
 
             @Override
@@ -99,7 +65,9 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
             }
         });
 
-        mPhoneCamera.onCreate();
+        mAOAStreamer.init();
+        mAOAStreamer.initStreamInfo(720, 1280, 20);
+
 
         //micRecoder = new MicRecoder(liteOBS.getApiPtr(), this);
 
@@ -112,14 +80,15 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         startOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPhoneCamera.startStream("rtmp://192.168.16.28/live/test");
+                //mPhoneCamera.startStream("rtmp://192.168.16.28/live/test");
+                mAOAStreamer.startStream();
             }
         });
 
         stopOutput.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mPhoneCamera.stopStream();
+                mAOAStreamer.stopStream();
             }
         });
 
@@ -132,42 +101,23 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
 
     public void onResume() {
         super.onResume();
-
-        mDebugView.append("onResumen");
-
-        UsbAccessory[] accessories = mUsbManager.getAccessoryList();
-        UsbAccessory accessory = (accessories == null ? null : accessories[0]);
-        if (accessory != null) {
-            if (mUsbManager.hasPermission(accessory)) {
-                Log.d(TAG, "openAccessory in resume");
-                mPhoneCamera.openAccessory(accessory);
-            } else {
-                Log.d(TAG, "fail to openAccessory, no permission");
-            }
-        } else {
-            Log.d(TAG, "mAccessory is null");
-        }
-    }
-    @Override
-    public void onPause() {
-        super.onPause();
+        mDebugView.append("onResume\n");
+        mAOAStreamer.checkOpenAccessory();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
 
-        mPhoneCamera.closeAccessory();
-        usbUninit();
-
-        mPhoneCamera.destroy();
-        mPhoneCamera = null;
+        mAOAStreamer.closeAccessory();
+        mAOAStreamer.destroy();
+        mAOAStreamer = null;
     }
 
     @Override
     public void onPreviewFrame(byte[] data, int width, int height) {
         int[] ls = new int[]{width, width/2, width/2};
-        mPhoneCamera.outputVideo(data, ls, width, height);
+        mAOAStreamer.outputVideo(data, ls, width, height);
     }
 
     @Override
