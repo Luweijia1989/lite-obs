@@ -45,33 +45,14 @@ public class AOAStreamer {
         mUsbCallback = cb;
     }
 
-    private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (UsbManager.ACTION_USB_ACCESSORY_DETACHED.equals(action)) {
-                UsbAccessory accessory = (UsbAccessory) intent.getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
-                if (accessory != null) {
-                    stopStream();
-                    closeAccessory();
-                }
-            }
-        }
-    };
-
     public void init() {
         liteOBS = new LiteOBS();
         mVideoSource = new LiteOBSSource(liteOBS.getApiPtr(), 5);
         mVideoSource.rotate(-90.f);
-
         mUsbManager = (UsbManager)mCtx.getSystemService(Context.USB_SERVICE);
-        IntentFilter filter = new IntentFilter(UsbManager.ACTION_USB_ACCESSORY_DETACHED);
-        mCtx.registerReceiver(mUsbReceiver, filter);
     }
 
     public void destroy() {
-        mCtx.unregisterReceiver(mUsbReceiver);
-
         mVideoSource = null;
         liteOBS = null;
     }
@@ -81,19 +62,19 @@ public class AOAStreamer {
         UsbAccessory accessory = (accessories == null ? null : accessories[0]);
         if (accessory != null) {
             if (mUsbManager.hasPermission(accessory)) {
-                Log.d(TAG, "openAccessory in resume");
+                doLog("openAccessory in resume");
                 openAccessory(accessory);
             } else {
-                Log.d(TAG, "fail to openAccessory, no permission");
+                doLog("fail to openAccessory, no permission");
             }
         } else {
-            Log.d(TAG, "mAccessory is null");
+            doLog("mAccessory is null");
         }
     }
 
     private void openAccessory(UsbAccessory accessory) {
         if (mConnected) {
-            Log.d(TAG, "openAccessory: already opened!");
+            doLog("openAccessory: already opened!");
             return;
         }
         mFileDescriptor = mUsbManager.openAccessory(accessory);
@@ -104,15 +85,15 @@ public class AOAStreamer {
             mOutputStream = new FileOutputStream(fd);
             readInternal();
             mConnected = true;
-            Log.d(TAG, "accessory opened, start read from input stream");
+            doLog("accessory opened, start read from input stream");
         } else {
-            Log.d(TAG, "accessory open fail");
+            doLog("accessory open fail");
         }
     }
 
     public void closeAccessory() {
         if (!mConnected) {
-            Log.d(TAG, "closeAccessory: not connected");
+            doLog("closeAccessory: not connected");
             return;
         }
 
@@ -158,6 +139,7 @@ public class AOAStreamer {
                         public void run() {
                             stopHeartBeatTimer();
                             stopStream();
+                            closeAccessory();
                             mUsbCallback.onDisconnect();
                         }
                     });
@@ -173,16 +155,27 @@ public class AOAStreamer {
         }
     }
 
+    private void doLog(String log) {
+        mCtx.runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                mUsbCallback.onLog(log);
+            }
+        });
+    }
+
     private void readInternal() {
         mReadThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                doLog("readInternal: start usb read thread");
                 while (true) {
                     try {
                         byte[] buf = new byte[1];
                         int len = mInputStream.read(buf);
                         if (len <= 0) {
-                            Log.d(TAG, "readInternal: should never happen");
+                            doLog("readInternal: should never happen");
                             break;
                         }
 
@@ -198,10 +191,11 @@ public class AOAStreamer {
                             });
                         }
                     } catch (IOException e) {
+                        doLog("readInternal exception: " + e.toString());
                         break;
                     }
                 }
-                Log.d(TAG, "read thread end");
+                doLog("readInternal: end");
             }
         });
         mReadThread.start();
@@ -221,7 +215,7 @@ public class AOAStreamer {
         }
 
         liteOBS.startStream(this);
-        mUsbCallback.onLog("startStream: AOA stream start");
+        doLog("startStream: AOA stream start");
     }
 
     public void stopStream() {
