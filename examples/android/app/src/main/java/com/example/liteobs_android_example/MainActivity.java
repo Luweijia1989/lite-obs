@@ -49,6 +49,11 @@ public class MainActivity extends AppCompatActivity implements Camera2FrameCallb
         camera2Wrapper = new Camera2Wrapper(this);
         mAOAStreamer = new AOAStreamer(this, new AOAStreamer.UsbConnectCallback() {
             @Override
+            public void onError() {
+                Toast.makeText(getApplicationContext(), "This is my Toast message!", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
             public void onConnect() {
                 mDebugView.append("usb connected!!!!, can click start stream\n");
             }

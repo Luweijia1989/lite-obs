@@ -35,6 +35,7 @@ public class AOAStreamer {
     private UsbConnectCallback mUsbCallback;
 
     public interface UsbConnectCallback {
+        void onError();
         void onConnect();
         void onDisconnect();
         void onLog(String log);
@@ -68,7 +69,7 @@ public class AOAStreamer {
                 doLog("fail to openAccessory, no permission");
             }
         } else {
-            doLog("mAccessory is null");
+            doLog("accessory is null! activity should start by system AOA dialog!");
         }
     }
 
@@ -87,6 +88,7 @@ public class AOAStreamer {
             mConnected = true;
             doLog("accessory opened, start read from input stream");
         } else {
+            mUsbCallback.onError();
             doLog("accessory open fail");
         }
     }
