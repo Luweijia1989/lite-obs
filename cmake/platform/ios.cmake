@@ -12,10 +12,10 @@ set(BITCODE_VALUE "NO")
 set(BITCODE_GENERATION_VALUE marker)
 
 set(PUBLIC_HEADERS
-    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
     ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_callback.h
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_defines.h
     ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_global.h
-    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs_media_defines.h
+    ${PROJECT_SOURCE_DIR}/include/lite-obs/lite_obs.h
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
     FRAMEWORK ON
