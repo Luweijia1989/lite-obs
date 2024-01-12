@@ -38,3 +38,6 @@
 examples/*build-qt*/*
 *external/*
 *output/*
+liteobs-sdk/*
+Examples/iOS/iOS-demo/Frameworks/*
+
