@@ -8,6 +8,7 @@
 #include "lite-obs/output/file_output.h"
 #include "lite-obs/output/srt_stream_output.h"
 #include "lite-obs/output/rtmp_stream_output.h"
+#include "lite-obs/output/iOS_muxd_output.h"
 #include "lite-obs/util/threading.h"
 #include "lite-obs/lite_obs_platform_config.h"
 
@@ -247,7 +248,7 @@ bool lite_obs_internal::lite_obs_start_output(output_type type, void *output_inf
             output = std::make_shared<aoa_output>();
             break;
         case output_type::iOS_usb:
-
+            output = std::make_shared<iOS_muxd_output>();
             break;
         default:
             break;
