@@ -7,16 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A004FF292B56940F00F1C6ED /* lite-obs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A004FF282B56940F00F1C6ED /* lite-obs.framework */; };
+		A004FF2A2B56941800F1C6ED /* lite-obs.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A004FF282B56940F00F1C6ED /* lite-obs.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		A0AF3CE62B5117E3002C409D /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3CE52B5117E3002C409D /* AppDelegate.m */; };
 		A0AF3CE92B5117E3002C409D /* SceneDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3CE82B5117E3002C409D /* SceneDelegate.m */; };
 		A0AF3CEF2B5117E3002C409D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A0AF3CED2B5117E3002C409D /* Main.storyboard */; };
 		A0AF3CF12B5117E5002C409D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0AF3CF02B5117E5002C409D /* Assets.xcassets */; };
 		A0AF3CF42B5117E5002C409D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A0AF3CF22B5117E5002C409D /* LaunchScreen.storyboard */; };
 		A0AF3CF72B5117E5002C409D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3CF62B5117E5002C409D /* main.m */; };
-		A0AF3D102B512C30002C409D /* Test.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3D0E2B512C30002C409D /* Test.cpp */; };
+		A0AF3D102B512C30002C409D /* TcpServer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3D0E2B512C30002C409D /* TcpServer.cpp */; };
 		A0AF3D122B512D6C002C409D /* ViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = A0AF3D112B512D6C002C409D /* ViewController.mm */; };
-		A0AF3D202B5133D8002C409D /* lite-obs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A0AF3D1F2B5133D8002C409D /* lite-obs.framework */; };
-		A0AF3D212B513434002C409D /* lite-obs.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = A0AF3D1F2B5133D8002C409D /* lite-obs.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,7 +26,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				A0AF3D212B513434002C409D /* lite-obs.framework in Embed Frameworks */,
+				A004FF2A2B56941800F1C6ED /* lite-obs.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -34,6 +34,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A004FF282B56940F00F1C6ED /* lite-obs.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "lite-obs.framework"; path = "Frameworks/lite-obs.framework"; sourceTree = "<group>"; };
 		A0AF3CE12B5117E3002C409D /* iOS-demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0AF3CE42B5117E3002C409D /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		A0AF3CE52B5117E3002C409D /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -45,10 +46,9 @@
 		A0AF3CF32B5117E5002C409D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A0AF3CF52B5117E5002C409D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A0AF3CF62B5117E5002C409D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		A0AF3D0E2B512C30002C409D /* Test.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Test.cpp; sourceTree = "<group>"; };
-		A0AF3D0F2B512C30002C409D /* Test.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Test.hpp; sourceTree = "<group>"; };
+		A0AF3D0E2B512C30002C409D /* TcpServer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TcpServer.cpp; sourceTree = "<group>"; };
+		A0AF3D0F2B512C30002C409D /* TcpServer.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = TcpServer.hpp; sourceTree = "<group>"; };
 		A0AF3D112B512D6C002C409D /* ViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ViewController.mm; sourceTree = "<group>"; };
-		A0AF3D1F2B5133D8002C409D /* lite-obs.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = "lite-obs.framework"; path = "dep/ssss/lite-obs.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,7 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0AF3D202B5133D8002C409D /* lite-obs.framework in Frameworks */,
+				A004FF292B56940F00F1C6ED /* lite-obs.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,9 +93,9 @@
 				A0AF3CF22B5117E5002C409D /* LaunchScreen.storyboard */,
 				A0AF3CF52B5117E5002C409D /* Info.plist */,
 				A0AF3CF62B5117E5002C409D /* main.m */,
-				A0AF3D0E2B512C30002C409D /* Test.cpp */,
-				A0AF3D0F2B512C30002C409D /* Test.hpp */,
-				A0AF3D1F2B5133D8002C409D /* lite-obs.framework */,
+				A0AF3D0E2B512C30002C409D /* TcpServer.cpp */,
+				A0AF3D0F2B512C30002C409D /* TcpServer.hpp */,
+				A004FF282B56940F00F1C6ED /* lite-obs.framework */,
 			);
 			path = "iOS-demo";
 			sourceTree = "<group>";
@@ -175,7 +175,7 @@
 				A0AF3CF72B5117E5002C409D /* main.m in Sources */,
 				A0AF3D122B512D6C002C409D /* ViewController.mm in Sources */,
 				A0AF3CE92B5117E3002C409D /* SceneDelegate.m in Sources */,
-				A0AF3D102B512C30002C409D /* Test.cpp in Sources */,
+				A0AF3D102B512C30002C409D /* TcpServer.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -331,6 +331,7 @@
 					"$(PROJECT_DIR)/iOS-demo",
 					"$(PROJECT_DIR)/iOS-demo/dep",
 					"$(PROJECT_DIR)/iOS-demo/dep/ssss",
+					"$(PROJECT_DIR)/iOS-demo/Frameworks",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS-demo/Info.plist";
@@ -370,6 +371,7 @@
 					"$(PROJECT_DIR)/iOS-demo",
 					"$(PROJECT_DIR)/iOS-demo/dep",
 					"$(PROJECT_DIR)/iOS-demo/dep/ssss",
+					"$(PROJECT_DIR)/iOS-demo/Frameworks",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS-demo/Info.plist";
